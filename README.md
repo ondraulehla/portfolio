@@ -22,6 +22,19 @@ Osobní web: profil, CV a případové studie projektů. Postaveno na **Astro 5+
 
 Po změně CV dat spusť `npm run build && npm run pdf` a commitni přegenerovaná PDF/OG.
 
+## Úprava 3D mapy (playground)
+
+Layout ostrova je ručně editovatelný v **[src/playground/world.ts](src/playground/world.ts)** — každé pole má komentář:
+
+- `mountains` — pole hor (pozice, výška, poloměr); klidně přidejte/uberte
+- `river` — amplitudy a frekvence meandrů + šířka údolí
+- `city` — pozice a poloměr městečka
+- `signSpots` — kde se vznášejí billboardy projektů
+- `forest.densityThreshold` — nižší číslo = více lesů; `maxTrees` strop počtu
+- `islandRadius`, `waterLevel`, `clouds.count`, `rocks.clustersPerMountain`
+
+Barvy terénu a objektů jsou v konstantě `COLORS` a nebe/světla v `SKY` v [src/playground/experience.ts](src/playground/experience.ts). Fyzika letu (rychlost, náklon) je tamtéž ve `startExperience` (`BASE_SPEED`, bank/pitch koeficienty). Po úpravě stačí `npm run dev` a otevřít `/en/playground`.
+
 ## Architektura
 
 - Hlavní web je čistě statický, JS ≈ 49 KB gzip (GSAP animace, deferred).

@@ -5,6 +5,7 @@
  * to open the project it advertises. Everything is procedural.
  */
 import * as THREE from 'three';
+import { WORLD } from './world';
 
 interface ProjectSign {
   title: string;
@@ -17,22 +18,13 @@ interface WorldData {
   labels: { open: string; pressEnter: string };
 }
 
-// --- world layout constants ---------------------------------------------------
-const ISLAND_RADIUS = 95; // where land starts fading into the sea
-const COAST_WIDTH = 45;
-const WATER_LEVEL = -0.9;
-const CITY = { x: 45, z: 35, radius: 22 };
-const MOUNTAINS = [
-  { x: -58, z: -42, h: 26, r: 17 },
-  { x: -72, z: -18, h: 20, r: 14 },
-  { x: -42, z: -64, h: 22, r: 15 },
-  { x: -30, z: -38, h: 12, r: 12 },
-];
-const SIGN_SPOTS = [
-  { x: -15, z: -68 },
-  { x: 72, z: -8 },
-  { x: -8, z: 76 },
-];
+// --- world layout: edit src/playground/world.ts, not these aliases -------------
+const ISLAND_RADIUS = WORLD.islandRadius;
+const COAST_WIDTH = WORLD.coastWidth;
+const WATER_LEVEL = WORLD.waterLevel;
+const CITY = WORLD.city;
+const MOUNTAINS = WORLD.mountains;
+const SIGN_SPOTS = WORLD.signSpots;
 
 const SKY = {
   light: {
@@ -68,6 +60,8 @@ const COLORS = {
   sand: 0xe6d095,
   grass: [0x62b45c, 0x54a355, 0x74c468],
   meadow: 0xa9cf62,
+  alpine: 0x8fae5e,
+  rockDark: 0x6b5d52,
   rock: 0x8a7a6e,
   rockHigh: 0x9d918a,
   snow: 0xf4f6f8,
@@ -125,7 +119,8 @@ function smoothstep(edge0: number, edge1: number, x: number): number {
 
 /** Centre line of the river (x as a function of z). */
 function riverX(z: number): number {
-  return 34 * Math.sin(z * 0.018) - 8 + 6 * Math.sin(z * 0.05);
+  const r = WORLD.river;
+  return r.a1 * Math.sin(z * r.f1) + r.offset + r.a2 * Math.sin(z * r.f2);
 }
 
 /** Terrain height — the single source of truth used by every builder. */
@@ -144,7 +139,7 @@ function getHeight(x: number, z: number): number {
 
   // river carves a smooth valley
   const riverDist = Math.abs(x - riverX(z));
-  const carve = smoothstep(10, 3.2, riverDist);
+  const carve = smoothstep(WORLD.river.width, WORLD.river.width * 0.32, riverDist);
   h = h * (1 - carve) + (WATER_LEVEL - 1.6) * carve;
 
   // town sits on a level plateau
@@ -433,8 +428,12 @@ function buildTerrain(): THREE.Mesh {
   const meadow = new THREE.Color(COLORS.meadow);
   const sand = new THREE.Color(COLORS.sand);
   const sandDeep = new THREE.Color(COLORS.sandDeep);
-  const rock = new THREE.Color(COLORS.rock);
-  const rockHigh = new THREE.Color(COLORS.rockHigh);
+  const alpine = new THREE.Color(COLORS.alpine);
+  const strata = [
+    new THREE.Color(COLORS.rockDark),
+    new THREE.Color(COLORS.rock),
+    new THREE.Color(COLORS.rockHigh),
+  ];
   const snow = new THREE.Color(COLORS.snow);
 
   for (let i = 0; i < pos.count; i++) {
@@ -444,19 +443,38 @@ function buildTerrain(): THREE.Mesh {
     pos.setY(i, h);
 
     const tint = fbm(x * 0.08 + 90, z * 0.08 + 90); // gentle variation everywhere
+    // slope from finite differences — steep faces read as bare rock
+    const slope = Math.max(
+      Math.abs(getHeight(x + 1.4, z) - h),
+      Math.abs(getHeight(x, z + 1.4) - h),
+    );
+    // irregular but CRISP feature lines instead of long smooth blends
+    const snowline = 14.2 + (fbm(x * 0.09 + 55, z * 0.09 + 55) - 0.5) * 5;
+    const rockline = 8.2 + (fbm(x * 0.07 + 21, z * 0.07 + 21) - 0.5) * 4;
+
     if (h < WATER_LEVEL + 0.25) {
       color.copy(sandDeep).lerp(sand, smoothstep(-4, WATER_LEVEL, h));
     } else if (h < 0.75) {
       color.copy(sand).lerp(grass[0]!, smoothstep(0.2, 0.75, h));
-    } else if (h < 9) {
+    } else if (h > snowline) {
+      // snow with faint cool shading in hollows
+      color.copy(snow).offsetHSL(0, 0.02, (tint - 0.7) * 0.05);
+    } else if (h > rockline || (h > 4.5 && slope > 1.15)) {
+      // banded strata following the contour lines, like layered sediment
+      const band = h * 0.5 + (fbm(x * 0.06 + 9, z * 0.06 + 9) - 0.5) * 1.6;
+      color
+        .copy(strata[((Math.floor(band) % 3) + 3) % 3]!)
+        .offsetHSL(0, 0, (tint - 0.5) * 0.05);
+      // dusting of snow just under the snowline
+      if (h > snowline - 1.2) color.lerp(snow, 0.45);
+    } else if (h > rockline - 1.4) {
+      // alpine meadow rim right below the rock — a crisp colour step
+      color.copy(alpine).offsetHSL(0, 0, (tint - 0.5) * 0.06);
+    } else {
       const meadowMix = smoothstep(0.62, 0.78, fbm(x * 0.035 + 300, z * 0.035 + 300));
       color
         .copy(grass[Math.floor(tint * grass.length) % grass.length]!)
         .lerp(meadow, meadowMix * 0.85);
-    } else if (h < 15.5) {
-      color.copy(rock).lerp(rockHigh, smoothstep(9, 15.5, h)).offsetHSL(0, 0, (tint - 0.5) * 0.06);
-    } else {
-      color.copy(rockHigh).lerp(snow, smoothstep(15.5, 18.5, h));
     }
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
@@ -503,16 +521,16 @@ function buildForests(): THREE.Group {
   }
   const placements: Placement[] = [];
 
-  for (let i = 0; i < 3200 && placements.length < 320; i++) {
+  for (let i = 0; i < 3200 && placements.length < WORLD.forest.maxTrees; i++) {
     const x = (hash2(i, 17) - 0.5) * 2 * (ISLAND_RADIUS + 10);
     const z = (hash2(i, 91) - 0.5) * 2 * (ISLAND_RADIUS + 10);
     const h = getHeight(x, z);
-    if (h < 0.9 || h > 8.5) continue;
+    if (h < WORLD.forest.minHeight || h > WORLD.forest.maxHeight) continue;
     if (Math.abs(x - riverX(z)) < 7) continue;
     if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.radius + 5) continue;
     // forests grow where the forest-noise says so — organic patches with soft edges
     const density = fbm(x * 0.03 + 700, z * 0.03 + 700);
-    if (density < 0.5) continue;
+    if (density < WORLD.forest.densityThreshold) continue;
     placements.push({
       x,
       z,
@@ -527,12 +545,12 @@ function buildForests(): THREE.Group {
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
-  // trunks (shared by both kinds)
-  const trunkGeo = new THREE.CylinderGeometry(0.14, 0.22, 1.2, 7);
+  // trunks (shared by both kinds) — tall enough to reach well into the crown
+  const trunkGeo = new THREE.CylinderGeometry(0.13, 0.24, 2.4, 7);
   const trunkMat = new THREE.MeshStandardMaterial({ color: COLORS.trunk, roughness: 0.9 });
   const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, placements.length);
   placements.forEach((p, i) => {
-    dummy.position.set(p.x, p.h + 0.5 * p.scale, p.z);
+    dummy.position.set(p.x, p.h + 1.0 * p.scale, p.z);
     dummy.scale.setScalar(p.scale);
     dummy.rotation.set(0, hash2(i, 2) * Math.PI, 0);
     dummy.updateMatrix();
@@ -563,10 +581,11 @@ function buildForests(): THREE.Group {
   // all sharing the tree's colour so it reads as a single crown
   const blobGeo = new THREE.IcosahedronGeometry(1, 2);
   const blobMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+  // dy positions sit low enough that every blob overlaps the trunk top (~2.2·scale)
   const CANOPY = [
-    { dx: 0, dy: 2.55, dz: 0, s: 1.28 },
-    { dx: 0.88, dy: 2.0, dz: 0.25, s: 0.78 },
-    { dx: -0.82, dy: 2.1, dz: -0.25, s: 0.7 },
+    { dx: 0, dy: 2.5, dz: 0, s: 1.28 },
+    { dx: 0.72, dy: 2.05, dz: 0.22, s: 0.78 },
+    { dx: -0.68, dy: 2.12, dz: -0.22, s: 0.7 },
   ] as const;
   for (const part of CANOPY) {
     const mesh = new THREE.InstancedMesh(blobGeo, blobMat, leafies.length);
@@ -616,14 +635,30 @@ function buildGableRoofGeometry(): THREE.BufferGeometry {
 }
 
 function buildRocks(): THREE.InstancedMesh {
+  // deliberate boulder groups at the foot of each mountain, like fallen scree —
+  // a big anchor rock with a few smaller ones huddled around it
   const placements: { x: number; z: number; h: number; s: number }[] = [];
-  for (let i = 0; i < 600 && placements.length < 40; i++) {
-    const x = (hash2(i, 401) - 0.5) * 2 * ISLAND_RADIUS;
-    const z = (hash2(i, 907) - 0.5) * 2 * ISLAND_RADIUS;
-    const h = getHeight(x, z);
-    if (h < 6 || h > 15) continue; // rocky band on the mountain flanks
-    placements.push({ x, z, h, s: 0.5 + hash2(i, 3) * 1.1 });
-  }
+  MOUNTAINS.forEach((m, mi) => {
+    for (let c = 0; c < WORLD.rocks.clustersPerMountain; c++) {
+      const angle = hash2(mi * 7 + c, 5) * Math.PI * 2;
+      const dist = m.r * (1.15 + hash2(mi * 3 + c, 9) * 0.45);
+      const cx = m.x + Math.cos(angle) * dist;
+      const cz = m.z + Math.sin(angle) * dist;
+      const ch = getHeight(cx, cz);
+      if (ch < 1.5 || ch > 11) continue; // only on the walkable flank
+      const anchor = 1.1 + hash2(mi + c, 13) * 0.7;
+      placements.push({ x: cx, z: cz, h: ch, s: anchor });
+      const count = 2 + Math.floor(hash2(mi * 11 + c, 21) * 3);
+      for (let k = 0; k < count; k++) {
+        const ra = hash2(k * 5 + c, mi + 31) * Math.PI * 2;
+        const rd = anchor + 0.6 + hash2(k * 3 + c, mi + 47) * 1.4;
+        const x = cx + Math.cos(ra) * rd;
+        const z = cz + Math.sin(ra) * rd;
+        placements.push({ x, z, h: getHeight(x, z), s: 0.35 + hash2(k + mi, c + 7) * 0.55 });
+      }
+    }
+  });
+
   const mesh = new THREE.InstancedMesh(
     new THREE.IcosahedronGeometry(1, 0),
     new THREE.MeshStandardMaterial({ color: COLORS.rockHigh, roughness: 0.95 }),
@@ -631,9 +666,10 @@ function buildRocks(): THREE.InstancedMesh {
   );
   const dummy = new THREE.Object3D();
   placements.forEach((p, i) => {
-    dummy.position.set(p.x, p.h + p.s * 0.3, p.z);
-    dummy.scale.set(p.s, p.s * 0.7, p.s);
-    dummy.rotation.set(hash2(i, 1) * 3, hash2(i, 2) * 3, hash2(i, 4) * 3);
+    // partly sunken so they sit in the ground instead of resting on it
+    dummy.position.set(p.x, p.h + p.s * 0.2, p.z);
+    dummy.scale.set(p.s, p.s * 0.65, p.s * 0.85);
+    dummy.rotation.set(0, hash2(i, 2) * Math.PI, (hash2(i, 4) - 0.5) * 0.3);
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
   });
@@ -838,10 +874,12 @@ class PuffTrail {
   private cursor = 0;
 
   constructor(scene: THREE.Scene, size = 110) {
-    const geometry = new THREE.IcosahedronGeometry(1, 1);
+    // smooth lit spheres — the shading is what makes them read as 3D volumes
+    const geometry = new THREE.IcosahedronGeometry(1, 2);
     for (let i = 0; i < size; i++) {
-      const material = new THREE.MeshBasicMaterial({
+      const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
+        roughness: 1,
         transparent: true,
         opacity: 0,
         depthWrite: false,
@@ -863,13 +901,13 @@ class PuffTrail {
       .copy(position)
       .add(
         new THREE.Vector3(
-          (Math.random() - 0.5) * 0.35,
-          (Math.random() - 0.5) * 0.35,
-          (Math.random() - 0.5) * 0.35,
+          (Math.random() - 0.5) * 0.22,
+          (Math.random() - 0.5) * 0.22,
+          (Math.random() - 0.5) * 0.22,
         ),
       );
     puff.mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
-    puff.size = 0.9 + Math.random() * 0.5; // every puff a bit different
+    puff.size = 0.55 + Math.random() * 0.3; // every puff a bit different
   }
 
   update(dt: number): void {
@@ -882,10 +920,10 @@ class PuffTrail {
         continue;
       }
       // swell quickly, then slowly dissolve while drifting up a touch
-      const grow = (0.4 + 1.1 * Math.min(1, t * 2.6)) * puff.size;
-      puff.mesh.scale.set(grow, grow * 0.78, grow * 0.92);
-      puff.mesh.position.y += 0.25 * dt;
-      puff.material.opacity = 0.9 * Math.pow(1 - t, 1.4);
+      const grow = (0.35 + 0.75 * Math.min(1, t * 2.6)) * puff.size;
+      puff.mesh.scale.set(grow, grow * 0.85, grow * 0.95);
+      puff.mesh.position.y += 0.15 * dt;
+      puff.material.opacity = 0.92 * Math.pow(1 - t, 1.4);
     }
   }
 }
