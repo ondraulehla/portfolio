@@ -1,50 +1,60 @@
 ---
 title: 'URL Shortener na mikroslužbách'
-summary: 'Produkčně pojatý zkracovač URL postavený jako systém mikroslužeb — Kubernetes, Terraform, observabilita a čistý návrh kontraktů mezi službami.'
+summary: 'Produkčně pojatý zkracovač URL jako systém mikroslužeb — cache-first přesměrování, analytika oddělená přes stream a plná observabilita, spuštění jedním příkazem.'
 role: 'Backend & infrastruktura'
-year: 2024
-order: 3
+year: 2026
+order: 4
 featured: true
-tech: ['Go', 'Node.js', 'Kubernetes', 'Terraform', 'Redis', 'PostgreSQL', 'Grafana']
-problem: 'Jednoduchá CRUD aplikace o distribuovaných systémech nic nenaučí — chtěl jsem si na vlastní kůži vyzkoušet skutečné hranice služeb, nasazování a observabilitu.'
-solution: 'Záměrně přeinženýrované tím správným směrem: oddělené služby pro zkracování, přesměrování a analytiku s typovanými kontrakty, nasazené do Kubernetes přes Terraform, plně observovatelné.'
-outcome: 'Latence přesměrování pod 10 ms díky cache-first čtení, nasazování bez výpadků a referenční architektura, kterou používám i v diskusích s klienty.'
+tech: ['Node.js', 'Express', 'PostgreSQL', 'Redis Streams', 'Prometheus', 'Grafana', 'Docker', 'Kubernetes']
+problem: 'Jednoduchá CRUD aplikace o distribuovaných systémech nic nenaučí — chtěl jsem si na vlastní kůži vyzkoušet skutečné hranice služeb, cachování, asynchronní pipeline a observabilitu.'
+solution: 'Záměrně přeinženýrované tím správným směrem: oddělené služby pro zkracování, přesměrování a analytiku za gatewayí, cache-first čtení, click eventy přes Redis Streams, metriky a dashboardy v základu.'
+outcome: 'Cache-first přesměrování, analytika plně oddělená od horké cesty, graceful degradation na gatewayi — a 56 testů běžících bez jakékoli infrastruktury.'
 cover: '@/assets/projects/url-shortener/cover.svg'
+links:
+  repo: 'https://github.com/ondraulehla/url-shortener-microservices'
 ---
-
-{/* TODO(Ondřej): nahradit placeholder text reálnými metrikami a skutečným diagramem architektury. */}
 
 ## Kontext
 
 Zkracovač URL je proslule jednoduchý na postavení — a proslule těžký na postavení *pořádně*
 ve velkém. Použil jsem ho jako záminku k procvičení věcí, které monolit schovává:
-hranice služeb, deployment pipeline, strategie cachování a observabilita.
+hranice služeb, strategie cachování, asynchronní pipeline a observabilita.
 
 ## Problém
 
 Zajímavé problémy se objeví, až když odmítnete snadnou cestu: co se stane při bouři cache
-missů? Jak nasadit redirect službu bez ztráty jediného requestu? Jak poznáte, že analytická
-pipeline potichu spadla?
+missů? Jak zaznamenat kliknutí, aniž by zpomalilo přesměrování? Jak poznáte, že analytická
+pipeline potichu spadla — a jak se systém zachová, když se to stane?
 
 ## Řešení
 
-Tři služby s přísnými kontrakty:
+Tři služby a gateway, každá s přísným kontraktem:
 
-- **Shortener služba** — zápisová cesta, generování ID odolné proti kolizím, validace
-- **Redirect služba** — horká čtecí cesta, Redis cache-first s PostgreSQL fallbackem
-- **Analytics služba** — asynchronní click eventy přes frontu, agregační joby
+- **Shortener služba** — zápisová cesta: validace, generování base62 kódů odolné proti
+  kolizím, PostgreSQL úložiště
+- **Redirector služba** — horká čtecí cesta: Redis cache-first s Postgres fallbackem;
+  každý hit odpálí click event do **Redis Streamu**, aniž by kdy blokoval přesměrování
+- **Analytics služba** — consumer-group čtečka agreguje stream do denních rollupů;
+  stats API servíruje součty, trendy a top referrery
+- **API gateway** — jediný veřejný povrch: rate limiting, propagace request-id
+  a overview endpoint s **graceful degradation** (informace o URL odpoví, i když
+  analytika leží)
 
-Infrastruktura je **plně deklarativní**: Terraform provisionuje cluster, Kubernetes manifesty
-popisují služby a Grafana dashboardy + alerty pokrývají golden signals
-(latence, provoz, chyby, saturace).
+Celý stack běží z jednoho `docker compose up` — Postgres, Redis, všechny čtyři služby,
+Prometheus scrapující každý `/metrics` a provisionovaný Grafana dashboard s request rate
+a p95 latencí. Kubernetes manifesty jsou přiložené jako referenční konfigurace. Každá
+služba loguje strukturovaný JSON, má skutečné `/health` checky a umí graceful shutdown.
 
 ## Výsledek
 
-- p99 latence přesměrování pod 10 ms s teplou cache
-- Rolling deploye bez jediného ztraceného requestu
-- Každý incident řešitelný jen z dashboardů a traců
+- Přesměrování s cache hitem se nikdy nedotkne databáze; analytika se nikdy nedotkne horké cesty
+- Gateway odpovídá dál — degradovaně, označeně, ale běží — když downstream služba umře
+- **56 testů běží úplně bez infrastruktury**: každá služba exportuje `createApp(deps)`
+  a testy injektují in-memory fakes
+- Golden-signal dashboardy rovnou v základu
 
 ## Co jsem se naučil
 
-Observabilita je feature, kterou stavíte *jako první*, ne poslední — bez ní systém
-neprovozujete, jen o něm hádáte.
+Observabilita je feature, kterou stavíte *jako první*, ne poslední — a druhé nejlepší
+rozhodnutí byla dependency injection všude: systém, který otestujete na notebooku
+bez jediné běžící závislosti, je systém, kterému skutečně rozumíte.

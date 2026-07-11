@@ -1,50 +1,60 @@
 ---
 title: 'URL Shortener on Microservices'
-summary: 'A production-grade URL shortener built as a microservices system — Kubernetes, Terraform, observability and a clean service contract design.'
+summary: 'A production-style URL shortener built as a microservices system — cache-first redirects, stream-decoupled analytics and full observability, one command to run.'
 role: 'Backend & Infrastructure'
-year: 2024
-order: 3
+year: 2026
+order: 4
 featured: true
-tech: ['Go', 'Node.js', 'Kubernetes', 'Terraform', 'Redis', 'PostgreSQL', 'Grafana']
-problem: 'A simple CRUD app teaches nothing about distributed systems — I wanted to experience real service boundaries, deployment and observability first-hand.'
-solution: 'Deliberately over-engineered in the right way: separate shortening, redirect and analytics services with typed contracts, deployed to Kubernetes via Terraform, fully observable.'
-outcome: 'Sub-10ms redirect latency with cache-first reads, zero-downtime deploys, and a reference architecture I reuse in client conversations.'
+tech: ['Node.js', 'Express', 'PostgreSQL', 'Redis Streams', 'Prometheus', 'Grafana', 'Docker', 'Kubernetes']
+problem: 'A simple CRUD app teaches nothing about distributed systems — I wanted to experience real service boundaries, caching, async pipelines and observability first-hand.'
+solution: 'Deliberately over-engineered in the right way: separate shortening, redirect and analytics services behind a gateway, cache-first reads, click events over Redis Streams, metrics and dashboards built in.'
+outcome: 'Cache-first redirects, analytics fully decoupled from the hot path, graceful degradation at the gateway — and 56 tests that run without any infrastructure.'
 cover: '@/assets/projects/url-shortener/cover.svg'
+links:
+  repo: 'https://github.com/ondraulehla/url-shortener-microservices'
 ---
-
-{/* TODO(Ondřej): replace placeholder narrative with real metrics and the actual architecture diagram. */}
 
 ## Context
 
 A URL shortener is famously simple to build — and famously hard to build *well* at scale.
 I used it as a vehicle to practice the parts of engineering that a monolith hides:
-service boundaries, deployment pipelines, caching strategy and observability.
+service boundaries, caching strategy, asynchronous pipelines and observability.
 
 ## Problem
 
 The interesting problems only appear when you refuse the easy path: what happens on cache
-miss storms? How do you deploy the redirect service without dropping a single request?
-How do you know the analytics pipeline silently broke?
+miss storms? How do you record clicks without slowing a redirect down? How do you know
+the analytics pipeline silently broke — and how does the system behave when it does?
 
 ## Solution
 
-Three services with strict contracts:
+Three services and a gateway, each with a strict contract:
 
-- **Shortener service** — write path, collision-safe ID generation, validation
-- **Redirect service** — hot read path, Redis cache-first with PostgreSQL fallback
-- **Analytics service** — async click events over a queue, aggregation jobs
+- **Shortener service** — write path: validation, collision-safe base62 code generation,
+  PostgreSQL storage
+- **Redirector service** — hot read path: Redis cache-first with Postgres fallback;
+  every hit fires a click event onto a **Redis Stream** without ever blocking the redirect
+- **Analytics service** — a consumer-group reader aggregates the stream into daily
+  rollups; stats API serves totals, trends and top referrers
+- **API gateway** — the only public surface: rate limiting, request-id propagation,
+  and an overview endpoint that **degrades gracefully** (URL info still answers when
+  analytics is down)
 
-The infrastructure is **fully declarative**: Terraform provisions the cluster, Kubernetes
-manifests describe the services, and Grafana dashboards + alerts cover the golden signals
-(latency, traffic, errors, saturation).
+The whole stack runs from one `docker compose up` — Postgres, Redis, all four services,
+Prometheus scraping every `/metrics`, and a provisioned Grafana dashboard for request
+rate and p95 latency. Kubernetes manifests ship as reference configuration. Every
+service logs structured JSON, exposes real `/health` checks and shuts down gracefully.
 
 ## Outcome
 
-- Redirect p99 latency under 10 ms with warm cache
-- Rolling deploys with zero dropped requests
-- Every incident debuggable from dashboards and traces alone
+- Cache-hit redirects never touch the database; analytics never touches the hot path
+- The gateway keeps answering — degraded, flagged, but up — when a downstream dies
+- **56 tests run with no infrastructure at all**: every service exports `createApp(deps)`
+  and the suites inject in-memory fakes
+- Golden-signal dashboards out of the box
 
 ## What I learned
 
-Observability is a feature you build *first*, not last — without it you're not running
-a system, you're guessing at one.
+Observability is a feature you build *first*, not last — and the second best design
+decision was dependency injection everywhere: a system you can fully test on a laptop
+with nothing running is a system you actually understand.
