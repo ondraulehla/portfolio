@@ -131,10 +131,14 @@ function getHeight(x: number, z: number): number {
     (fbm(x * 0.02, z * 0.02) - 0.45) * 9 +
     (fbm(x * 0.055 + 40, z * 0.055 + 40) - 0.45) * 2.2;
 
-  // mountain massif (smooth gaussian bumps blended together)
+  // mountain massif: gaussian footprint × ridged noise → craggy peaks and
+  // ridgelines instead of smooth domes
   for (const m of MOUNTAINS) {
     const d2 = (x - m.x) ** 2 + (z - m.z) ** 2;
-    h += m.h * Math.exp(-d2 / (2 * m.r * m.r));
+    const g = Math.exp(-d2 / (2 * m.r * m.r));
+    if (g < 0.01) continue;
+    const ridge = 1 - Math.abs(2 * fbm(x * 0.045 + m.x * 0.1, z * 0.045 + m.z * 0.1) - 1);
+    h += m.h * g * (0.62 + 0.6 * ridge);
   }
 
   // river carves a smooth valley
@@ -417,13 +421,25 @@ export async function startExperience(): Promise<void> {
 
 function buildTerrain(): THREE.Mesh {
   const size = 320;
-  const segments = 110;
-  const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
-  geometry.rotateX(-Math.PI / 2);
+  const segments = 128;
+  const indexed = new THREE.PlaneGeometry(size, size, segments, segments);
+  indexed.rotateX(-Math.PI / 2);
 
+  // displace on the indexed grid (shared verts keep the surface watertight)…
+  const gridPos = indexed.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < gridPos.count; i++) {
+    gridPos.setY(i, getHeight(gridPos.getX(i), gridPos.getZ(i)));
+  }
+
+  // …then split faces apart: one colour + one normal PER TRIANGLE gives the
+  // crisp faceted low-poly look instead of soft vertex-blended gradients
+  const geometry = indexed.toNonIndexed();
+  indexed.dispose();
   const pos = geometry.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
   const color = new THREE.Color();
+  const edge1 = new THREE.Vector3();
+  const edge2 = new THREE.Vector3();
   const grass = COLORS.grass.map((c) => new THREE.Color(c));
   const meadow = new THREE.Color(COLORS.meadow);
   const sand = new THREE.Color(COLORS.sand);
@@ -436,21 +452,21 @@ function buildTerrain(): THREE.Mesh {
   ];
   const snow = new THREE.Color(COLORS.snow);
 
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    const h = getHeight(x, z);
-    pos.setY(i, h);
+  for (let i = 0; i < pos.count; i += 3) {
+    // face centroid + true face slope from the triangle's normal
+    const x = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3;
+    const h = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
+    const z = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3;
+    edge1
+      .set(pos.getX(i + 1) - pos.getX(i), pos.getY(i + 1) - pos.getY(i), pos.getZ(i + 1) - pos.getZ(i));
+    edge2
+      .set(pos.getX(i + 2) - pos.getX(i), pos.getY(i + 2) - pos.getY(i), pos.getZ(i + 2) - pos.getZ(i));
+    const steep = 1 - Math.abs(edge1.cross(edge2).normalize().y); // 0 flat … 1 vertical
 
     const tint = fbm(x * 0.08 + 90, z * 0.08 + 90); // gentle variation everywhere
-    // slope from finite differences — steep faces read as bare rock
-    const slope = Math.max(
-      Math.abs(getHeight(x + 1.4, z) - h),
-      Math.abs(getHeight(x, z + 1.4) - h),
-    );
     // irregular but CRISP feature lines instead of long smooth blends
-    const snowline = 14.2 + (fbm(x * 0.09 + 55, z * 0.09 + 55) - 0.5) * 5;
-    const rockline = 8.2 + (fbm(x * 0.07 + 21, z * 0.07 + 21) - 0.5) * 4;
+    const snowline = 13.8 + (fbm(x * 0.09 + 55, z * 0.09 + 55) - 0.5) * 5;
+    const rockline = 7.6 + (fbm(x * 0.07 + 21, z * 0.07 + 21) - 0.5) * 4;
 
     if (h < WATER_LEVEL + 0.25) {
       color.copy(sandDeep).lerp(sand, smoothstep(-4, WATER_LEVEL, h));
@@ -459,15 +475,16 @@ function buildTerrain(): THREE.Mesh {
     } else if (h > snowline) {
       // snow with faint cool shading in hollows
       color.copy(snow).offsetHSL(0, 0.02, (tint - 0.7) * 0.05);
-    } else if (h > rockline || (h > 4.5 && slope > 1.15)) {
-      // banded strata following the contour lines, like layered sediment
-      const band = h * 0.5 + (fbm(x * 0.06 + 9, z * 0.06 + 9) - 0.5) * 1.6;
+    } else if (h > rockline || (h > 4 && steep > 0.42)) {
+      // banded strata following the contour lines, like layered sediment;
+      // steeper faces pick darker layers
+      const band = h * 0.55 + (fbm(x * 0.06 + 9, z * 0.06 + 9) - 0.5) * 1.8 + steep * 1.2;
       color
         .copy(strata[((Math.floor(band) % 3) + 3) % 3]!)
-        .offsetHSL(0, 0, (tint - 0.5) * 0.05);
+        .offsetHSL(0, 0, (tint - 0.5) * 0.06);
       // dusting of snow just under the snowline
-      if (h > snowline - 1.2) color.lerp(snow, 0.45);
-    } else if (h > rockline - 1.4) {
+      if (h > snowline - 1.4 && steep < 0.5) color.lerp(snow, 0.5);
+    } else if (h > rockline - 1.3) {
       // alpine meadow rim right below the rock — a crisp colour step
       color.copy(alpine).offsetHSL(0, 0, (tint - 0.5) * 0.06);
     } else {
@@ -476,17 +493,23 @@ function buildTerrain(): THREE.Mesh {
         .copy(grass[Math.floor(tint * grass.length) % grass.length]!)
         .lerp(meadow, meadowMix * 0.85);
     }
-    colors[i * 3] = color.r;
-    colors[i * 3 + 1] = color.g;
-    colors[i * 3 + 2] = color.b;
+
+    // subtle per-face brightness jitter — the "hand-cut facets" texture
+    color.offsetHSL(0, 0, (hash2(i, 977) - 0.5) * 0.035);
+
+    for (let k = 0; k < 3; k++) {
+      colors[(i + k) * 3] = color.r;
+      colors[(i + k) * 3 + 1] = color.g;
+      colors[(i + k) * 3 + 2] = color.b;
+    }
   }
 
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geometry.computeVertexNormals(); // smooth rolling shapes, no hard facets
+  geometry.computeVertexNormals(); // unshared verts → true flat facet normals
 
   const mesh = new THREE.Mesh(
     geometry,
-    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }),
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }),
   );
   mesh.receiveShadow = true;
   return mesh;
@@ -931,21 +954,21 @@ class PuffTrail {
 function buildFloatingSign(project: ProjectSign): THREE.Group {
   const group = new THREE.Group();
   const texture = makePanelTexture(project);
-  const panelGeo = new THREE.PlaneGeometry(7.4, 3.05);
 
-  // two back-to-back faces so the sign reads from both directions
-  [1, -1].forEach((side) => {
-    const face = new THREE.Mesh(panelGeo, new THREE.MeshBasicMaterial({ map: texture }));
-    face.position.z = side * 0.05;
-    face.rotation.y = side === 1 ? 0 : Math.PI;
-    group.add(face);
-  });
-
-  const frame = new THREE.Mesh(
-    new THREE.BoxGeometry(7.7, 3.35, 0.08),
-    new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.4 }),
-  );
-  group.add(frame);
+  // a single box — no stacked coplanar faces, so nothing to z-fight at distance;
+  // box UVs are authored per-face from the outside, so both faces read correctly
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.4 });
+  const faceMat = new THREE.MeshBasicMaterial({ map: texture });
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(7.7, 3.35, 0.3), [
+    frameMat,
+    frameMat,
+    frameMat,
+    frameMat,
+    faceMat,
+    faceMat,
+  ]);
+  panel.castShadow = true;
+  group.add(panel);
 
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(4.7, 0.1, 10, 48),
@@ -981,6 +1004,9 @@ function makePanelTexture(project: ProjectSign): THREE.CanvasTexture {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = COLORS.panelAccent;
   ctx.fillRect(0, 0, canvas.width, 26);
+  ctx.strokeStyle = COLORS.panelAccent;
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
 
   ctx.fillStyle = COLORS.panelAccent;
   ctx.font = '600 46px ui-monospace, monospace';
