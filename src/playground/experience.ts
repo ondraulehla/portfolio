@@ -226,8 +226,8 @@ export async function startExperience(): Promise<void> {
   plane.position.set(0, 14, 108);
   scene.add(plane);
 
-  const trailLeft = new Contrail(scene, sky.fog);
-  const trailRight = new Contrail(scene, sky.fog);
+  const puffs = new PuffTrail(scene);
+  let puffTimer = 0;
 
   // --- input -----------------------------------------------------------------------
   const keys = { up: false, down: false, left: false, right: false };
@@ -280,6 +280,7 @@ export async function startExperience(): Promise<void> {
   let heading = Math.PI; // facing the island centre
   let bank = 0;
   let pitch = 0;
+  let currentSpeed = 19;
   const BASE_SPEED = 19;
   const forward = new THREE.Vector3();
   const camPos = new THREE.Vector3(0, 18, 122);
@@ -304,8 +305,14 @@ export async function startExperience(): Promise<void> {
     const pitchTarget = pitchInput * 0.4;
     pitch += (pitchTarget - pitch) * (1 - Math.pow(0.004, dt));
 
+    // near a billboard the plane eases into a hover so you can read it and
+    // press Enter; any steering input takes off again
+    const anyInput = keys.up || keys.down || keys.left || keys.right;
+    const hovering = activeSign !== null && !anyInput;
     // dive a little faster, climb a little slower
-    const speed = BASE_SPEED - pitch * 7;
+    const targetSpeed = hovering ? 0 : BASE_SPEED - pitch * 7;
+    currentSpeed += (targetSpeed - currentSpeed) * (1 - Math.pow(0.1, dt));
+    const speed = currentSpeed;
     forward.set(Math.sin(heading), 0, Math.cos(heading));
     plane.position.addScaledVector(forward, speed * dt);
     plane.position.y += pitch * speed * 0.55 * dt;
@@ -329,14 +336,19 @@ export async function startExperience(): Promise<void> {
     }
 
     plane.rotation.set(-pitch * 0.9, heading, -bank, 'YXZ');
-    plane.position.y += Math.sin(elapsed * 1.7) * 0.008; // gentle float
-    propeller.rotation.z += 42 * dt;
+    plane.position.y += Math.sin(elapsed * (hovering ? 2.4 : 1.7)) * (hovering ? 0.02 : 0.008);
+    propeller.rotation.z += (hovering ? 18 : 42) * dt;
 
-    // wingtip contrails
-    tipOffset.set(2.35, 0.18, -0.35).applyEuler(plane.rotation).add(plane.position);
-    trailLeft.push(tipOffset);
-    tipOffset.set(-2.35, 0.18, -0.35).applyEuler(plane.rotation).add(plane.position);
-    trailRight.push(tipOffset);
+    // cartoon contrail: little cloud puffs popping off the wingtips
+    puffTimer += dt;
+    if (speed > 4 && puffTimer > 0.05) {
+      puffTimer = 0;
+      tipOffset.set(2.35, 0.18, -0.5).applyEuler(plane.rotation).add(plane.position);
+      puffs.spawn(tipOffset);
+      tipOffset.set(-2.35, 0.18, -0.5).applyEuler(plane.rotation).add(plane.position);
+      puffs.spawn(tipOffset);
+    }
+    puffs.update(dt);
 
     // chase camera
     camLook.copy(plane.position).addScaledVector(forward, 7);
@@ -547,34 +559,60 @@ function buildForests(): THREE.Group {
     group.add(mesh);
   }
 
-  // leafy crowns: soft icosphere blobs, occasionally autumn-coloured
-  const blobGeo = new THREE.IcosahedronGeometry(1, 1);
+  // leafy crowns: one rounded canopy from three overlapping smooth spheres,
+  // all sharing the tree's colour so it reads as a single crown
+  const blobGeo = new THREE.IcosahedronGeometry(1, 2);
   const blobMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
-  for (const part of [0, 1]) {
+  const CANOPY = [
+    { dx: 0, dy: 2.55, dz: 0, s: 1.28 },
+    { dx: 0.88, dy: 2.0, dz: 0.25, s: 0.78 },
+    { dx: -0.82, dy: 2.1, dz: -0.25, s: 0.7 },
+  ] as const;
+  for (const part of CANOPY) {
     const mesh = new THREE.InstancedMesh(blobGeo, blobMat, leafies.length);
     leafies.forEach((p, i) => {
-      const main = part === 0;
-      const s = p.scale * (main ? 1.35 : 0.8);
-      dummy.position.set(
-        p.x + (main ? 0 : (hash2(i, 11) - 0.5) * 1.6 * p.scale),
-        p.h + (main ? 2.2 : 2.9) * p.scale,
-        p.z + (main ? 0 : (hash2(i, 13) - 0.5) * 1.6 * p.scale),
-      );
+      const rot = hash2(i, 3) * Math.PI * 2;
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      const dx = part.dx * cos - part.dz * sin;
+      const dz = part.dx * sin + part.dz * cos;
+      const s = part.s * p.scale;
+      dummy.position.set(p.x + dx * p.scale, p.h + part.dy * p.scale, p.z + dz * p.scale);
       dummy.scale.set(s, s * 0.9, s);
-      dummy.rotation.set(0, hash2(i, 3) * Math.PI, 0);
+      dummy.rotation.set(0, rot, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
-      const autumn = hash2(i, 21) > 0.85;
-      mesh.setColorAt(
-        i,
-        color.setHex(autumn ? COLORS.leafy[3]! : COLORS.leafy[i % 3]!),
-      );
+      const autumn = hash2(i, 21) > 0.86;
+      mesh.setColorAt(i, color.setHex(autumn ? COLORS.leafy[3]! : COLORS.leafy[i % 3]!));
     });
     mesh.castShadow = true;
     group.add(mesh);
   }
 
   return group;
+}
+
+/**
+ * Unit gable roof: 1×1 base centred at the origin, ridge at y=1 running
+ * along the Z axis. Flat-shaded slopes and gable-end triangles, no bottom.
+ */
+function buildGableRoofGeometry(): THREE.BufferGeometry {
+  // prettier-ignore
+  const v = {
+    A: [-0.5, 0, -0.5], B: [0.5, 0, -0.5], C: [0, 1, -0.5],
+    D: [-0.5, 0, 0.5],  E: [0.5, 0, 0.5],  F: [0, 1, 0.5],
+  };
+  // prettier-ignore
+  const triangles = [
+    v.A, v.C, v.B, // front gable end
+    v.D, v.E, v.F, // back gable end
+    v.A, v.D, v.F,  v.A, v.F, v.C, // left slope
+    v.B, v.C, v.F,  v.B, v.F, v.E, // right slope
+  ];
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(triangles.flat(), 3));
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function buildRocks(): THREE.InstancedMesh {
@@ -646,15 +684,14 @@ function buildTown(): THREE.Group {
   walls.receiveShadow = true;
   group.add(walls);
 
-  // pitched roofs: 3-sided prisms lying on the walls
-  const roofGeo = new THREE.CylinderGeometry(1, 1, 1, 3, 1);
-  roofGeo.rotateZ(Math.PI / 2); // prism axis along X
+  // gable roofs sitting square on the walls, ridge along the house length
+  const roofGeo = buildGableRoofGeometry();
   const roofMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
   const roofs = new THREE.InstancedMesh(roofGeo, roofMat, spots.length);
   spots.forEach((sp, i) => {
-    dummy.position.set(sp.x, groundY + sp.h + sp.w * 0.22, sp.z);
-    dummy.scale.set(sp.d * 1.12, sp.w * 0.62, sp.w * 0.62);
-    dummy.rotation.set(0, sp.rot + Math.PI / 2, 0);
+    dummy.position.set(sp.x, groundY + sp.h, sp.z);
+    dummy.scale.set(sp.w * 1.16, sp.w * 0.5, sp.d * 1.14);
+    dummy.rotation.set(0, sp.rot, 0);
     dummy.updateMatrix();
     roofs.setMatrixAt(i, dummy.matrix);
     roofs.setColorAt(i, color.setHex(COLORS.roof[i % COLORS.roof.length]!));
@@ -667,10 +704,9 @@ function buildTown(): THREE.Group {
   const nave = new THREE.Mesh(new THREE.BoxGeometry(3, 2.6, 4.6), churchMat);
   nave.position.set(CITY.x, groundY + 1.3, CITY.z);
   nave.castShadow = true;
-  const naveRoof = new THREE.Mesh(roofGeo.clone(), new THREE.MeshStandardMaterial({ color: 0x8a5a3c }));
-  naveRoof.scale.set(5, 1.9, 1.9);
-  naveRoof.position.set(CITY.x, groundY + 3.1, CITY.z);
-  naveRoof.rotation.y = Math.PI / 2;
+  const naveRoof = new THREE.Mesh(roofGeo, new THREE.MeshStandardMaterial({ color: 0x8a5a3c }));
+  naveRoof.scale.set(3.4, 1.5, 5.1);
+  naveRoof.position.set(CITY.x, groundY + 2.6, CITY.z);
   naveRoof.castShadow = true;
   const tower = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4.6, 1.5), churchMat);
   tower.position.set(CITY.x, groundY + 2.3, CITY.z + 3);
@@ -790,47 +826,67 @@ function buildPlane(): { plane: THREE.Group; propeller: THREE.Group } {
   return { plane, propeller };
 }
 
-/** Short fading wingtip contrail, like the real thing. */
-class Contrail {
-  private readonly MAX = 90;
-  private points: THREE.Vector3[] = [];
-  private geometry = new THREE.BufferGeometry();
-  private positions = new Float32Array(this.MAX * 3);
+/** Cartoon contrail: a pool of little cloud puffs that swell up and dissolve. */
+class PuffTrail {
+  private pool: {
+    mesh: THREE.Mesh;
+    material: THREE.MeshBasicMaterial;
+    age: number;
+    life: number;
+    size: number;
+  }[] = [];
+  private cursor = 0;
 
-  constructor(scene: THREE.Scene, fadeTo: number) {
-    const colors = new Float32Array(this.MAX * 3);
-    const white = new THREE.Color(0xffffff);
-    const sky = new THREE.Color(fadeTo);
-    const c = new THREE.Color();
-    for (let i = 0; i < this.MAX; i++) {
-      // newest point is white, the tail dissolves into the sky
-      c.copy(white).lerp(sky, Math.pow(i / (this.MAX - 1), 0.7));
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+  constructor(scene: THREE.Scene, size = 110) {
+    const geometry = new THREE.IcosahedronGeometry(1, 1);
+    for (let i = 0; i < size; i++) {
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.visible = false;
+      scene.add(mesh);
+      this.pool.push({ mesh, material, age: 0, life: 1, size: 1 });
     }
-    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-    this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    this.geometry.setDrawRange(0, 0);
-    const line = new THREE.Line(
-      this.geometry,
-      new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }),
-    );
-    line.frustumCulled = false;
-    scene.add(line);
   }
 
-  push(point: THREE.Vector3): void {
-    this.points.unshift(point.clone());
-    if (this.points.length > this.MAX) this.points.pop();
-    for (let i = 0; i < this.points.length; i++) {
-      const p = this.points[i]!;
-      this.positions[i * 3] = p.x;
-      this.positions[i * 3 + 1] = p.y;
-      this.positions[i * 3 + 2] = p.z;
+  spawn(position: THREE.Vector3): void {
+    const puff = this.pool[this.cursor]!;
+    this.cursor = (this.cursor + 1) % this.pool.length;
+    puff.age = 0;
+    puff.life = 1.3 + Math.random() * 0.5;
+    puff.mesh.visible = true;
+    puff.mesh.position
+      .copy(position)
+      .add(
+        new THREE.Vector3(
+          (Math.random() - 0.5) * 0.35,
+          (Math.random() - 0.5) * 0.35,
+          (Math.random() - 0.5) * 0.35,
+        ),
+      );
+    puff.mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+    puff.size = 0.9 + Math.random() * 0.5; // every puff a bit different
+  }
+
+  update(dt: number): void {
+    for (const puff of this.pool) {
+      if (!puff.mesh.visible) continue;
+      puff.age += dt;
+      const t = puff.age / puff.life;
+      if (t >= 1) {
+        puff.mesh.visible = false;
+        continue;
+      }
+      // swell quickly, then slowly dissolve while drifting up a touch
+      const grow = (0.4 + 1.1 * Math.min(1, t * 2.6)) * puff.size;
+      puff.mesh.scale.set(grow, grow * 0.78, grow * 0.92);
+      puff.mesh.position.y += 0.25 * dt;
+      puff.material.opacity = 0.9 * Math.pow(1 - t, 1.4);
     }
-    this.geometry.setDrawRange(0, this.points.length);
-    (this.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
   }
 }
 
