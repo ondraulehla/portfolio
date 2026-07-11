@@ -1,0 +1,68 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import type { Locale } from '@/i18n/config';
+import { localePath, useTranslations } from '@/i18n/utils';
+import Badge from '@/components/ui/Badge.astro';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  locale: Locale;
+}
+const { project, locale } = Astro.props;
+const t = useTranslations(locale);
+const slug = project.id.split('/').slice(1).join('/');
+const href = localePath(locale, `/projects/${slug}`);
+---
+
+<article
+  class="group border-line hover:border-ink-faint relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-[0_12px_40px_var(--glow)]"
+  data-reveal
+>
+  <a href={href} class="absolute inset-0 z-10" aria-label={project.data.title} data-astro-prefetch="hover"></a>
+
+  <div class="overflow-hidden">
+    <Image
+      src={project.data.cover}
+      alt=""
+      widths={[480, 768, 1200]}
+      sizes="(min-width: 1024px) 560px, 100vw"
+      class="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+      transition:name={`cover-${slug}`}
+    />
+  </div>
+
+  <div class="p-6 sm:p-7">
+    <div class="text-ink-faint flex items-center gap-3 font-mono text-xs tracking-wide">
+      <span>{project.data.year}</span>
+      <span aria-hidden="true">·</span>
+      <span>{project.data.role}</span>
+    </div>
+    <h3
+      class="font-display text-ink group-hover:text-accent mt-2 text-xl font-semibold tracking-tight transition-colors sm:text-2xl"
+      transition:name={`title-${slug}`}
+    >
+      {project.data.title}
+    </h3>
+    <p class="text-ink-muted mt-2.5 leading-relaxed">{project.data.summary}</p>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      {project.data.tech.slice(0, 5).map((item) => <Badge>{item}</Badge>)}
+    </div>
+
+    <p class="text-accent mt-5 inline-flex items-center gap-1.5 text-sm font-semibold">
+      {t('projects.viewCase')}
+      <svg
+        class="size-4 transition-transform group-hover:translate-x-1"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"></path></svg
+      >
+    </p>
+  </div>
+</article>

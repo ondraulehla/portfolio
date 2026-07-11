@@ -1,0 +1,138 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import { locales, type Locale } from '@/i18n/config';
+import { localePath, useTranslations } from '@/i18n/utils';
+
+export function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = useTranslations(locale);
+
+const projects = (await getCollection('projects', (e) => e.id.startsWith(`${locale}/`))).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const worldData = {
+  projects: projects.map((p) => ({
+    title: p.data.title,
+    year: p.data.year,
+    url: localePath(locale, `/projects/${p.id.split('/').slice(1).join('/')}`),
+  })),
+  labels: {
+    open: t('playground.enterProject'),
+    pressEnter: t('playground.pressEnter'),
+  },
+};
+---
+
+<Base
+  {locale}
+  title={`${t('playground.title')} — Ondřej Úlehla`}
+  description={t('playground.description')}
+  chrome={false}
+>
+  <div class="fixed inset-0" id="playground-root">
+    <canvas id="playground-canvas" class="block h-full w-full"></canvas>
+
+    <!-- top bar -->
+    <div class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4 sm:p-6">
+      <a
+        href={localePath(locale, '/')}
+        class="bg-surface/80 border-line text-ink pointer-events-auto inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold backdrop-blur-md"
+      >
+        <svg
+          class="size-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"></path></svg
+        >
+        {t('playground.back')}
+      </a>
+      <p
+        class="bg-surface/80 border-line text-ink-muted hidden rounded-full border px-4 py-2 font-mono text-xs backdrop-blur-md sm:block"
+        id="hud-controls"
+        hidden
+      >
+        {t('playground.controls')}
+      </p>
+    </div>
+
+    <!-- proximity prompt -->
+    <div
+      class="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center sm:bottom-16"
+      id="hud-prompt"
+      hidden
+    >
+      <p class="bg-surface/90 border-accent text-ink rounded-full border px-5 py-2.5 text-sm font-semibold shadow-lg backdrop-blur-md">
+        <kbd class="bg-accent text-surface mr-2 rounded px-2 py-0.5 font-mono text-xs">Enter</kbd>
+        <span id="hud-prompt-text"></span>
+      </p>
+    </div>
+
+    <!-- touch controls -->
+    <div class="absolute right-4 bottom-4 z-20 grid select-none grid-cols-3 gap-1.5 sm:hidden" id="touch-pad" hidden>
+      {
+        (
+          [
+            ['', '', ''],
+            ['up', '▲', 'col-start-2'],
+            ['left', '◀', 'col-start-1'],
+            ['down', '▼', 'col-start-2'],
+            ['right', '▶', 'col-start-3'],
+          ] as const
+        )
+          .slice(1)
+          .map(([key, glyph, pos]) => (
+            <button
+              type="button"
+              data-touch-key={key}
+              class={`bg-surface/80 border-line text-ink size-12 rounded-xl border text-lg backdrop-blur-md active:scale-95 ${pos} ${key === 'up' ? 'row-start-1' : 'row-start-2'}`}
+              aria-label={key}
+            >
+              {glyph}
+            </button>
+          ))
+      }
+    </div>
+
+    <!-- enter gate -->
+    <div class="bg-surface/95 absolute inset-0 z-30 flex items-center justify-center p-6 backdrop-blur-sm" id="gate">
+      <div class="max-w-md text-center">
+        <p class="text-accent mb-3 font-mono text-xs font-semibold tracking-[0.2em] uppercase">Three.js</p>
+        <h1 class="font-display text-ink text-4xl font-bold tracking-tight">{t('playground.title')}</h1>
+        <p class="text-ink-muted mt-4 text-lg">{t('playground.description')}</p>
+        <p class="text-ink-faint mt-2 font-mono text-sm" id="gate-note" hidden></p>
+        <button
+          type="button"
+          id="gate-enter"
+          class="bg-accent text-surface hover:bg-accent-strong mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-[0_4px_24px_var(--glow)] transition-all active:scale-[0.97]"
+        >
+          {t('playground.enter')}
+        </button>
+        <p class="text-ink-faint mt-4 text-sm" id="gate-loading" hidden>{t('playground.loading')}</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="playground-data" set:html={JSON.stringify(worldData)} is:inline />
+
+  <script>
+    import { initGate } from '@/playground/gate';
+    initGate();
+  </script>
+</Base>
+
+<style>
+  /* Playground never scrolls. */
+  :global(body) {
+    overflow: hidden;
+  }
+</style>

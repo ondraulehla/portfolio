@@ -1,0 +1,52 @@
+---
+title: 'URL Shortener on Microservices'
+summary: 'A production-grade URL shortener built as a microservices system — Kubernetes, Terraform, observability and a clean service contract design.'
+role: 'Backend & Infrastructure'
+year: 2024
+order: 2
+featured: true
+tech: ['Go', 'Node.js', 'Kubernetes', 'Terraform', 'Redis', 'PostgreSQL', 'Grafana']
+problem: 'A simple CRUD app teaches nothing about distributed systems — I wanted to experience real service boundaries, deployment and observability first-hand.'
+solution: 'Deliberately over-engineered in the right way: separate shortening, redirect and analytics services with typed contracts, deployed to Kubernetes via Terraform, fully observable.'
+outcome: 'Sub-10ms redirect latency with cache-first reads, zero-downtime deploys, and a reference architecture I reuse in client conversations.'
+cover: '@/assets/projects/url-shortener/cover.svg'
+links:
+  repo: 'https://github.com/ondrejulehla'
+---
+
+{/* TODO(Ondřej): replace placeholder narrative with real metrics and the actual architecture diagram. */}
+
+## Context
+
+A URL shortener is famously simple to build — and famously hard to build *well* at scale.
+I used it as a vehicle to practice the parts of engineering that a monolith hides:
+service boundaries, deployment pipelines, caching strategy and observability.
+
+## Problem
+
+The interesting problems only appear when you refuse the easy path: what happens on cache
+miss storms? How do you deploy the redirect service without dropping a single request?
+How do you know the analytics pipeline silently broke?
+
+## Solution
+
+Three services with strict contracts:
+
+- **Shortener service** — write path, collision-safe ID generation, validation
+- **Redirect service** — hot read path, Redis cache-first with PostgreSQL fallback
+- **Analytics service** — async click events over a queue, aggregation jobs
+
+The infrastructure is **fully declarative**: Terraform provisions the cluster, Kubernetes
+manifests describe the services, and Grafana dashboards + alerts cover the golden signals
+(latency, traffic, errors, saturation).
+
+## Outcome
+
+- Redirect p99 latency under 10 ms with warm cache
+- Rolling deploys with zero dropped requests
+- Every incident debuggable from dashboards and traces alone
+
+## What I learned
+
+Observability is a feature you build *first*, not last — without it you're not running
+a system, you're guessing at one.

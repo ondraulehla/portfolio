@@ -1,0 +1,77 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const t = useTranslations(Astro.props.locale);
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  aria-label={t('theme.toggle')}
+  class="border-line text-ink-muted hover:text-ink hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
+>
+  <svg
+    class="size-4 dark-hidden"
+    data-icon-sun
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+  </svg>
+  <svg
+    class="size-4"
+    data-icon-moon
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+  </svg>
+</button>
+
+<style>
+  /* Show sun in dark mode (click → light), moon in light mode. */
+  [data-icon-sun] {
+    display: none;
+  }
+  :global([data-theme='dark']) [data-icon-sun] {
+    display: block;
+  }
+  :global([data-theme='dark']) [data-icon-moon] {
+    display: none;
+  }
+</style>
+
+<script>
+  function initThemeToggles() {
+    document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try {
+          localStorage.setItem('theme', next);
+        } catch {}
+      });
+    });
+  }
+  initThemeToggles();
+  document.addEventListener('astro:page-load', initThemeToggles);
+</script>

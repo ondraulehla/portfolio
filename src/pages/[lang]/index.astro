@@ -1,0 +1,29 @@
+---
+import Base from '@/layouts/Base.astro';
+import Hero from '@/components/sections/Hero.astro';
+import About from '@/components/sections/About.astro';
+import Experience from '@/components/sections/Experience.astro';
+import Education from '@/components/sections/Education.astro';
+import Skills from '@/components/sections/Skills.astro';
+import ProjectsGrid from '@/components/sections/ProjectsGrid.astro';
+import Contact from '@/components/sections/Contact.astro';
+import { locales, type Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+
+export function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = useTranslations(locale);
+---
+
+<Base {locale} title={t('site.title')} description={t('site.description')}>
+  <Hero {locale} />
+  <About {locale} />
+  <Experience {locale} />
+  <Education {locale} />
+  <Skills {locale} />
+  <ProjectsGrid {locale} />
+  <Contact {locale} />
+</Base>

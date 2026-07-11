@@ -1,0 +1,22 @@
+---
+import Base from '@/layouts/Base.astro';
+import Button from '@/components/ui/Button.astro';
+import { useTranslations } from '@/i18n/utils';
+
+// The 404 page is served for any missing path; default to English UI.
+const locale = 'en';
+const t = useTranslations(locale);
+---
+
+<Base {locale} title={`404 — ${t('notfound.title')}`} description={t('notfound.text')} noindex>
+  <section class="mx-auto flex max-w-6xl flex-col items-center px-5 py-32 text-center sm:px-8">
+    <p class="text-accent font-mono text-sm font-semibold tracking-[0.2em]">404</p>
+    <h1 class="font-display text-ink mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+      {t('notfound.title')}
+    </h1>
+    <p class="text-ink-muted mt-4 max-w-md text-lg">{t('notfound.text')}</p>
+    <div class="mt-8">
+      <Button href="/en/" variant="primary">{t('notfound.home')}</Button>
+    </div>
+  </section>
+</Base>

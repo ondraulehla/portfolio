@@ -1,0 +1,45 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { cv } from '@/data/cv';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="about">
+  <SectionHeading kicker={t('about.kicker')} heading={t('about.heading')} />
+
+  <div class="grid gap-10 md:grid-cols-[2fr_1fr]">
+    <div class="space-y-5" data-reveal>
+      {
+        cv.profile.bio.map((paragraph) => (
+          <p class="text-ink-muted text-lg leading-relaxed">{paragraph[locale]}</p>
+        ))
+      }
+    </div>
+
+    <dl class="border-line h-fit divide-y divide-[var(--line)] rounded-2xl border" data-reveal>
+      {
+        cv.profile.facts.map((fact) => (
+          <div class="flex items-baseline justify-between gap-4 px-5 py-4">
+            <dt class="text-ink-faint text-sm">{fact.label[locale]}</dt>
+            <dd class="text-ink text-sm font-semibold">{fact.value[locale]}</dd>
+          </div>
+        ))
+      }
+      {
+        cv.languages.map((lang) => (
+          <div class="flex items-baseline justify-between gap-4 px-5 py-4">
+            <dt class="text-ink-faint text-sm">{lang.name[locale]}</dt>
+            <dd class="text-ink text-sm font-semibold">{lang.level[locale]}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>

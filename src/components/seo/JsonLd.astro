@@ -1,0 +1,32 @@
+---
+import { site } from '@/data/site';
+import { cv } from '@/data/cv';
+import type { Locale } from '@/i18n/config';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: site.name,
+  email: `mailto:${site.email}`,
+  url: site.domain,
+  jobTitle: cv.profile.title[locale],
+  sameAs: [site.github, site.linkedin],
+  knowsLanguage: ['cs', 'en'],
+};
+
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: site.name,
+  url: site.domain,
+  inLanguage: ['en', 'cs'],
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(person)} is:inline />
+<script type="application/ld+json" set:html={JSON.stringify(website)} is:inline />

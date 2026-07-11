@@ -1,0 +1,55 @@
+---
+title: 'AI Application Platform'
+summary: 'A TypeScript monorepo platform for building AI-powered business applications — plugin architecture, typed APIs and a shared design system.'
+role: 'Architect & Fullstack Developer'
+year: 2025
+order: 1
+featured: true
+tech: ['TypeScript', 'React', 'Hono', 'tRPC', 'Drizzle', 'PostgreSQL', 'Turborepo', 'Docker']
+problem: 'Every new AI project started from scratch — auth, data layer, LLM plumbing and UI were rebuilt again and again.'
+solution: 'A modular monorepo platform with a plugin architecture: shared packages for auth, database, LLM orchestration and UI, so a new app is scaffolded in hours.'
+outcome: 'New AI application prototypes go from idea to running demo in under a day instead of weeks.'
+cover: '@/assets/projects/ai-framework/cover.svg'
+links:
+  repo: 'https://github.com/ondrejulehla'
+---
+
+{/* TODO(Ondřej): replace placeholder narrative with real numbers, screenshots and architecture diagram. */}
+
+## Context
+
+Building AI-powered applications for clients kept following the same pattern: a React frontend,
+a typed API, a relational database, and an orchestration layer talking to LLM providers. Yet each
+project started from an empty folder — and the first two weeks were always spent rebuilding the
+same foundations.
+
+## Problem
+
+The repeated setup wasn't just slow, it was inconsistent. Each project solved auth, migrations,
+error handling and LLM streaming slightly differently, which made maintenance across projects
+expensive and onboarding painful.
+
+## Solution
+
+I designed a **Turborepo monorepo platform** with clear boundaries:
+
+- **`packages/core`** — typed domain primitives, result types, validation
+- **`packages/db`** — Drizzle ORM schema factory with per-app migrations
+- **`packages/ai`** — LLM orchestration: provider-agnostic client, streaming, tool use, evals
+- **`packages/ui`** — shared design system (React + Tailwind)
+- **`apps/*`** — thin applications composed from plugins
+
+The key decision was the **plugin architecture**: an application declares the capabilities it
+needs (auth, files, AI chat, workflows) and the platform wires them together with typed contracts
+end to end — from the database schema through tRPC up to React hooks.
+
+## Outcome
+
+- A new application scaffold runs locally **in hours, not weeks**
+- One shared upgrade path: fixing a bug in the platform fixes it in every app
+- Typed end-to-end: schema changes fail the build instead of failing in production
+
+## What I learned
+
+Designing for the second and third consumer of an abstraction is what makes a platform —
+the first consumer always looks fine.

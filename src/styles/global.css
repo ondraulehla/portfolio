@@ -1,0 +1,157 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/space-grotesk/index.css';
+
+/* ---------------------------------------------------------------------------
+   Semantic design tokens. Raw values live on :root / [data-theme='dark'];
+   @theme inline maps them into Tailwind utilities (bg-surface, text-ink, …).
+--------------------------------------------------------------------------- */
+:root {
+  --surface: oklch(98.6% 0.003 95);
+  --panel: oklch(96.5% 0.004 95);
+  --ink: oklch(22% 0.02 272);
+  --ink-muted: oklch(48% 0.015 272);
+  --ink-faint: oklch(62% 0.012 272);
+  --line: oklch(90% 0.006 272);
+  --accent: oklch(51% 0.21 275);
+  --accent-strong: oklch(44% 0.22 275);
+  --accent-soft: oklch(94% 0.035 275);
+  --glow: oklch(51% 0.21 275 / 0.12);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --surface: oklch(17.5% 0.015 272);
+  --panel: oklch(21.5% 0.018 272);
+  --ink: oklch(93.5% 0.008 272);
+  --ink-muted: oklch(70% 0.014 272);
+  --ink-faint: oklch(56% 0.014 272);
+  --line: oklch(30% 0.018 272);
+  --accent: oklch(74% 0.15 278);
+  --accent-strong: oklch(80% 0.13 278);
+  --accent-soft: oklch(28% 0.06 278);
+  --glow: oklch(74% 0.15 278 / 0.14);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+}
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+  --text-fluid-xl: clamp(2.6rem, 1.4rem + 5.2vw, 5.2rem);
+  --text-fluid-lg: clamp(1.9rem, 1.2rem + 2.6vw, 3.1rem);
+  --text-fluid-md: clamp(1.35rem, 1.05rem + 1.2vw, 1.9rem);
+}
+
+html {
+  scroll-behavior: smooth;
+  @media (prefers-reduced-motion: reduce) {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  @apply bg-surface font-sans text-ink antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Reveal-on-scroll elements: hidden only when JS + motion are available.
+   The `motion-ok` class is added by animations.ts before first reveal runs,
+   so no-JS and reduced-motion users always see content. */
+html.motion-ok [data-reveal] {
+  opacity: 0;
+}
+
+/* Hero entrance is CSS-only so LCP never waits for GSAP. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-rise {
+    animation: hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .hero-rise-late {
+    animation: hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+  }
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Experience timeline line: painted by --line-progress (scrubbed by GSAP). */
+[data-timeline] {
+  --line-progress: 0%;
+  border-image: linear-gradient(
+      to bottom,
+      var(--accent) var(--line-progress),
+      var(--line) var(--line-progress)
+    )
+    1;
+}
+
+/* Case-study prose */
+.prose-custom {
+  @apply text-ink-muted leading-relaxed;
+}
+.prose-custom h2 {
+  @apply font-display text-ink mt-12 mb-4 text-2xl font-semibold tracking-tight;
+}
+.prose-custom h3 {
+  @apply font-display text-ink mt-8 mb-3 text-xl font-semibold;
+}
+.prose-custom p {
+  @apply my-4;
+}
+.prose-custom ul {
+  @apply my-4 list-disc space-y-1.5 pl-6;
+}
+.prose-custom ol {
+  @apply my-4 list-decimal space-y-1.5 pl-6;
+}
+.prose-custom a {
+  @apply text-accent decoration-accent/40 hover:decoration-accent underline underline-offset-4;
+}
+.prose-custom strong {
+  @apply text-ink font-semibold;
+}
+.prose-custom code {
+  @apply bg-panel border-line rounded border px-1.5 py-0.5 font-mono text-[0.9em];
+}
+.prose-custom pre {
+  @apply bg-panel border-line my-6 overflow-x-auto rounded-xl border p-5 text-sm;
+}
+.prose-custom pre code {
+  @apply border-0 bg-transparent p-0;
+}
+.prose-custom blockquote {
+  @apply border-accent text-ink-muted my-6 border-l-2 pl-5 italic;
+}
+.prose-custom img {
+  @apply border-line my-6 rounded-xl border;
+}

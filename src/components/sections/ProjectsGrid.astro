@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const projects = (await getCollection('projects', (entry) => entry.id.startsWith(`${locale}/`)))
+  .filter((entry) => entry.data.featured)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="projects">
+  <SectionHeading kicker={t('projects.kicker')} heading={t('projects.heading')} />
+
+  <div class="grid gap-6 md:grid-cols-2">
+    {projects.map((project) => <ProjectCard {project} {locale} />)}
+  </div>
+</section>

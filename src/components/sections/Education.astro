@@ -1,0 +1,31 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { cv, formatMonth } from '@/data/cv';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="education">
+  <SectionHeading kicker={t('education.kicker')} heading={t('education.heading')} />
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    {
+      cv.education.map((item) => (
+        <article class="border-line rounded-2xl border p-6" data-reveal>
+          <p class="text-ink-faint font-mono text-xs tracking-wide">
+            {formatMonth(item.start, locale)} — {item.end ? formatMonth(item.end, locale) : t('experience.present')}
+          </p>
+          <h3 class="font-display text-ink mt-2 text-lg font-semibold">{item.school}</h3>
+          <p class="text-ink-muted mt-1">{item.degree[locale]}</p>
+          {item.note && <p class="text-ink-faint mt-2 text-sm">{item.note[locale]}</p>}
+        </article>
+      ))
+    }
+  </div>
+</section>

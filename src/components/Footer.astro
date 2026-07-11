@@ -1,0 +1,30 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { site } from '@/data/site';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const year = new Date().getFullYear();
+---
+
+<footer class="border-line/60 border-t">
+  <div
+    class="text-ink-faint mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm sm:flex-row sm:px-8"
+  >
+    <p>© {year} {site.name}. {t('footer.rights')}</p>
+    <div class="flex items-center gap-5">
+      <a href={site.github} rel="me noopener" target="_blank" class="hover:text-ink transition-colors">
+        GitHub
+      </a>
+      <a href={site.linkedin} rel="me noopener" target="_blank" class="hover:text-ink transition-colors">
+        LinkedIn
+      </a>
+      <a href={`mailto:${site.email}`} class="hover:text-ink transition-colors">E-mail</a>
+    </div>
+  </div>
+  <p class="text-ink-faint/70 pb-6 text-center text-xs">{t('footer.built')}</p>
+</footer>

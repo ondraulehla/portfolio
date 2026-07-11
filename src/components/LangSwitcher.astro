@@ -1,0 +1,21 @@
+---
+import type { Locale } from '@/i18n/config';
+import { otherLocale, switchLocalePath, useTranslations } from '@/i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const target = otherLocale(locale);
+const href = switchLocalePath(Astro.url, target);
+---
+
+<a
+  {href}
+  aria-label={t('lang.switch')}
+  data-astro-prefetch="hover"
+  class="border-line text-ink-muted hover:text-ink hover:border-ink-faint inline-flex h-9 items-center justify-center rounded-full border px-3 font-mono text-xs font-semibold tracking-wide transition-colors"
+>
+  {t('lang.switchShort')}
+</a>

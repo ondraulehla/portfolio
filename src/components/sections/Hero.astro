@@ -1,0 +1,85 @@
+---
+import type { Locale } from '@/i18n/config';
+import { localePath, useTranslations } from '@/i18n/utils';
+import Button from '@/components/ui/Button.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="relative overflow-hidden">
+  <!-- decorative grid + glow, pure CSS so it costs nothing -->
+  <div
+    class="pointer-events-none absolute inset-0 -z-10"
+    aria-hidden="true"
+    style="background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 75%); opacity: 0.5;"
+  >
+  </div>
+  <div
+    class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-96 w-[52rem] -translate-x-1/2 rounded-full blur-3xl"
+    aria-hidden="true"
+    style="background: var(--glow);"
+  >
+  </div>
+
+  <div class="mx-auto max-w-6xl px-5 pt-24 pb-20 sm:px-8 sm:pt-32 sm:pb-28">
+    <p
+      class="hero-rise border-line bg-panel/60 text-ink-muted mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm"
+    >
+      <span class="relative flex size-2">
+        <span class="bg-accent absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"></span>
+        <span class="bg-accent relative inline-flex size-2 rounded-full"></span>
+      </span>
+      {t('hero.available')}
+    </p>
+
+    <h1
+      class="hero-rise font-display text-ink max-w-4xl text-[length:var(--text-fluid-xl)] leading-[1.05] font-bold tracking-tight"
+      data-hero-title
+    >
+      {t('hero.title.line1')}<br />
+      <span class="text-accent">{t('hero.title.line2')}</span>
+    </h1>
+
+    <p class="hero-rise-late text-ink-muted mt-7 max-w-2xl text-lg leading-relaxed sm:text-xl">
+      {t('hero.subtitle')}
+    </p>
+
+    <div class="hero-rise-late mt-10 flex flex-wrap items-center gap-3">
+      <Button href={`${localePath(locale, '/')}#projects`} variant="primary">
+        {t('hero.cta.projects')}
+        <svg
+          class="size-4 transition-transform group-hover:translate-y-0.5"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"><path d="M12 5v14m-7-7 7 7 7-7"></path></svg
+        >
+      </Button>
+      <Button href={`/cv/ondrej-ulehla-${locale}.pdf`} variant="secondary" download>
+        {t('hero.cta.cv')}
+      </Button>
+      <Button href={localePath(locale, '/playground')} variant="ghost" prefetch>
+        {t('hero.cta.playground')}
+        <svg
+          class="size-4 transition-transform group-hover:translate-x-0.5"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"></path></svg
+        >
+      </Button>
+    </div>
+  </div>
+</section>

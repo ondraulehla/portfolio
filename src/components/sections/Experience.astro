@@ -1,0 +1,62 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { cv, formatMonth } from '@/data/cv';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+import Badge from '@/components/ui/Badge.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="experience">
+  <SectionHeading kicker={t('experience.kicker')} heading={t('experience.heading')} />
+
+  <ol class="relative space-y-12 border-l border-[var(--line)] pl-8" data-timeline>
+    {
+      cv.experience.map((job) => (
+        <li class="relative" data-reveal>
+          <span
+            class="border-accent bg-surface absolute top-1.5 -left-[2.42rem] size-3 rounded-full border-2"
+            aria-hidden="true"
+          />
+          <p class="text-ink-faint font-mono text-xs tracking-wide">
+            {formatMonth(job.start, locale)} — {job.end ? formatMonth(job.end, locale) : t('experience.present')}
+          </p>
+          <h3 class="font-display text-ink mt-1.5 text-xl font-semibold">
+            {job.role[locale]}
+            <span class="text-ink-muted font-normal">
+              ·{' '}
+              {job.url ? (
+                <a href={job.url} target="_blank" rel="noopener" class="hover:text-accent underline decoration-[var(--line)] underline-offset-4 transition-colors">
+                  {job.company}
+                </a>
+              ) : (
+                job.company
+              )}
+            </span>
+          </h3>
+          <p class="text-ink-muted mt-2 max-w-3xl leading-relaxed">{job.summary[locale]}</p>
+          <ul class="text-ink-muted mt-3 max-w-3xl space-y-1.5 text-sm">
+            {job.highlights.map((h) => (
+              <li class="flex gap-2.5">
+                <span class="text-accent mt-0.5" aria-hidden="true">
+                  →
+                </span>
+                {h[locale]}
+              </li>
+            ))}
+          </ul>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {job.tech.map((item) => (
+              <Badge>{item}</Badge>
+            ))}
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</section>

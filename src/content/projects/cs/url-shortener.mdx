@@ -1,0 +1,52 @@
+---
+title: 'URL Shortener na mikroslužbách'
+summary: 'Produkčně pojatý zkracovač URL postavený jako systém mikroslužeb — Kubernetes, Terraform, observabilita a čistý návrh kontraktů mezi službami.'
+role: 'Backend & infrastruktura'
+year: 2024
+order: 2
+featured: true
+tech: ['Go', 'Node.js', 'Kubernetes', 'Terraform', 'Redis', 'PostgreSQL', 'Grafana']
+problem: 'Jednoduchá CRUD aplikace o distribuovaných systémech nic nenaučí — chtěl jsem si na vlastní kůži vyzkoušet skutečné hranice služeb, nasazování a observabilitu.'
+solution: 'Záměrně přeinženýrované tím správným směrem: oddělené služby pro zkracování, přesměrování a analytiku s typovanými kontrakty, nasazené do Kubernetes přes Terraform, plně observovatelné.'
+outcome: 'Latence přesměrování pod 10 ms díky cache-first čtení, nasazování bez výpadků a referenční architektura, kterou používám i v diskusích s klienty.'
+cover: '@/assets/projects/url-shortener/cover.svg'
+links:
+  repo: 'https://github.com/ondrejulehla'
+---
+
+{/* TODO(Ondřej): nahradit placeholder text reálnými metrikami a skutečným diagramem architektury. */}
+
+## Kontext
+
+Zkracovač URL je proslule jednoduchý na postavení — a proslule těžký na postavení *pořádně*
+ve velkém. Použil jsem ho jako záminku k procvičení věcí, které monolit schovává:
+hranice služeb, deployment pipeline, strategie cachování a observabilita.
+
+## Problém
+
+Zajímavé problémy se objeví, až když odmítnete snadnou cestu: co se stane při bouři cache
+missů? Jak nasadit redirect službu bez ztráty jediného requestu? Jak poznáte, že analytická
+pipeline potichu spadla?
+
+## Řešení
+
+Tři služby s přísnými kontrakty:
+
+- **Shortener služba** — zápisová cesta, generování ID odolné proti kolizím, validace
+- **Redirect služba** — horká čtecí cesta, Redis cache-first s PostgreSQL fallbackem
+- **Analytics služba** — asynchronní click eventy přes frontu, agregační joby
+
+Infrastruktura je **plně deklarativní**: Terraform provisionuje cluster, Kubernetes manifesty
+popisují služby a Grafana dashboardy + alerty pokrývají golden signals
+(latence, provoz, chyby, saturace).
+
+## Výsledek
+
+- p99 latence přesměrování pod 10 ms s teplou cache
+- Rolling deploye bez jediného ztraceného requestu
+- Každý incident řešitelný jen z dashboardů a traců
+
+## Co jsem se naučil
+
+Observabilita je feature, kterou stavíte *jako první*, ne poslední — bez ní systém
+neprovozujete, jen o něm hádáte.

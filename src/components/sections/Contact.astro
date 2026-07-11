@@ -1,0 +1,79 @@
+---
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { site } from '@/data/site';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+import Button from '@/components/ui/Button.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-28" id="contact">
+  <div
+    class="border-line relative overflow-hidden rounded-3xl border px-6 py-14 text-center sm:px-12 sm:py-20"
+    data-reveal
+  >
+    <div
+      class="pointer-events-none absolute -top-24 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full blur-3xl"
+      aria-hidden="true"
+      style="background: var(--glow);"
+    >
+    </div>
+
+    <p class="text-accent mb-3 font-mono text-xs font-semibold tracking-[0.2em] uppercase">
+      {t('contact.kicker')}
+    </p>
+    <h2 id="contact-heading" class="font-display text-ink text-[length:var(--text-fluid-lg)] font-bold tracking-tight">
+      {t('contact.heading')}
+    </h2>
+    <p class="text-ink-muted mx-auto mt-4 max-w-xl text-lg">{t('contact.text')}</p>
+
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <Button href={`mailto:${site.email}`} variant="primary">{site.email}</Button>
+      <button
+        type="button"
+        data-copy-email={site.email}
+        class="border-line text-ink hover:border-ink-faint hover:bg-panel inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]"
+      >
+        <span data-copy-label>{t('contact.copy')}</span>
+        <span data-copied-label hidden>{t('contact.copied')}</span>
+      </button>
+      <Button href={`/cv/ondrej-ulehla-${locale}.pdf`} variant="secondary" download>
+        {t('contact.cv')}
+      </Button>
+    </div>
+
+    <div class="text-ink-muted mt-8 flex items-center justify-center gap-6 text-sm">
+      <a href={site.github} target="_blank" rel="me noopener" class="hover:text-ink underline decoration-[var(--line)] underline-offset-4 transition-colors">GitHub</a>
+      <a href={site.linkedin} target="_blank" rel="me noopener" class="hover:text-ink underline decoration-[var(--line)] underline-offset-4 transition-colors">LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<script>
+  function initCopy() {
+    document.querySelectorAll<HTMLButtonElement>('[data-copy-email]').forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = 'true';
+      const label = btn.querySelector<HTMLElement>('[data-copy-label]')!;
+      const copied = btn.querySelector<HTMLElement>('[data-copied-label]')!;
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.copyEmail!);
+          label.hidden = true;
+          copied.hidden = false;
+          setTimeout(() => {
+            label.hidden = false;
+            copied.hidden = true;
+          }, 1800);
+        } catch {}
+      });
+    });
+  }
+  initCopy();
+  document.addEventListener('astro:page-load', initCopy);
+</script>
