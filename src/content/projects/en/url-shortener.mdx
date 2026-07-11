@@ -3,15 +3,13 @@ title: 'URL Shortener on Microservices'
 summary: 'A production-grade URL shortener built as a microservices system — Kubernetes, Terraform, observability and a clean service contract design.'
 role: 'Backend & Infrastructure'
 year: 2024
-order: 2
+order: 3
 featured: true
 tech: ['Go', 'Node.js', 'Kubernetes', 'Terraform', 'Redis', 'PostgreSQL', 'Grafana']
 problem: 'A simple CRUD app teaches nothing about distributed systems — I wanted to experience real service boundaries, deployment and observability first-hand.'
 solution: 'Deliberately over-engineered in the right way: separate shortening, redirect and analytics services with typed contracts, deployed to Kubernetes via Terraform, fully observable.'
 outcome: 'Sub-10ms redirect latency with cache-first reads, zero-downtime deploys, and a reference architecture I reuse in client conversations.'
 cover: '@/assets/projects/url-shortener/cover.svg'
-links:
-  repo: 'https://github.com/ondrejulehla'
 ---
 
 {/* TODO(Ondřej): replace placeholder narrative with real metrics and the actual architecture diagram. */}

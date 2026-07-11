@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="2.5">
+    <path d="M600 130 L780 200 V360 Q780 470 600 540 Q420 470 420 360 V200 Z"/>
+    <path d="M530 340 L580 395 L680 285" stroke-width="7" stroke-opacity="0.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g font-family="monospace" font-size="26" fill="#ffffff" fill-opacity="0.55">
+    <text x="90" y="120">✖ MCP003 inline API key committed</text>
+    <text x="90" y="165">▲ MCP002 unpinned npx package</text>
+    <text x="850" y="520">✖ CC001 Bash(*)</text>
+    <text x="850" y="565">▲ SK001 injection</text>
+  </g>
+  <text x="90" y="612" font-family="monospace" font-size="34" fill="#ffffff" fill-opacity="0.9">agent-audit · security scanner</text>
+</svg>

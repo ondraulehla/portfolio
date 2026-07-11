@@ -1,0 +1,65 @@
+---
+title: 'agent-audit'
+summary: 'Open-source bezpečnostní auditor konfigurací AI agentů — najde inline tajemství, nepinované závislosti, plošná oprávnění a prompt-injection povrchy dřív, než ublíží.'
+role: 'Autor & maintainer'
+year: 2026
+order: 1
+featured: true
+tech: ['TypeScript', 'Node.js', 'Vitest', 'CLI', 'Security']
+problem: 'AI agenti přinesli nový útočný povrch — MCP servery, oprávnění, skills a hooky — který klasické lintery a skenery tajemství vůbec nevidí.'
+solution: 'CLI bez závislostí s rules enginem, který skenuje konfigurace agentů na deset tříd rizik — s redigovaným výstupem, čísly řádků a exit kódy pro CI.'
+outcome: 'Jediný příkaz (npx agent-audit) promění neviditelný útočný povrch v akční report — lokálně i jako brána v CI.'
+cover: '@/assets/projects/agent-audit/cover.svg'
+links:
+  repo: 'https://github.com/ondraulehla/agent-audit'
+---
+
+## Kontext
+
+Agentní nástroje v letech 2025–2026 explodovaly: MCP servery, nastavení Claude Code,
+skills z marketplaců, hooky běžící bez dozoru. Každá z těchto věcí je konfigurace,
+která *jedná* — spouští příkazy, sahá na síť, čte souborový systém. Bezpečnostní
+nástroje ale zaostaly: `eslint` neví, co znamená `Bash(*)`, a skenery tajemství
+nechápou, že nepinovaný `npx some-mcp` je supply-chain časovaná bomba.
+
+## Problém
+
+V reálných konfiguracích agentů se opakují čtyři třídy rizik:
+
+- **Supply chain** — MCP servery spouštěné přes `npx`/`uvx` bez připnuté verze:
+  každá session spustí to, co bylo publikováno naposledy
+- **Poloměr výbuchu** — oprávnění `Bash(*)` nebo `bypassPermissions`, které promění
+  každou úspěšnou prompt injection v spuštění libovolného kódu bez člověka ve smyčce
+- **Tajemství** — API klíče commitnuté přímo v `.mcp.json`, čitelné každým agentem
+  i každým kolegou s přístupem do repa
+- **Instrukce jako kód** — skills a agenti třetích stran nesoucí injection payloady
+  („ignore previous instructions…", stahování instrukcí z internetu, skrytý base64)
+
+## Řešení
+
+**TypeScript CLI bez runtime závislostí** postavené kolem malého rules enginu:
+
+- **Discovery** projde repozitář a klasifikuje konfigurační soubory napříč dialekty
+  (`.mcp.json`, Claude Desktop, VS Code, `.claude/` settings, agenti, skills, hooky)
+- **Normalizace** převede různé tvary MCP konfigurací na jeden model serveru
+- **Deset pravidel** kontroluje šifrování transportu, pinování verzí, rozsah přístupu
+  k souborům, wildcard oprávnění, exfiltrující hooky, rizikové kombinace nástrojů
+  a injection markery
+- **Report** vypisuje nálezy se závažností, čísly řádků a *redigovanými* tajemstvími;
+  `--json` pro stroje, exit kódy pro CI (`--fail-on warning`)
+
+Celý nástroj je navržený na spuštění přes `npx agent-audit` — bez instalace,
+bez konfigurace, užitečný výstup během sekund.
+
+## Výsledek
+
+- Deset tříd rizik pokrytých deterministickými pravidly — bez API klíčů a LLM volání
+- Vestavěná redakce: report nikdy znovu neunikne tajemství, které právě našel
+- Zapadne do jakékoli pipeline jako jednořádková CI brána
+- Open source (MIT) s roadmapou: SARIF výstup, další dialekty, allowlisty, autofix
+
+## Co jsem se naučil
+
+Bezpečnostní nástroj stojí a padá s mírou falešných poplachů — každé pravidlo
+potřebovalo explicitní rozlišení, jak vypadá *reference* (bezpečná) versus *literál*
+(rizikový), než se reportům dalo věřit natolik, aby na nich stálo CI.
