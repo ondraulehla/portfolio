@@ -1,7 +1,8 @@
 /**
- * The 3D playground: a small low-poly island you drive around in a toy car.
- * Approach a signpost and press Enter to open the project it advertises.
- * Everything is procedural — no model files to download.
+ * The 3D playground: a toy plane flying over a hand-shaped island —
+ * rolling hills, snowy mountains, a winding river, a little town and
+ * organic forests. Fly close to a floating billboard and press Enter
+ * to open the project it advertises. Everything is procedural.
  */
 import * as THREE from 'three';
 
@@ -16,117 +17,219 @@ interface WorldData {
   labels: { open: string; pressEnter: string };
 }
 
-const WORLD_RADIUS = 60;
-const SIGN_RADIUS = 24;
-const SIGN_TRIGGER_DISTANCE = 7;
+// --- world layout constants ---------------------------------------------------
+const ISLAND_RADIUS = 95; // where land starts fading into the sea
+const COAST_WIDTH = 45;
+const WATER_LEVEL = -0.9;
+const CITY = { x: 45, z: 35, radius: 22 };
+const MOUNTAINS = [
+  { x: -58, z: -42, h: 26, r: 17 },
+  { x: -72, z: -18, h: 20, r: 14 },
+  { x: -42, z: -64, h: 22, r: 15 },
+  { x: -30, z: -38, h: 12, r: 12 },
+];
+const SIGN_SPOTS = [
+  { x: -15, z: -68 },
+  { x: 72, z: -8 },
+  { x: -8, z: 76 },
+];
 
-const PALETTES = {
+const SKY = {
   light: {
-    sky: 0xdfe8f5,
-    fog: 0xdfe8f5,
-    ground: 0x8fc78f,
-    groundEdge: 0x7ab57a,
-    trunk: 0x8a6444,
-    leaves: [0x4f9e5c, 0x63b06b, 0x3f8e50],
-    rock: 0x9aa3ad,
-    carBody: 0x4f46e5,
-    carCabin: 0xdfe6f5,
-    wheel: 0x2a2f38,
-    pole: 0x7d8590,
-    panel: '#ffffff',
-    panelText: '#1c2030',
-    panelAccent: '#4f46e5',
+    sky: 0x9ed2f5,
+    skyTop: 0x5fa8e8,
+    skyHorizon: 0xdcedf8,
+    fog: 0xc9e6f7,
+    hemiSky: 0xbfe3ff,
+    hemiGround: 0x8fbf7f,
+    hemiIntensity: 0.95,
+    sunColor: 0xfff3d6,
+    sunIntensity: 1.35,
+    water: 0x3f86c9,
   },
   dark: {
-    sky: 0x12141f,
-    fog: 0x12141f,
-    ground: 0x2e5d45,
-    groundEdge: 0x254c38,
-    trunk: 0x5d4430,
-    leaves: [0x2e6b46, 0x3a7d52, 0x25593b],
-    rock: 0x525a66,
-    carBody: 0x8b85f4,
-    carCabin: 0x2b3040,
-    wheel: 0x14161c,
-    pole: 0x555c68,
-    panel: '#2c3247',
-    panelText: '#f2f3fa',
-    panelAccent: '#b5b0ff',
+    // sunset flight: purple dusk overhead, peach glow at the horizon
+    sky: 0x38285c,
+    skyTop: 0x2a1d4d,
+    skyHorizon: 0xf29c72,
+    fog: 0xe0916f,
+    hemiSky: 0x8a6fc4,
+    hemiGround: 0x4f4066,
+    hemiIntensity: 0.85,
+    sunColor: 0xffab66,
+    sunIntensity: 1.6,
+    water: 0x5d6fb5,
   },
 } as const;
 
-type Palette = (typeof PALETTES)[keyof typeof PALETTES];
+// Shared, theme-independent terrain colors — the lighting does the mood.
+const COLORS = {
+  sandDeep: 0xb3a071,
+  sand: 0xe6d095,
+  grass: [0x62b45c, 0x54a355, 0x74c468],
+  meadow: 0xa9cf62,
+  rock: 0x8a7a6e,
+  rockHigh: 0x9d918a,
+  snow: 0xf4f6f8,
+  trunk: 0x7d5a3c,
+  pine: [0x2f7a46, 0x39894e, 0x27693c],
+  leafy: [0x55a84f, 0x6cbb52, 0x8cc953, 0xd9903f],
+  wall: [0xf3ead8, 0xffffff, 0xe8c39a, 0xd9a066, 0xc4d0dc],
+  roof: [0xc0504a, 0xa93b32, 0x8a5a3c, 0x6d4c41, 0x4f6a8f],
+  cloud: 0xffffff,
+  planeBody: 0xe3574f,
+  planeWing: 0xf7f2e8,
+  planeDark: 0x3a3f4c,
+  panel: '#fffdf8',
+  panelText: '#232838',
+  panelAccent: '#4f46e5',
+};
 
+// --- deterministic value noise --------------------------------------------------
+// sin-based hash: well distributed even for the small lattice coords we use
+function hash2(ix: number, iz: number): number {
+  const n = Math.sin(ix * 127.1 + iz * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function valueNoise(x: number, z: number): number {
+  const ix = Math.floor(x);
+  const iz = Math.floor(z);
+  const fx = x - ix;
+  const fz = z - iz;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uz = fz * fz * (3 - 2 * fz);
+  const a = hash2(ix, iz);
+  const b = hash2(ix + 1, iz);
+  const c = hash2(ix, iz + 1);
+  const d = hash2(ix + 1, iz + 1);
+  return a + (b - a) * ux + (c - a) * uz + (a - b - c + d) * ux * uz;
+}
+
+function fbm(x: number, z: number): number {
+  let sum = 0;
+  let amp = 0.5;
+  let freq = 1;
+  for (let i = 0; i < 4; i++) {
+    sum += amp * valueNoise(x * freq, z * freq);
+    amp *= 0.5;
+    freq *= 2.1;
+  }
+  return sum; // ~0..1
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = THREE.MathUtils.clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** Centre line of the river (x as a function of z). */
+function riverX(z: number): number {
+  return 34 * Math.sin(z * 0.018) - 8 + 6 * Math.sin(z * 0.05);
+}
+
+/** Terrain height — the single source of truth used by every builder. */
+function getHeight(x: number, z: number): number {
+  // rolling hills on a solid landmass base
+  let h =
+    2.8 +
+    (fbm(x * 0.02, z * 0.02) - 0.45) * 9 +
+    (fbm(x * 0.055 + 40, z * 0.055 + 40) - 0.45) * 2.2;
+
+  // mountain massif (smooth gaussian bumps blended together)
+  for (const m of MOUNTAINS) {
+    const d2 = (x - m.x) ** 2 + (z - m.z) ** 2;
+    h += m.h * Math.exp(-d2 / (2 * m.r * m.r));
+  }
+
+  // river carves a smooth valley
+  const riverDist = Math.abs(x - riverX(z));
+  const carve = smoothstep(10, 3.2, riverDist);
+  h = h * (1 - carve) + (WATER_LEVEL - 1.6) * carve;
+
+  // town sits on a level plateau
+  const cityDist = Math.hypot(x - CITY.x, z - CITY.z);
+  const flat = smoothstep(CITY.radius + 6, CITY.radius - 8, cityDist);
+  h = h * (1 - flat) + 1.35 * flat;
+
+  // island falls away into the sea
+  const shore = Math.hypot(x, z);
+  const island = 1 - smoothstep(ISLAND_RADIUS, ISLAND_RADIUS + COAST_WIDTH, shore);
+  return h * island - (1 - island) * 6;
+}
+
+// ================================================================================
 export async function startExperience(): Promise<void> {
   const canvas = document.getElementById('playground-canvas') as HTMLCanvasElement;
   const dataEl = document.getElementById('playground-data');
-  const data: WorldData = dataEl ? JSON.parse(dataEl.textContent ?? '{}') : { projects: [], labels: {} };
+  const data: WorldData = dataEl
+    ? JSON.parse(dataEl.textContent ?? '{}')
+    : { projects: [], labels: { open: '', pressEnter: '' } };
   const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-  const palette = PALETTES[theme];
+  const sky = SKY[theme];
 
-  // --- renderer / scene / camera -------------------------------------------
+  // --- renderer / scene / camera -----------------------------------------------
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = theme === 'dark' ? 1.05 : 1.12;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(palette.sky);
-  scene.fog = new THREE.Fog(palette.fog, 55, 110);
+  scene.background = new THREE.Color(sky.sky);
+  scene.fog = new THREE.Fog(sky.fog, 90, 260);
+  scene.add(buildSkyDome(sky.skyTop, sky.skyHorizon));
 
-  const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 300);
-  camera.position.set(0, 6, 12);
+  // far plane must reach past the sky dome (r=460) from anywhere on the island
+  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1200);
 
-  const hemi = new THREE.HemisphereLight(palette.sky, palette.ground, theme === 'dark' ? 1.2 : 0.95);
+  const hemi = new THREE.HemisphereLight(sky.hemiSky, sky.hemiGround, sky.hemiIntensity);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(theme === 'dark' ? 0xbdc7ff : 0xffffff, theme === 'dark' ? 1.1 : 1.2);
-  sun.position.set(24, 36, 18);
+  const sun = new THREE.DirectionalLight(sky.sunColor, sky.sunIntensity);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -70;
-  sun.shadow.camera.right = 70;
-  sun.shadow.camera.top = 70;
-  sun.shadow.camera.bottom = -70;
-  sun.shadow.camera.far = 120;
-  scene.add(sun);
+  const s = 70;
+  sun.shadow.camera.left = -s;
+  sun.shadow.camera.right = s;
+  sun.shadow.camera.top = s;
+  sun.shadow.camera.bottom = -s;
+  sun.shadow.camera.near = 10;
+  sun.shadow.camera.far = 260;
+  scene.add(sun, sun.target);
 
   if (theme === 'dark') scene.add(buildStars());
 
-  // --- world ----------------------------------------------------------------
-  const ground = new THREE.Mesh(
-    new THREE.CircleGeometry(WORLD_RADIUS, 48),
-    new THREE.MeshStandardMaterial({ color: palette.ground, flatShading: true }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // --- world ---------------------------------------------------------------------
+  scene.add(buildTerrain());
+  scene.add(buildSea(sky.water));
+  scene.add(buildForests());
+  scene.add(buildRocks());
+  scene.add(buildTown());
+  const clouds = buildClouds();
+  scene.add(clouds);
 
-  const rim = new THREE.Mesh(
-    new THREE.CylinderGeometry(WORLD_RADIUS, WORLD_RADIUS + 4, 3, 48, 1, true),
-    new THREE.MeshStandardMaterial({ color: palette.groundEdge, flatShading: true, side: THREE.DoubleSide }),
-  );
-  rim.position.y = -1.5;
-  scene.add(rim);
-
-  scatterNature(scene, palette);
-
-  // --- signposts --------------------------------------------------------------
-  const signs: { mesh: THREE.Group; project: ProjectSign }[] = [];
+  const signs: { group: THREE.Group; project: ProjectSign; base: number }[] = [];
   data.projects.forEach((project, i) => {
-    const angle = (i / data.projects.length) * Math.PI * 2 - Math.PI / 2;
-    const sign = buildSignpost(project, palette);
-    sign.position.set(Math.cos(angle) * SIGN_RADIUS, 0, Math.sin(angle) * SIGN_RADIUS);
-    sign.lookAt(0, sign.position.y, 0);
-    scene.add(sign);
-    signs.push({ mesh: sign, project });
+    const spot = SIGN_SPOTS[i % SIGN_SPOTS.length]!;
+    const y = Math.max(getHeight(spot.x, spot.z), 0) + 13;
+    const group = buildFloatingSign(project);
+    group.position.set(spot.x, y, spot.z);
+    group.lookAt(0, y, 0);
+    scene.add(group);
+    signs.push({ group, project, base: y });
   });
 
-  // --- car --------------------------------------------------------------------
-  const { car, wheels, frontWheels } = buildCar(palette);
-  scene.add(car);
+  // --- plane -----------------------------------------------------------------------
+  const { plane, propeller } = buildPlane();
+  plane.position.set(0, 14, 108);
+  scene.add(plane);
 
-  // --- input --------------------------------------------------------------------
+  const trailLeft = new Contrail(scene, sky.fog);
+  const trailRight = new Contrail(scene, sky.fog);
+
+  // --- input -----------------------------------------------------------------------
   const keys = { up: false, down: false, left: false, right: false };
   const keymap: Record<string, keyof typeof keys> = {
     ArrowUp: 'up', KeyW: 'up',
@@ -148,7 +251,6 @@ export async function startExperience(): Promise<void> {
   addEventListener('keydown', onKey(true));
   addEventListener('keyup', onKey(false));
 
-  // Touch d-pad
   const pad = document.getElementById('touch-pad');
   if (pad && matchMedia('(pointer: coarse)').matches) {
     pad.hidden = false;
@@ -165,7 +267,6 @@ export async function startExperience(): Promise<void> {
     });
   }
 
-  // HUD
   const hudControls = document.getElementById('hud-controls');
   const hudPrompt = document.getElementById('hud-prompt');
   const hudPromptText = document.getElementById('hud-prompt-text');
@@ -175,60 +276,100 @@ export async function startExperience(): Promise<void> {
   });
   if (hudPrompt) hudPrompt.style.pointerEvents = 'auto';
 
-  // --- simulation ---------------------------------------------------------------
-  let speed = 0;
-  let heading = Math.PI;
-  const MAX_SPEED = 22;
-  const camTarget = new THREE.Vector3();
-  const camPos = new THREE.Vector3().copy(camera.position);
+  // --- flight model -------------------------------------------------------------------
+  let heading = Math.PI; // facing the island centre
+  let bank = 0;
+  let pitch = 0;
+  const BASE_SPEED = 19;
+  const forward = new THREE.Vector3();
+  const camPos = new THREE.Vector3(0, 18, 122);
+  const camLook = new THREE.Vector3();
+  const tipOffset = new THREE.Vector3();
   let lastTime = performance.now();
+  let elapsed = 0;
 
   function tick() {
     const now = performance.now();
     const dt = Math.min((now - lastTime) / 1000, 0.05);
     lastTime = now;
+    elapsed += dt;
 
-    // driving model: accelerate, brake/reverse, drag, speed-scaled steering
-    const accel = keys.up ? 30 : keys.down ? -18 : 0;
-    speed += accel * dt;
-    speed -= speed * 1.6 * dt;
-    speed = THREE.MathUtils.clamp(speed, -MAX_SPEED * 0.5, MAX_SPEED);
-    if (Math.abs(speed) < 0.02 && !accel) speed = 0;
+    // banking drives the turn — lean in, then the nose follows
+    const turnInput = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
+    const bankTarget = turnInput * 0.62;
+    bank += (bankTarget - bank) * (1 - Math.pow(0.002, dt));
+    heading += bank * 1.15 * dt;
 
-    const steer = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
-    const steerStrength = 1.9 * Math.min(1, Math.abs(speed) / 6);
-    heading += steer * steerStrength * Math.sign(speed || 1) * dt;
+    const pitchInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+    const pitchTarget = pitchInput * 0.4;
+    pitch += (pitchTarget - pitch) * (1 - Math.pow(0.004, dt));
 
-    car.position.x += Math.sin(heading) * speed * dt;
-    car.position.z += Math.cos(heading) * speed * dt;
-    car.rotation.y = heading;
+    // dive a little faster, climb a little slower
+    const speed = BASE_SPEED - pitch * 7;
+    forward.set(Math.sin(heading), 0, Math.cos(heading));
+    plane.position.addScaledVector(forward, speed * dt);
+    plane.position.y += pitch * speed * 0.55 * dt;
 
-    // keep the car on the island
-    const dist = Math.hypot(car.position.x, car.position.z);
-    const limit = WORLD_RADIUS - 3;
-    if (dist > limit) {
-      car.position.x *= limit / dist;
-      car.position.z *= limit / dist;
-      speed *= 0.4;
+    // stay above the terrain and under the ceiling
+    const floor = Math.max(getHeight(plane.position.x, plane.position.z), WATER_LEVEL) + 3;
+    if (plane.position.y < floor) {
+      plane.position.y += (floor - plane.position.y) * Math.min(1, 8 * dt);
+      pitch = Math.max(pitch, 0);
+    }
+    plane.position.y = Math.min(plane.position.y, 42);
+
+    // soft steer back when drifting out to sea
+    const r = Math.hypot(plane.position.x, plane.position.z);
+    if (r > 125) {
+      const toCenter = Math.atan2(-plane.position.x, -plane.position.z);
+      let diff = toCenter - heading;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      heading += diff * Math.min(1, (r - 125) / 18) * 1.6 * dt;
     }
 
-    // wheel spin + front wheel steering + body lean
-    wheels.forEach((wheel) => (wheel.rotation.x += (speed / 0.5) * dt));
-    frontWheels.forEach((wheel) => (wheel.rotation.y = steer * 0.42));
-    car.rotation.z = THREE.MathUtils.lerp(car.rotation.z, -steer * Math.min(1, Math.abs(speed) / MAX_SPEED) * 0.06, 0.15);
+    plane.rotation.set(-pitch * 0.9, heading, -bank, 'YXZ');
+    plane.position.y += Math.sin(elapsed * 1.7) * 0.008; // gentle float
+    propeller.rotation.z += 42 * dt;
 
-    // follow camera
-    const back = new THREE.Vector3(-Math.sin(heading), 0, -Math.cos(heading));
-    camTarget.copy(car.position).addScaledVector(back, 9).add(new THREE.Vector3(0, 4.5, 0));
-    camPos.lerp(camTarget, 1 - Math.pow(0.0015, dt));
+    // wingtip contrails
+    tipOffset.set(2.35, 0.18, -0.35).applyEuler(plane.rotation).add(plane.position);
+    trailLeft.push(tipOffset);
+    tipOffset.set(-2.35, 0.18, -0.35).applyEuler(plane.rotation).add(plane.position);
+    trailRight.push(tipOffset);
+
+    // chase camera
+    camLook.copy(plane.position).addScaledVector(forward, 7);
+    const desired = camLook
+      .clone()
+      .addScaledVector(forward, -17)
+      .add(new THREE.Vector3(0, 5.2, 0));
+    camPos.lerp(desired, 1 - Math.pow(0.001, dt));
     camera.position.copy(camPos);
-    camera.lookAt(car.position.x, car.position.y + 1.2, car.position.z);
+    camera.lookAt(plane.position.x, plane.position.y + 1.4, plane.position.z);
 
-    // signpost proximity
+    // sun (and its shadow frustum) follows the plane so shadows stay crisp
+    sun.position.set(plane.position.x + 45, plane.position.y + 70, plane.position.z + 28);
+    sun.target.position.copy(plane.position);
+
+    // drifting clouds
+    clouds.children.forEach((cloud, i) => {
+      cloud.position.x += (1.1 + (i % 3) * 0.35) * dt;
+      if (cloud.position.x > 170) cloud.position.x = -170;
+    });
+
+    // floating signs bob and shimmer
+    signs.forEach((sign, i) => {
+      sign.group.position.y = sign.base + Math.sin(elapsed * 1.1 + i * 2.1) * 0.5;
+      const ring = sign.group.getObjectByName('ring');
+      if (ring) ring.rotation.z += 0.4 * dt;
+    });
+
+    // proximity
     let nearest: { project: ProjectSign; distance: number } | null = null;
     for (const sign of signs) {
-      const d = sign.mesh.position.distanceTo(car.position);
-      if (d < SIGN_TRIGGER_DISTANCE && (!nearest || d < nearest.distance)) {
+      const d = sign.group.position.distanceTo(plane.position);
+      if (d < 12 && (!nearest || d < nearest.distance)) {
         nearest = { project: sign.project, distance: d };
       }
     }
@@ -237,7 +378,7 @@ export async function startExperience(): Promise<void> {
       activeSign = next;
       if (hudPrompt && hudPromptText) {
         hudPrompt.hidden = !next;
-        if (next) hudPromptText.textContent = `${data.labels.open} „${next.title}“`;
+        if (next) hudPromptText.textContent = `${data.labels.open} „${next.title}"`;
       }
     }
 
@@ -253,7 +394,6 @@ export async function startExperience(): Promise<void> {
   };
   addEventListener('resize', onResize);
 
-  // View Transitions: tear the world down when navigating away.
   document.addEventListener(
     'astro:before-swap',
     () => {
@@ -264,110 +404,497 @@ export async function startExperience(): Promise<void> {
   );
 }
 
-// --- builders -----------------------------------------------------------------
+// ================================================================================
+// world builders
+// ================================================================================
 
-function buildCar(palette: Palette) {
-  const car = new THREE.Group();
+function buildTerrain(): THREE.Mesh {
+  const size = 320;
+  const segments = 110;
+  const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
+  geometry.rotateX(-Math.PI / 2);
 
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(1.7, 0.65, 3),
-    new THREE.MeshStandardMaterial({ color: palette.carBody, flatShading: true }),
+  const pos = geometry.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(pos.count * 3);
+  const color = new THREE.Color();
+  const grass = COLORS.grass.map((c) => new THREE.Color(c));
+  const meadow = new THREE.Color(COLORS.meadow);
+  const sand = new THREE.Color(COLORS.sand);
+  const sandDeep = new THREE.Color(COLORS.sandDeep);
+  const rock = new THREE.Color(COLORS.rock);
+  const rockHigh = new THREE.Color(COLORS.rockHigh);
+  const snow = new THREE.Color(COLORS.snow);
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const h = getHeight(x, z);
+    pos.setY(i, h);
+
+    const tint = fbm(x * 0.08 + 90, z * 0.08 + 90); // gentle variation everywhere
+    if (h < WATER_LEVEL + 0.25) {
+      color.copy(sandDeep).lerp(sand, smoothstep(-4, WATER_LEVEL, h));
+    } else if (h < 0.75) {
+      color.copy(sand).lerp(grass[0]!, smoothstep(0.2, 0.75, h));
+    } else if (h < 9) {
+      const meadowMix = smoothstep(0.62, 0.78, fbm(x * 0.035 + 300, z * 0.035 + 300));
+      color
+        .copy(grass[Math.floor(tint * grass.length) % grass.length]!)
+        .lerp(meadow, meadowMix * 0.85);
+    } else if (h < 15.5) {
+      color.copy(rock).lerp(rockHigh, smoothstep(9, 15.5, h)).offsetHSL(0, 0, (tint - 0.5) * 0.06);
+    } else {
+      color.copy(rockHigh).lerp(snow, smoothstep(15.5, 18.5, h));
+    }
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals(); // smooth rolling shapes, no hard facets
+
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }),
   );
-  body.position.y = 0.65;
-  body.castShadow = true;
-  car.add(body);
-
-  const cabin = new THREE.Mesh(
-    new THREE.BoxGeometry(1.45, 0.55, 1.4),
-    new THREE.MeshStandardMaterial({ color: palette.carCabin, flatShading: true }),
-  );
-  cabin.position.set(0, 1.2, -0.15);
-  cabin.castShadow = true;
-  car.add(cabin);
-
-  const wheelGeometry = new THREE.CylinderGeometry(0.38, 0.38, 0.3, 12);
-  wheelGeometry.rotateZ(Math.PI / 2);
-  const wheelMaterial = new THREE.MeshStandardMaterial({ color: palette.wheel, flatShading: true });
-
-  const wheels: THREE.Mesh[] = [];
-  const frontWheels: THREE.Group[] = [];
-  (
-    [
-      [-0.85, 1.05, true],
-      [0.85, 1.05, true],
-      [-0.85, -1.05, false],
-      [0.85, -1.05, false],
-    ] as const
-  ).forEach(([x, z, front]) => {
-    const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-    wheel.castShadow = true;
-    const pivot = new THREE.Group();
-    pivot.position.set(x, 0.38, z);
-    pivot.add(wheel);
-    car.add(pivot);
-    wheels.push(wheel);
-    if (front) frontWheels.push(pivot);
-  });
-
-  return { car, wheels, frontWheels };
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
-function buildSignpost(project: ProjectSign, palette: Palette): THREE.Group {
+function buildSea(waterColor: number): THREE.Mesh {
+  const sea = new THREE.Mesh(
+    new THREE.CircleGeometry(400, 64),
+    new THREE.MeshStandardMaterial({
+      color: waterColor,
+      roughness: 0.35,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.92,
+    }),
+  );
+  sea.rotation.x = -Math.PI / 2;
+  sea.position.y = WATER_LEVEL;
+  return sea;
+}
+
+/** Trees in organic noise-driven clusters; instanced for cheap draw calls. */
+function buildForests(): THREE.Group {
   const group = new THREE.Group();
-  const poleMaterial = new THREE.MeshStandardMaterial({ color: palette.pole, flatShading: true });
 
-  [-2.1, 2.1].forEach((x) => {
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 3.4, 8), poleMaterial);
-    pole.position.set(x, 1.7, 0);
-    pole.castShadow = true;
-    group.add(pole);
+  interface Placement {
+    x: number;
+    z: number;
+    h: number;
+    scale: number;
+    kind: 'pine' | 'leafy';
+  }
+  const placements: Placement[] = [];
+
+  for (let i = 0; i < 3200 && placements.length < 320; i++) {
+    const x = (hash2(i, 17) - 0.5) * 2 * (ISLAND_RADIUS + 10);
+    const z = (hash2(i, 91) - 0.5) * 2 * (ISLAND_RADIUS + 10);
+    const h = getHeight(x, z);
+    if (h < 0.9 || h > 8.5) continue;
+    if (Math.abs(x - riverX(z)) < 7) continue;
+    if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.radius + 5) continue;
+    // forests grow where the forest-noise says so — organic patches with soft edges
+    const density = fbm(x * 0.03 + 700, z * 0.03 + 700);
+    if (density < 0.5) continue;
+    placements.push({
+      x,
+      z,
+      h,
+      scale: 1.15 + hash2(i, 5) * 0.85,
+      kind: hash2(i, 33) < 0.55 ? 'pine' : 'leafy',
+    });
+  }
+
+  const pines = placements.filter((p) => p.kind === 'pine');
+  const leafies = placements.filter((p) => p.kind === 'leafy');
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+
+  // trunks (shared by both kinds)
+  const trunkGeo = new THREE.CylinderGeometry(0.14, 0.22, 1.2, 7);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: COLORS.trunk, roughness: 0.9 });
+  const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, placements.length);
+  placements.forEach((p, i) => {
+    dummy.position.set(p.x, p.h + 0.5 * p.scale, p.z);
+    dummy.scale.setScalar(p.scale);
+    dummy.rotation.set(0, hash2(i, 2) * Math.PI, 0);
+    dummy.updateMatrix();
+    trunks.setMatrixAt(i, dummy.matrix);
   });
+  trunks.castShadow = true;
+  group.add(trunks);
 
-  const texture = makePanelTexture(project, palette);
-  const panel = new THREE.Mesh(
-    new THREE.BoxGeometry(4.6, 1.9, 0.12),
-    [
-      poleMaterial, poleMaterial, poleMaterial, poleMaterial,
-      // Basic material: the sign stays readable regardless of scene lighting.
-      new THREE.MeshBasicMaterial({ map: texture }),
-      new THREE.MeshStandardMaterial({ color: palette.pole }),
-    ],
-  );
-  panel.position.y = 2.8;
-  panel.castShadow = true;
-  group.add(panel);
+  // pine crowns: two stacked, slightly rounded cones
+  const pineGeo = new THREE.ConeGeometry(1, 2.1, 8);
+  const pineMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+  for (const tier of [0, 1]) {
+    const mesh = new THREE.InstancedMesh(pineGeo, pineMat, pines.length);
+    pines.forEach((p, i) => {
+      const s = p.scale * (tier === 0 ? 1.25 : 0.85);
+      dummy.position.set(p.x, p.h + (tier === 0 ? 1.9 : 3.1) * p.scale, p.z);
+      dummy.scale.set(s, s, s);
+      dummy.rotation.set(0, hash2(i, 7 + tier) * Math.PI, 0);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, color.setHex(COLORS.pine[(i + tier) % COLORS.pine.length]!));
+    });
+    mesh.castShadow = true;
+    group.add(mesh);
+  }
 
-  // marker ring on the ground showing the trigger zone
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(2.6, 2.9, 32),
-    new THREE.MeshBasicMaterial({ color: palette.carBody, transparent: true, opacity: 0.35 }),
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.02;
-  group.add(ring);
+  // leafy crowns: soft icosphere blobs, occasionally autumn-coloured
+  const blobGeo = new THREE.IcosahedronGeometry(1, 1);
+  const blobMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+  for (const part of [0, 1]) {
+    const mesh = new THREE.InstancedMesh(blobGeo, blobMat, leafies.length);
+    leafies.forEach((p, i) => {
+      const main = part === 0;
+      const s = p.scale * (main ? 1.35 : 0.8);
+      dummy.position.set(
+        p.x + (main ? 0 : (hash2(i, 11) - 0.5) * 1.6 * p.scale),
+        p.h + (main ? 2.2 : 2.9) * p.scale,
+        p.z + (main ? 0 : (hash2(i, 13) - 0.5) * 1.6 * p.scale),
+      );
+      dummy.scale.set(s, s * 0.9, s);
+      dummy.rotation.set(0, hash2(i, 3) * Math.PI, 0);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      const autumn = hash2(i, 21) > 0.85;
+      mesh.setColorAt(
+        i,
+        color.setHex(autumn ? COLORS.leafy[3]! : COLORS.leafy[i % 3]!),
+      );
+    });
+    mesh.castShadow = true;
+    group.add(mesh);
+  }
 
   return group;
 }
 
-function makePanelTexture(project: ProjectSign, palette: Palette): THREE.CanvasTexture {
+function buildRocks(): THREE.InstancedMesh {
+  const placements: { x: number; z: number; h: number; s: number }[] = [];
+  for (let i = 0; i < 600 && placements.length < 40; i++) {
+    const x = (hash2(i, 401) - 0.5) * 2 * ISLAND_RADIUS;
+    const z = (hash2(i, 907) - 0.5) * 2 * ISLAND_RADIUS;
+    const h = getHeight(x, z);
+    if (h < 6 || h > 15) continue; // rocky band on the mountain flanks
+    placements.push({ x, z, h, s: 0.5 + hash2(i, 3) * 1.1 });
+  }
+  const mesh = new THREE.InstancedMesh(
+    new THREE.IcosahedronGeometry(1, 0),
+    new THREE.MeshStandardMaterial({ color: COLORS.rockHigh, roughness: 0.95 }),
+    placements.length,
+  );
+  const dummy = new THREE.Object3D();
+  placements.forEach((p, i) => {
+    dummy.position.set(p.x, p.h + p.s * 0.3, p.z);
+    dummy.scale.set(p.s, p.s * 0.7, p.s);
+    dummy.rotation.set(hash2(i, 1) * 3, hash2(i, 2) * 3, hash2(i, 4) * 3);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  });
+  mesh.castShadow = true;
+  return mesh;
+}
+
+/** A little town: colourful houses with pitched roofs, a few flats, a church. */
+function buildTown(): THREE.Group {
+  const group = new THREE.Group();
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+
+  const spots: { x: number; z: number; rot: number; w: number; h: number; d: number }[] = [];
+  let n = 0;
+  for (let gx = -2; gx <= 2; gx++) {
+    for (let gz = -2; gz <= 2; gz++) {
+      if (gx === 0 && gz === 0) continue; // village square
+      n++;
+      const jx = (hash2(n, 51) - 0.5) * 2.4;
+      const jz = (hash2(n, 77) - 0.5) * 2.4;
+      spots.push({
+        x: CITY.x + gx * 6.4 + jx,
+        z: CITY.z + gz * 6.4 + jz,
+        rot: (hash2(n, 9) - 0.5) * 0.5 + (Math.abs(gx) > Math.abs(gz) ? Math.PI / 2 : 0),
+        w: 2.3 + hash2(n, 13) * 1.1,
+        h: 1.7 + hash2(n, 17) * 0.9,
+        d: 2.6 + hash2(n, 19) * 1.2,
+      });
+    }
+  }
+
+  const groundY = 1.35;
+
+  // walls
+  const wallGeo = new THREE.BoxGeometry(1, 1, 1);
+  const wallMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
+  const walls = new THREE.InstancedMesh(wallGeo, wallMat, spots.length);
+  spots.forEach((sp, i) => {
+    dummy.position.set(sp.x, groundY + sp.h / 2, sp.z);
+    dummy.scale.set(sp.w, sp.h, sp.d);
+    dummy.rotation.set(0, sp.rot, 0);
+    dummy.updateMatrix();
+    walls.setMatrixAt(i, dummy.matrix);
+    walls.setColorAt(i, color.setHex(COLORS.wall[i % COLORS.wall.length]!));
+  });
+  walls.castShadow = true;
+  walls.receiveShadow = true;
+  group.add(walls);
+
+  // pitched roofs: 3-sided prisms lying on the walls
+  const roofGeo = new THREE.CylinderGeometry(1, 1, 1, 3, 1);
+  roofGeo.rotateZ(Math.PI / 2); // prism axis along X
+  const roofMat = new THREE.MeshStandardMaterial({ roughness: 0.8 });
+  const roofs = new THREE.InstancedMesh(roofGeo, roofMat, spots.length);
+  spots.forEach((sp, i) => {
+    dummy.position.set(sp.x, groundY + sp.h + sp.w * 0.22, sp.z);
+    dummy.scale.set(sp.d * 1.12, sp.w * 0.62, sp.w * 0.62);
+    dummy.rotation.set(0, sp.rot + Math.PI / 2, 0);
+    dummy.updateMatrix();
+    roofs.setMatrixAt(i, dummy.matrix);
+    roofs.setColorAt(i, color.setHex(COLORS.roof[i % COLORS.roof.length]!));
+  });
+  roofs.castShadow = true;
+  group.add(roofs);
+
+  // church on the square: nave + tower + spire
+  const churchMat = new THREE.MeshStandardMaterial({ color: 0xf6f1e4, roughness: 0.85 });
+  const nave = new THREE.Mesh(new THREE.BoxGeometry(3, 2.6, 4.6), churchMat);
+  nave.position.set(CITY.x, groundY + 1.3, CITY.z);
+  nave.castShadow = true;
+  const naveRoof = new THREE.Mesh(roofGeo.clone(), new THREE.MeshStandardMaterial({ color: 0x8a5a3c }));
+  naveRoof.scale.set(5, 1.9, 1.9);
+  naveRoof.position.set(CITY.x, groundY + 3.1, CITY.z);
+  naveRoof.rotation.y = Math.PI / 2;
+  naveRoof.castShadow = true;
+  const tower = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4.6, 1.5), churchMat);
+  tower.position.set(CITY.x, groundY + 2.3, CITY.z + 3);
+  tower.castShadow = true;
+  const spire = new THREE.Mesh(
+    new THREE.ConeGeometry(1.15, 2.6, 4),
+    new THREE.MeshStandardMaterial({ color: 0x4f6a8f }),
+  );
+  spire.position.set(CITY.x, groundY + 5.9, CITY.z + 3);
+  spire.rotation.y = Math.PI / 4;
+  spire.castShadow = true;
+  group.add(nave, naveRoof, tower, spire);
+
+  return group;
+}
+
+function buildClouds(): THREE.Group {
+  const group = new THREE.Group();
+  const geo = new THREE.IcosahedronGeometry(1, 1);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.cloud,
+    roughness: 1,
+    transparent: true,
+    opacity: 0.92,
+    flatShading: false,
+  });
+  for (let c = 0; c < 11; c++) {
+    const cloud = new THREE.Group();
+    const puffs = 3 + Math.floor(hash2(c, 71) * 3);
+    for (let p = 0; p < puffs; p++) {
+      const puff = new THREE.Mesh(geo, mat);
+      const s = 2.2 + hash2(c * 10 + p, 3) * 2.6;
+      puff.position.set(p * 2.6 - puffs, (hash2(c * 10 + p, 5) - 0.5) * 1.2, (hash2(c * 10 + p, 7) - 0.5) * 2.5);
+      puff.scale.set(s, s * 0.55, s * 0.8);
+      cloud.add(puff);
+    }
+    cloud.position.set(
+      (hash2(c, 11) - 0.5) * 300,
+      26 + hash2(c, 13) * 9,
+      (hash2(c, 17) - 0.5) * 260,
+    );
+    group.add(cloud);
+  }
+  return group;
+}
+
+// ================================================================================
+// plane, contrail, signs
+// ================================================================================
+
+function buildPlane(): { plane: THREE.Group; propeller: THREE.Group } {
+  const plane = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: COLORS.planeBody, roughness: 0.55 });
+  const wingMat = new THREE.MeshStandardMaterial({ color: COLORS.planeWing, roughness: 0.6 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: COLORS.planeDark, roughness: 0.5 });
+
+  // smooth capsule fuselage, nose towards +Z
+  const fuselage = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.9, 6, 12), bodyMat);
+  fuselage.rotation.x = Math.PI / 2;
+  fuselage.castShadow = true;
+  plane.add(fuselage);
+
+  // canopy
+  const canopy = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xbfe0f2, roughness: 0.15, metalness: 0.35 }),
+  );
+  canopy.scale.set(0.85, 0.7, 1.15);
+  canopy.position.set(0, 0.38, 0.15);
+  plane.add(canopy);
+
+  // main wing with red tips
+  const wing = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.1, 1.05), wingMat);
+  wing.position.set(0, 0.14, 0.1);
+  wing.castShadow = true;
+  plane.add(wing);
+  [-2.45, 2.45].forEach((x) => {
+    const tip = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.11, 1.05), bodyMat);
+    tip.position.set(x, 0.14, 0.1);
+    plane.add(tip);
+  });
+
+  // tail
+  const stabilizer = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.08, 0.6), wingMat);
+  stabilizer.position.set(0, 0.1, -1.45);
+  plane.add(stabilizer);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.75, 0.62), bodyMat);
+  fin.position.set(0, 0.45, -1.45);
+  fin.castShadow = true;
+  plane.add(fin);
+
+  // engine + propeller
+  const cowl = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.3, 12), darkMat);
+  cowl.rotation.x = Math.PI / 2;
+  cowl.position.z = 1.42;
+  plane.add(cowl);
+  const propeller = new THREE.Group();
+  for (const rot of [0, Math.PI / 2]) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.5, 0.04), darkMat);
+    blade.rotation.z = rot;
+    propeller.add(blade);
+  }
+  propeller.position.z = 1.62;
+  plane.add(propeller);
+
+  // fixed landing gear
+  [-0.55, 0.55].forEach((x) => {
+    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 6), darkMat);
+    strut.position.set(x, -0.5, 0.35);
+    plane.add(strut);
+    const wheel = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), darkMat);
+    wheel.scale.set(0.55, 1, 1);
+    wheel.position.set(x, -0.75, 0.35);
+    plane.add(wheel);
+  });
+
+  return { plane, propeller };
+}
+
+/** Short fading wingtip contrail, like the real thing. */
+class Contrail {
+  private readonly MAX = 90;
+  private points: THREE.Vector3[] = [];
+  private geometry = new THREE.BufferGeometry();
+  private positions = new Float32Array(this.MAX * 3);
+
+  constructor(scene: THREE.Scene, fadeTo: number) {
+    const colors = new Float32Array(this.MAX * 3);
+    const white = new THREE.Color(0xffffff);
+    const sky = new THREE.Color(fadeTo);
+    const c = new THREE.Color();
+    for (let i = 0; i < this.MAX; i++) {
+      // newest point is white, the tail dissolves into the sky
+      c.copy(white).lerp(sky, Math.pow(i / (this.MAX - 1), 0.7));
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+    }
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+    this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    this.geometry.setDrawRange(0, 0);
+    const line = new THREE.Line(
+      this.geometry,
+      new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85 }),
+    );
+    line.frustumCulled = false;
+    scene.add(line);
+  }
+
+  push(point: THREE.Vector3): void {
+    this.points.unshift(point.clone());
+    if (this.points.length > this.MAX) this.points.pop();
+    for (let i = 0; i < this.points.length; i++) {
+      const p = this.points[i]!;
+      this.positions[i * 3] = p.x;
+      this.positions[i * 3 + 1] = p.y;
+      this.positions[i * 3 + 2] = p.z;
+    }
+    this.geometry.setDrawRange(0, this.points.length);
+    (this.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+  }
+}
+
+function buildFloatingSign(project: ProjectSign): THREE.Group {
+  const group = new THREE.Group();
+  const texture = makePanelTexture(project);
+  const panelGeo = new THREE.PlaneGeometry(7.4, 3.05);
+
+  // two back-to-back faces so the sign reads from both directions
+  [1, -1].forEach((side) => {
+    const face = new THREE.Mesh(panelGeo, new THREE.MeshBasicMaterial({ map: texture }));
+    face.position.z = side * 0.05;
+    face.rotation.y = side === 1 ? 0 : Math.PI;
+    group.add(face);
+  });
+
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(7.7, 3.35, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.4 }),
+  );
+  group.add(frame);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(4.7, 0.1, 10, 48),
+    new THREE.MeshBasicMaterial({ color: 0x8b85f4, transparent: true, opacity: 0.75 }),
+  );
+  ring.name = 'ring';
+  group.add(ring);
+
+  // soft light beam anchoring the sign to the ground
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.35, 0.9, 26, 10, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0x8b85f4,
+      transparent: true,
+      opacity: 0.16,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  beam.position.y = -13;
+  group.add(beam);
+
+  return group;
+}
+
+function makePanelTexture(project: ProjectSign): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
   canvas.height = 424;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = palette.panel;
+  ctx.fillStyle = COLORS.panel;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = palette.panelAccent;
-  ctx.lineWidth = 10;
-  ctx.strokeRect(14, 14, canvas.width - 28, canvas.height - 28);
+  ctx.fillStyle = COLORS.panelAccent;
+  ctx.fillRect(0, 0, canvas.width, 26);
 
-  ctx.fillStyle = palette.panelAccent;
-  ctx.font = '600 44px ui-monospace, monospace';
-  ctx.fillText(String(project.year), 60, 110);
+  ctx.fillStyle = COLORS.panelAccent;
+  ctx.font = '600 46px ui-monospace, monospace';
+  ctx.fillText(String(project.year), 62, 120);
 
-  ctx.fillStyle = palette.panelText;
-  ctx.font = 'bold 72px system-ui, sans-serif';
-  wrapText(ctx, project.title, 60, 210, canvas.width - 120, 84);
+  ctx.fillStyle = COLORS.panelText;
+  ctx.font = 'bold 78px system-ui, sans-serif';
+  wrapText(ctx, project.title, 62, 218, canvas.width - 124, 90);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;
@@ -398,60 +925,43 @@ function wrapText(
   ctx.fillText(line, x, y);
 }
 
-function scatterNature(scene: THREE.Scene, palette: Palette) {
-  const trunkMaterial = new THREE.MeshStandardMaterial({ color: palette.trunk, flatShading: true });
-  const rockMaterial = new THREE.MeshStandardMaterial({ color: palette.rock, flatShading: true });
-  const leafMaterials = palette.leaves.map(
-    (color) => new THREE.MeshStandardMaterial({ color, flatShading: true }),
-  );
-
-  for (let i = 0; i < 46; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    // keep the center and the signpost ring clear
-    const radius = 32 + Math.random() * (WORLD_RADIUS - 38);
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-
-    if (Math.random() < 0.72) {
-      const tree = new THREE.Group();
-      const height = 1.4 + Math.random() * 1.4;
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, height, 6), trunkMaterial);
-      trunk.position.y = height / 2;
-      trunk.castShadow = true;
-      tree.add(trunk);
-      const size = 1.1 + Math.random() * 1.3;
-      const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(size, size * 2.1, 6),
-        leafMaterials[Math.floor(Math.random() * leafMaterials.length)],
-      );
-      crown.position.y = height + size * 0.9;
-      crown.castShadow = true;
-      tree.add(crown);
-      tree.position.set(x, 0, z);
-      tree.rotation.y = Math.random() * Math.PI;
-      scene.add(tree);
-    } else {
-      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.7, 0), rockMaterial);
-      rock.position.set(x, 0.3, z);
-      rock.rotation.set(Math.random(), Math.random(), Math.random());
-      rock.castShadow = true;
-      scene.add(rock);
-    }
+/** Gradient sky sphere: horizon glow fading into the zenith colour. */
+function buildSkyDome(topHex: number, horizonHex: number): THREE.Mesh {
+  const geometry = new THREE.SphereGeometry(460, 32, 24);
+  const top = new THREE.Color(topHex);
+  const horizon = new THREE.Color(horizonHex);
+  const pos = geometry.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const t = smoothstep(-0.04, 0.38, pos.getY(i) / 460);
+    c.copy(horizon).lerp(top, t);
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
   }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }),
+  );
 }
 
 function buildStars(): THREE.Points {
-  const count = 400;
+  const count = 450;
   const positions = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    const radius = 130 + Math.random() * 60;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.random() * Math.PI * 0.45;
+    const radius = 300 + hash2(i, 1) * 120;
+    const theta = hash2(i, 2) * Math.PI * 2;
+    const phi = hash2(i, 3) * Math.PI * 0.45;
     positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
     positions[i * 3 + 1] = radius * Math.cos(phi);
     positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  return new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xbfc6ff, size: 0.7, sizeAttenuation: true }));
+  return new THREE.Points(
+    geometry,
+    new THREE.PointsMaterial({ color: 0xffe8d0, size: 1.1, sizeAttenuation: true }),
+  );
 }

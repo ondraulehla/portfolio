@@ -62,10 +62,10 @@ const en = {
 
   'playground.title': '3D Playground',
   'playground.description':
-    'A small interactive 3D world. Drive around, discover my projects — built with Three.js.',
-  'playground.enter': 'Start the engine',
+    'A small interactive 3D world. Take off, fly over the island and discover my projects — built with Three.js.',
+  'playground.enter': 'Take off',
   'playground.loading': 'Loading world…',
-  'playground.controls': 'Drive with WASD or arrow keys',
+  'playground.controls': '←→ turn · ↑↓ climb & dive (WASD works too)',
   'playground.enterProject': 'to open project',
   'playground.pressEnter': 'Press Enter',
   'playground.fallback.motion':
@@ -148,10 +148,10 @@ const cs = {
 
   'playground.title': '3D Playground',
   'playground.description':
-    'Malý interaktivní 3D svět. Projeďte se a objevte mé projekty — postaveno na Three.js.',
-  'playground.enter': 'Nastartovat motor',
+    'Malý interaktivní 3D svět. Vzlétněte, prolétněte se nad ostrovem a objevte mé projekty — postaveno na Three.js.',
+  'playground.enter': 'Vzlétnout',
   'playground.loading': 'Načítám svět…',
-  'playground.controls': 'Ovládejte pomocí WASD nebo šipek',
+  'playground.controls': '←→ zatáčení · ↑↓ stoupání a klesání (funguje i WASD)',
   'playground.enterProject': 'pro otevření projektu',
   'playground.pressEnter': 'Stiskněte Enter',
   'playground.fallback.motion':
