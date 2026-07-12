@@ -48,8 +48,8 @@ export interface CV {
 }
 
 // ============================================================================
-// TODO(Ondřej): PLACEHOLDER DATA — replace every entry below with real data.
-// The structure is final; only the values need to change.
+// Real data. A few dates are approximate — search "CONFIRM" to verify before
+// sending the PDF anywhere.
 // ============================================================================
 export const cv: CV = {
   profile: {
@@ -64,18 +64,18 @@ export const cv: CV = {
     },
     bio: [
       {
-        en: 'I work across the whole product lifecycle: I sit down with clients, analyse their needs, propose an architecture, and then build it — frontend, backend and infrastructure alike. Lately my focus has shifted heavily towards AI engineering: LLM-powered features, agentic workflows and retrieval pipelines that actually make it to production.',
-        cs: 'Pracuji napříč celým životním cyklem produktu: sednu si s klientem, zanalyzuji jeho potřeby, navrhnu architekturu a pak ji postavím — frontend, backend i infrastrukturu. V poslední době se intenzivně věnuji AI inženýrství: funkcím postaveným na LLM, agentním workflow a retrieval pipeline, které se skutečně dostanou do produkce.',
+        en: "I'm a fullstack developer at NetGenium, where over the last five years I've grown into the person who leads how AI gets built into our products and our own workflow. I work across the whole lifecycle — sitting down with clients, analysing their needs, designing the solution, and then shipping it across frontend, backend and infrastructure.",
+        cs: 'Jsem fullstack vývojář v NetGeniu, kde jsem se za posledních pět let vypracoval na člověka, který vede zavádění AI do našich produktů i vlastního fungování. Pracuji napříč celým životním cyklem — sednu si s klientem, zanalyzuji potřeby, navrhnu řešení a pak ho dodám na frontendu, backendu i infrastruktuře.',
       },
       {
-        en: 'What sets me apart is the combination of engineering depth and client-facing work — I write the analysis, defend it in the meeting room, and then deliver the code that makes it real.',
-        cs: 'Odlišuje mě kombinace inženýrské hloubky a práce s klienty — napíšu analýzu, obhájím ji na schůzce a pak dodám kód, který ji promění ve skutečnost.',
+        en: 'Lately my focus is AI engineering: RAG pipelines over real client implementations, MCP servers, and automating processes that used to eat entire days — from customs clearance for the Czech Post to resolving client tickets, where the AI has the concrete codebase on hand and can find and fix the reported issue itself.',
+        cs: 'V poslední době se soustředím na AI inženýrství: RAG pipeline nad reálnými implementacemi klientů, MCP servery a automatizaci procesů, které dřív zabraly celé dny — od proclení pro Českou poštu po řešení klientských ticketů, kde má AI po ruce konkrétní kód a dokáže nahlášený problém sama najít a opravit.',
       },
     ],
     facts: [
       { label: { en: 'Location', cs: 'Lokalita' }, value: { en: 'Prague, CZ', cs: 'Praha, ČR' } },
       { label: { en: 'Focus', cs: 'Zaměření' }, value: { en: 'Fullstack · AI', cs: 'Fullstack · AI' } },
-      { label: { en: 'Experience', cs: 'Praxe' }, value: { en: '3+ years', cs: '3+ roky' } },
+      { label: { en: 'Experience', cs: 'Praxe' }, value: { en: '5+ years', cs: '5+ let' } },
     ],
   },
 
@@ -83,58 +83,110 @@ export const cv: CV = {
     {
       company: 'NetGenium',
       url: 'https://www.netgenium.com',
-      role: { en: 'Fullstack Developer & Analyst', cs: 'Fullstack vývojář & analytik' },
-      start: '2023-01',
+      role: { en: 'Fullstack Developer & AI Engineer', cs: 'Fullstack vývojář & AI inženýr' },
+      start: '2021-01', // CONFIRM start month
       summary: {
-        en: 'Development of enterprise applications on a low-code platform, client analyses and custom integrations.',
-        cs: 'Vývoj podnikových aplikací na low-code platformě, analýzy pro klienty a integrace na míru.',
+        en: 'Enterprise applications on our low-code platform, client delivery, and leading the integration of AI across the company’s products and internal workflow.',
+        cs: 'Podnikové aplikace na naší low-code platformě, dodávky pro klienty a vedení integrace AI napříč produkty firmy i interním fungováním.',
       },
       highlights: [
         {
-          en: 'Led analysis and delivery of smaller client projects end-to-end — requirements, data model, implementation, handover.',
-          cs: 'Vedl jsem analýzu a dodávku menších klientských projektů end-to-end — požadavky, datový model, implementace, předání.',
+          en: 'Led the end-to-end integration of AI into NetGenium’s systems, from data and retrieval to the tools and interfaces developers and clients use.',
+          cs: 'Vedl jsem integraci AI do systémů NetGenia end-to-end — od dat a retrievalu po nástroje a rozhraní, která používají vývojáři i klienti.',
         },
         {
-          en: 'Designed and built AI-assisted features integrating LLM APIs into business workflows.',
-          cs: 'Navrhl a postavil jsem AI funkce integrující LLM API do firemních procesů.',
+          en: 'Built RAG pipelines for the LLMs we use with clients, grounding answers in each client’s real implementation so the models reason over actual code and data.',
+          cs: 'Postavil jsem RAG pipeline pro LLM, které používáme u klientů — odpovědi ukotvené v reálné implementaci daného klienta, takže modely pracují se skutečným kódem a daty.',
+        },
+        {
+          en: 'Automated internal processes with AI: generating applications in our NetGenium framework, and near-automatic client-ticket resolution — the AI has the concrete implementation on hand, so it locates the reported problem and fixes it.',
+          cs: 'Zautomatizoval jsem interní procesy pomocí AI: generování aplikací v našem frameworku NetGenium a téměř automatické řešení klientských ticketů — AI má po ruce konkrétní implementaci, takže nahlášený problém najde a opraví.',
+        },
+        {
+          en: 'Automated the customs-clearance process for the Czech Post and built/customized their PostShop (postshop.cz) storefront.',
+          cs: 'Zautomatizoval jsem proces proclení pro Českou poštu a upravoval jejich e-shop PostShop (postshop.cz).',
+        },
+        {
+          en: 'Built internal MCP servers and database-backed MCP servers for clients; currently building the new Hello.cz website together with a partner studio.',
+          cs: 'Postavil jsem interní MCP servery i databázové MCP servery pro klienty; aktuálně s partnerským studiem stavím nový web Hello.cz.',
         },
       ],
-      tech: ['TypeScript', 'React', 'Node.js', 'SQL', 'Claude API'],
+      tech: ['TypeScript', 'JavaScript', 'C#', 'SQL', 'React', 'Claude API', 'RAG', 'MCP'],
+    },
+    {
+      company: 'TU Wien',
+      url: 'https://www.tuwien.at',
+      role: { en: 'Research Internship (exchange)', cs: 'Výzkumná stáž (výjezd)' },
+      start: '2023-02', // CONFIRM dates
+      end: '2023-06',
+      summary: {
+        en: 'Research internship in Vienna during an exchange stay at TU Wien.',
+        cs: 'Výzkumná stáž ve Vídni během studijního výjezdu na TU Wien.',
+      },
+      highlights: [
+        {
+          en: 'International research experience alongside a demanding CS program.',
+          cs: 'Mezinárodní výzkumná zkušenost vedle náročného studia informatiky.',
+        },
+      ],
+      tech: [],
+    },
+    {
+      company: 'Health centre',
+      role: { en: 'IT Administrator', cs: 'IT administrátor' },
+      start: '2018-01',
+      end: '2020-12',
+      summary: {
+        en: 'IT administration and support during university studies.',
+        cs: 'IT administrace a podpora během studia na vysoké škole.',
+      },
+      highlights: [],
+      tech: [],
     },
   ],
 
   education: [
     {
-      school: 'FIT — Faculty of Information Technology',
+      school: 'Czech Technical University — FIT',
       degree: {
-        en: 'B.Sc. in Computer Science (placeholder)',
-        cs: 'Bc. v oboru informatika (placeholder)',
+        en: 'Ing. (Master’s), Software Engineering',
+        cs: 'Ing., Softwarové inženýrství',
       },
-      start: '2019-09',
-      end: '2023-06',
+      start: '2018-09',
+      end: '2024-06', // CONFIRM graduation month
       note: {
-        en: 'TODO: real school, field, thesis topic.',
-        cs: 'TODO: skutečná škola, obor, téma práce.',
+        en: 'Included a research internship / exchange semester at TU Wien, Vienna.',
+        cs: 'Součástí byla výzkumná stáž / výjezdový semestr na TU Wien ve Vídni.',
       },
     },
   ],
 
   skills: [
     {
-      category: { en: 'Frontend', cs: 'Frontend' },
-      items: ['TypeScript', 'React', 'Astro', 'Tailwind CSS', 'GSAP', 'Three.js'],
+      category: { en: 'Languages', cs: 'Jazyky' },
+      items: ['TypeScript', 'JavaScript', 'C#', 'C/C++', 'Java', 'SQL'],
     },
     {
-      category: { en: 'Backend', cs: 'Backend' },
-      items: ['Node.js', 'Hono', 'tRPC', 'PostgreSQL', 'Drizzle ORM', 'Redis'],
+      category: { en: 'Frontend', cs: 'Frontend' },
+      items: ['React', 'Vue', 'Astro', 'Tailwind CSS', 'HTML/CSS'],
     },
     {
       category: { en: 'AI Engineering', cs: 'AI inženýrství' },
-      items: ['Claude API', 'Agentic workflows', 'RAG pipelines', 'Prompt engineering', 'Evals'],
+      items: [
+        { en: 'RAG pipelines', cs: 'RAG pipeline' },
+        'MCP servers',
+        'Claude API',
+        { en: 'Agentic workflows', cs: 'Agentní workflow' },
+        { en: 'Prompt engineering', cs: 'Prompt engineering' },
+      ],
+    },
+    {
+      category: { en: 'Backend & Data', cs: 'Backend & data' },
+      items: ['Node.js', '.NET', 'PostgreSQL', 'Oracle', 'Redis'],
     },
     {
       category: { en: 'Infrastructure', cs: 'Infrastruktura' },
-      items: ['Docker', 'Kubernetes', 'Terraform', 'CI/CD', 'Vercel'],
+      items: ['Docker', 'Kubernetes', 'Git', 'CI/CD'],
     },
     {
       category: { en: 'Client work', cs: 'Práce s klienty' },
@@ -149,8 +201,12 @@ export const cv: CV = {
 
   languages: [
     { name: { en: 'Czech', cs: 'Čeština' }, level: { en: 'Native', cs: 'Rodilý mluvčí' } },
-    { name: { en: 'English', cs: 'Angličtina' }, level: { en: 'Professional (C1)', cs: 'Profesionální (C1)' } },
-    { name: { en: 'German', cs: 'Němčina' }, level: { en: 'Basic (A2)', cs: 'Základní (A2)' } },
+    {
+      name: { en: 'English', cs: 'Angličtina' },
+      level: { en: 'C1 · TOEFL iBT 101/120', cs: 'C1 · TOEFL iBT 101/120' },
+    },
+    { name: { en: 'French', cs: 'Francouzština' }, level: { en: 'Intermediate · B1', cs: 'Středně pokročilá · B1' } },
+    { name: { en: 'German', cs: 'Němčina' }, level: { en: 'Basic · A2', cs: 'Základní · A2' } },
   ],
 };
 
