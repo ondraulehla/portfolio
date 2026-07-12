@@ -6,31 +6,34 @@
    Semantic design tokens. Raw values live on :root / [data-theme='dark'];
    @theme inline maps them into Tailwind utilities (bg-surface, text-ink, …).
 --------------------------------------------------------------------------- */
+/* Editorial-technical palette: warm bone paper + ink, one vermilion accent.
+   Warm hues (60–75 for neutrals, 32 for accent) deliberately avoid the cold
+   indigo/violet default that reads as "generated". */
 :root {
-  --surface: oklch(98.6% 0.003 95);
-  --panel: oklch(96.5% 0.004 95);
-  --ink: oklch(22% 0.02 272);
-  --ink-muted: oklch(48% 0.015 272);
-  --ink-faint: oklch(62% 0.012 272);
-  --line: oklch(90% 0.006 272);
-  --accent: oklch(51% 0.21 275);
-  --accent-strong: oklch(44% 0.22 275);
-  --accent-soft: oklch(94% 0.035 275);
-  --glow: oklch(51% 0.21 275 / 0.12);
+  --surface: oklch(98.2% 0.008 83);
+  --panel: oklch(95.8% 0.011 83);
+  --ink: oklch(21% 0.012 55);
+  --ink-muted: oklch(44% 0.014 55);
+  --ink-faint: oklch(58% 0.012 60);
+  --line: oklch(88.5% 0.012 80);
+  --accent: oklch(55% 0.2 33);
+  --accent-strong: oklch(47% 0.2 32);
+  --accent-soft: oklch(93% 0.045 55);
+  --glow: oklch(55% 0.2 33 / 0.1);
   color-scheme: light;
 }
 
 [data-theme='dark'] {
-  --surface: oklch(17.5% 0.015 272);
-  --panel: oklch(21.5% 0.018 272);
-  --ink: oklch(93.5% 0.008 272);
-  --ink-muted: oklch(70% 0.014 272);
-  --ink-faint: oklch(56% 0.014 272);
-  --line: oklch(30% 0.018 272);
-  --accent: oklch(74% 0.15 278);
-  --accent-strong: oklch(80% 0.13 278);
-  --accent-soft: oklch(28% 0.06 278);
-  --glow: oklch(74% 0.15 278 / 0.14);
+  --surface: oklch(17% 0.008 65);
+  --panel: oklch(21% 0.01 65);
+  --ink: oklch(93% 0.012 80);
+  --ink-muted: oklch(70% 0.016 70);
+  --ink-faint: oklch(55% 0.016 65);
+  --line: oklch(29% 0.012 65);
+  --accent: oklch(70% 0.17 38);
+  --accent-strong: oklch(77% 0.15 45);
+  --accent-soft: oklch(27% 0.05 45);
+  --glow: oklch(70% 0.17 38 / 0.12);
   color-scheme: dark;
 }
 

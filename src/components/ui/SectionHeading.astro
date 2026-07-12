@@ -3,15 +3,20 @@ interface Props {
   id?: string;
   kicker: string;
   heading: string;
+  /** Two-digit section index, e.g. "01" — the editorial through-line. */
+  index?: string;
 }
-const { id, kicker, heading } = Astro.props;
+const { id, kicker, heading, index } = Astro.props;
 ---
 
-<div class="mb-10" data-reveal>
-  <p class="text-accent mb-2 font-mono text-xs font-semibold tracking-[0.2em] uppercase">
-    {kicker}
-  </p>
-  <h2 {id} class="font-display text-ink text-3xl font-bold tracking-tight sm:text-4xl">
+<div class="border-line mb-12 border-t pt-5" data-reveal>
+  <div class="flex items-baseline justify-between gap-4">
+    <p class="text-accent font-mono text-xs font-semibold tracking-[0.2em] uppercase">
+      {kicker}
+    </p>
+    {index && <span class="text-ink-faint/70 font-mono text-xs tracking-widest">{index}</span>}
+  </div>
+  <h2 {id} class="font-display text-ink mt-3 text-3xl font-bold tracking-[-0.02em] sm:text-4xl">
     {heading}
   </h2>
 </div>

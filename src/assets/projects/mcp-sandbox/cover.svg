@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b3d2e"/>
+      <stop offset="1" stop-color="#0d7a54"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.5">
+    <rect x="120" y="250" width="200" height="120" rx="12"/>
+    <rect x="880" y="250" width="200" height="120" rx="12" stroke-dasharray="8 7"/>
+    <path d="M320 310 H520 M680 310 H880" stroke-width="3"/>
+    <circle cx="600" cy="310" r="70"/>
+    <path d="M572 310 L594 332 L634 288" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g font-family="monospace" font-size="24" fill="#ffffff" fill-opacity="0.85">
+    <text x="150" y="230">MCP client</text>
+    <text x="905" y="230">E2B sandbox</text>
+    <text x="545" y="420">stdio bridge</text>
+  </g>
+  <text x="90" y="612" font-family="monospace" font-size="34" fill="#ffffff" fill-opacity="0.9">mcp-sandbox · isolate untrusted MCP servers</text>
+</svg>
