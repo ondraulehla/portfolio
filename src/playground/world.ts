@@ -35,13 +35,18 @@ export const WORLD = {
   ],
 
   /**
-   * Where the floating project billboards hover (in project order).
-   * More projects than spots wrap around to the first spot.
+   * Where the floating project billboards hover (in project order). Give each
+   * project its own spot — if there are more projects than spots they wrap and
+   * overlap (which z-fights). Spread around the island, clear of the town,
+   * mountains and river so each sign stands alone.
    */
   signSpots: [
-    { x: -15, z: -68 },
-    { x: 72, z: -8 },
-    { x: -8, z: 76 },
+    { x: -18, z: -70 },
+    { x: 68, z: -14 },
+    { x: -10, z: 78 },
+    { x: 40, z: -60 },
+    { x: -66, z: 46 },
+    { x: 74, z: 40 },
   ],
 
   /** Forests: lower densityThreshold (0..1) → more/larger woods. */
