@@ -1,0 +1,65 @@
+---
+title: 'Neural Networks in Virtual Reality'
+summary: 'My master’s thesis: a web app that configures a neural network and a metaverse world that reads those parameters and builds a functional 3D model of the network – a “3D brain”.'
+role: 'Master’s Thesis · CTU FIT'
+year: 2025
+order: 4
+featured: true
+tech: ['TypeScript', 'React', 'Three.js', 'Neural Networks', 'Resonite', 'WebGL']
+problem: 'Neural networks are taught as flat diagrams – hard to feel the architecture, the weights, or how a signal actually propagates through the layers.'
+solution: 'A web application that encodes a network’s architecture and parameters, paired with an immersive 3D/VR environment that decodes them and generates a living 3D model used to drive objects in the scene.'
+outcome: 'An end-to-end system connecting web technology, neural networks and virtual reality – and an interactive version you can run right here on this site.'
+cover: '@/assets/projects/neural-vr/cover.svg'
+links:
+  live: '/en/neural-network'
+---
+
+## Context
+
+This is my master’s thesis at the Czech Technical University, Faculty of
+Information Technology (2025), supervised by doc. Ing. Mgr. Petr Klán, CSc.
+The brief: build a system that models neural networks in virtual reality – a
+web app encodes the network’s parameters, and a visual program in a 3D
+metaverse reads that data and constructs a working 3D model of the network
+(a “3D brain”) that can control objects in the virtual world.
+
+## Problem
+
+Neural networks are almost always presented as static, flat diagrams. That
+representation hides the things that actually build intuition: the shape of the
+architecture, the sign and magnitude of individual weights, and how an input
+signal propagates and transforms layer by layer. It’s especially unintuitive
+for newcomers.
+
+## Solution
+
+The thesis has two halves that talk to each other:
+
+- **A web application** – the interface for defining a network: its layers,
+  neurons, activation functions and weights. It runs the forward pass and
+  backpropagation, generates datasets, and *encodes* the whole network into a
+  compact description.
+- **A virtual 3D world** built on the [Resonite](https://resonite.com)
+  metaverse platform using visual programming. It reads and decodes the web
+  data and automatically **generates a 3D model** of the network in an
+  immersive space, where the model becomes a control element for scene objects.
+
+Together they demonstrate automated generation of a neural-network model from
+parameters set in the browser – a bridge between web technologies, AI and VR.
+
+## Outcome
+
+- A complete pipeline: configure in the browser → encode → generate the network
+  in VR → use it to drive the 3D scene.
+- The forward pass, backprop and dataset generation are all real, running code.
+- **Revived on this site:** the original visualization site went offline, so I
+  rebuilt its interactive core right here – [open the Neural Network Lab](/en/neural-network)
+  to train a network live and watch a 3D model of it light up with its own
+  activations.
+
+## What I learned
+
+Making something *legible* is its own engineering problem. Getting a network to
+train is the easy half; turning weights, activations and signal flow into
+something a person can look at and immediately understand – in 2D and in 3D –
+took more design iteration than the math ever did.

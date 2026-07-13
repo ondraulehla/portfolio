@@ -19,7 +19,8 @@ const projects = defineCollection({
       links: z
         .object({
           repo: z.string().url().optional(),
-          live: z.string().url().optional(),
+          // live may be an external URL or an on-site path (e.g. /en/neural-network)
+          live: z.string().optional(),
         })
         .default({}),
     }),

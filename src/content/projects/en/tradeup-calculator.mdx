@@ -1,12 +1,12 @@
 ---
 title: 'Trade-up Profit Calculator'
-summary: 'A data pipeline and calculator that finds profitable CS2 trade-up contracts — market data ingestion, probability model and a tested TypeScript core.'
+summary: 'A data pipeline and calculator that finds profitable CS2 trade-up contracts – market data ingestion, probability model and a tested TypeScript core.'
 role: 'Solo Developer'
 year: 2024
-order: 6
+order: 7
 featured: true
 tech: ['TypeScript', 'Node.js', 'SQLite', 'Vitest', 'REST APIs']
-problem: 'Trade-up contracts hide a genuine expected-value calculation behind fluctuating market prices — doing it by hand is slow and error-prone.'
+problem: 'Trade-up contracts hide a genuine expected-value calculation behind fluctuating market prices – doing it by hand is slow and error-prone.'
 solution: 'An automated pipeline that ingests market prices, models outcome probabilities and float values, and ranks every possible contract by expected profit.'
 outcome: 'Evaluates thousands of contract combinations in seconds; the probability core is fully unit-tested against known outcomes.'
 cover: '@/assets/projects/tradeup-calculator/cover.svg'
@@ -19,8 +19,8 @@ links:
 ## Context
 
 In Counter-Strike 2, a *trade-up contract* converts ten lower-tier skins into one random
-higher-tier skin. Whether that gamble is profitable is a pure math problem — expected value
-over outcome probabilities and current market prices — but the inputs shift constantly.
+higher-tier skin. Whether that gamble is profitable is a pure math problem – expected value
+over outcome probabilities and current market prices – but the inputs shift constantly.
 
 ## Problem
 
@@ -32,12 +32,12 @@ the interesting opportunities live in the long tail.
 
 A TypeScript pipeline in three stages:
 
-- **Ingestion** — market price snapshots pulled into SQLite with rate-limit-aware fetching
-- **Model** — outcome probabilities per collection, float value propagation, fee-adjusted pricing
-- **Ranking** — exhaustive search over viable input pools, ranked by expected profit and variance
+- **Ingestion** – market price snapshots pulled into SQLite with rate-limit-aware fetching
+- **Model** – outcome probabilities per collection, float value propagation, fee-adjusted pricing
+- **Ranking** – exhaustive search over viable input pools, ranked by expected profit and variance
 
 The probability model is the heart of it, so it's covered by **Vitest unit tests** against
-hand-verified contract outcomes — refactoring the math is safe.
+hand-verified contract outcomes – refactoring the math is safe.
 
 ## Outcome
 
@@ -47,5 +47,5 @@ hand-verified contract outcomes — refactoring the math is safe.
 
 ## What I learned
 
-Data quality beats model sophistication — most "profitable" contracts turned out to be
+Data quality beats model sophistication – most "profitable" contracts turned out to be
 stale-price artifacts until ingestion got strict about freshness.

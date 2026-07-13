@@ -24,7 +24,7 @@ const t = useTranslations(locale);
             aria-hidden="true"
           />
           <p class="text-ink-faint font-mono text-xs tracking-wide">
-            {formatMonth(job.start, locale)} — {job.end ? formatMonth(job.end, locale) : t('experience.present')}
+            {formatMonth(job.start, locale)} – {job.end ? formatMonth(job.end, locale) : t('experience.present')}
           </p>
           <h3 class="font-display text-ink mt-1.5 text-xl font-semibold">
             {job.role[locale]}

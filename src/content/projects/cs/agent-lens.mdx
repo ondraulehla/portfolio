@@ -1,14 +1,14 @@
 ---
 title: 'agent-lens'
-summary: 'Přetáhněte transcript agentní session do prohlížeče a uvidíte, co se skutečně stalo — timeline tool-callů, kde se strávil čas, tokeny, cena a chyby. 100% na straně klienta.'
+summary: 'Přetáhněte transcript agentní session do prohlížeče a uvidíte, co se skutečně stalo – timeline tool-callů, kde se strávil čas, tokeny, cena a chyby. 100% na straně klienta.'
 role: 'Autor & maintainer'
 year: 2026
 order: 3
 featured: true
 tech: ['React', 'TypeScript', 'Vite', 'Vitest', 'Data Visualization']
-problem: 'Agentní sessions jsou dlouhé, větvené a drahé — a důkazy o tom, co bylo pomalé, zbytečné nebo rozbité, jsou zahrabané ve stovkách řádků surového JSONL, které nikdo nečte.'
+problem: 'Agentní sessions jsou dlouhé, větvené a drahé – a důkazy o tom, co bylo pomalé, zbytečné nebo rozbité, jsou zahrabané ve stovkách řádků surového JSONL, které nikdo nečte.'
 solution: 'Klientský vizualizér s tolerantním JSONL parserem: páruje tool cally s jejich výsledky, takže měří skutečné doby běhu, a session vykreslí jako přehlednou timeline se statistikami.'
-outcome: 'Pohled na 40 sekund nahradí čtení 400 řádků JSONu — a protože transcripty obsahují kód i tajemství, nic nikdy neopustí váš počítač.'
+outcome: 'Pohled na 40 sekund nahradí čtení 400 řádků JSONu – a protože transcripty obsahují kód i tajemství, nic nikdy neopustí váš počítač.'
 cover: '@/assets/projects/agent-lens/cover.svg'
 links:
   repo: 'https://github.com/ondraulehla/agent-lens'
@@ -16,43 +16,43 @@ links:
 
 ## Kontext
 
-AI agenty stavím a ladím denně. Nejužitečnější podklad pro debugging — transcript
-session — je zároveň ten nejhůř čitelný: JSONL zeď, kde se tool cally, jejich výsledky,
+AI agenty stavím a ladím denně. Nejužitečnější podklad pro debugging – transcript
+session – je zároveň ten nejhůř čitelný: JSONL zeď, kde se tool cally, jejich výsledky,
 účtování tokenů a chyby proplétají přes stovky řádků. Odpověď na jednoduché otázky jako
 *„který nástroj sežral čas?"* nebo *„kde to poprvé selhalo?"* znamenala scrollovat a grepovat.
 
 ## Problém
 
 Existující observability platformy chtějí trace nahrát k sobě do cloudu. Jenže agentní
-transcripty běžně obsahují proprietární kód, cesty k souborům a přihlašovací údaje —
+transcripty běžně obsahují proprietární kód, cesty k souborům a přihlašovací údaje –
 přesně ta data, která nechcete nikam posílat jen kvůli pohledu na timeline.
 
 ## Řešení
 
 **Plně klientská** React aplikace:
 
-- **Tolerantní parser** — soubory Claude Code sessions jako první třída, generické
+- **Tolerantní parser** – soubory Claude Code sessions jako první třída, generické
   `{role, content}` dumpy také; vadné řádky se přeskočí a nahlásí, timestampy jsou
   volitelné. Tool cally se párují s výsledky podle id, takže doby běhu jsou *změřené*,
   ne odhadnuté
-- **Timeline session** — každá událost umístěná v reálném čase session, obarvená podle
+- **Timeline session** – každá událost umístěná v reálném čase session, obarvená podle
   nástroje (validovaná colorblind-safe paleta), selhané cally s červeným prstencem,
   hover pro detaily
-- **Kde se strávil čas** — součty wall-clock času per nástroj, počty volání a selhání
-- **Statistické dlaždice** — délka, tahy, tokeny in/out a odhad ceny odvozený z modelu
+- **Kde se strávil čas** – součty wall-clock času per nástroj, počty volání a selhání
+- **Statistické dlaždice** – délka, tahy, tokeny in/out a odhad ceny odvozený z modelu
   uvedeného v transcriptu
-- **Inspektor událostí** — celá sekvence, rozbalitelná, vstupy nástrojů spárované s výsledky
+- **Inspektor událostí** – celá sekvence, rozbalitelná, vstupy nástrojů spárované s výsledky
 
 ## Výsledek
 
 - Sessions se dají skenovat: pomalý nástroj, první selhání i retry smyčka jsou vidět
   během sekund
-- Soukromí bez nahrávání už z principu — neexistuje backend, kam by data unikla
+- Soukromí bez nahrávání už z principu – neexistuje backend, kam by data unikla
 - Parser kryje samostatná testovací sada (poškozené řádky, nedokončené tool cally,
   chybějící timestampy, generické formáty)
 
 ## Co jsem se naučil
 
-Skutečná práce byl návrh pro nepřátelský vstup — debugovací nástroj, který spadne na
+Skutečná práce byl návrh pro nepřátelský vstup – debugovací nástroj, který spadne na
 přesně tom rozbitém transcriptu, který zrovna ladíte, je horší než k ničemu. Každá cesta
 parserem proto předpokládá, že data jsou rozbitá, dokud se neprokáže opak.

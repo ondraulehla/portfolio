@@ -19,7 +19,7 @@ const t = useTranslations(locale);
       cv.education.map((item) => (
         <article class="border-line rounded-2xl border p-6" data-reveal>
           <p class="text-ink-faint font-mono text-xs tracking-wide">
-            {formatMonth(item.start, locale)} — {item.end ? formatMonth(item.end, locale) : t('experience.present')}
+            {formatMonth(item.start, locale)} – {item.end ? formatMonth(item.end, locale) : t('experience.present')}
           </p>
           <h3 class="font-display text-ink mt-2 text-lg font-semibold">{item.school}</h3>
           <p class="text-ink-muted mt-1">{item.degree[locale]}</p>

@@ -1,0 +1,63 @@
+---
+title: 'Neuronové sítě ve virtuální realitě'
+summary: 'Moje diplomová práce: webová aplikace konfiguruje neuronovou síť a metaverse svět z těchto parametrů postaví funkční 3D model sítě – „3D mozek".'
+role: 'Diplomová práce · ČVUT FIT'
+year: 2025
+order: 4
+featured: true
+tech: ['TypeScript', 'React', 'Three.js', 'Neuronové sítě', 'Resonite', 'WebGL']
+problem: 'Neuronové sítě se učí jako ploché diagramy – je těžké vycítit architekturu, váhy nebo to, jak se signál skutečně šíří vrstvami.'
+solution: 'Webová aplikace, která kóduje architekturu a parametry sítě, spojená s imerzivním 3D/VR prostředím, které je dekóduje a vygeneruje živý 3D model řídící objekty ve scéně.'
+outcome: 'Ucelený systém propojující webové technologie, neuronové sítě a virtuální realitu – a interaktivní verze, kterou si spustíte přímo na tomto webu.'
+cover: '@/assets/projects/neural-vr/cover.svg'
+links:
+  live: '/cs/neural-network'
+---
+
+## Kontext
+
+Toto je moje diplomová práce na Českém vysokém učení technickém, Fakultě
+informačních technologií (2025), pod vedením doc. Ing. Mgr. Petra Klána, CSc.
+Zadání: vytvořit systém pro modelování neuronových sítí ve virtuální realitě –
+webová aplikace zakóduje parametry sítě a vizuální program v 3D metaverse tato
+data přečte a postaví funkční 3D model sítě („3D mozek"), který dokáže ovládat
+objekty ve virtuálním světě.
+
+## Problém
+
+Neuronové sítě se skoro vždy prezentují jako statické ploché diagramy. Tahle
+reprezentace skrývá právě to, co buduje intuici: tvar architektury, znaménko a
+velikost jednotlivých vah a to, jak se vstupní signál šíří a mění vrstvu po
+vrstvě. Pro začátečníky obzvlášť nenázorné.
+
+## Řešení
+
+Práce má dvě poloviny, které spolu komunikují:
+
+- **Webová aplikace** – rozhraní pro definici sítě: vrstvy, neurony, aktivační
+  funkce a váhy. Počítá forward pass i backpropagaci, generuje datasety a celou
+  síť *zakóduje* do kompaktního popisu.
+- **Virtuální 3D svět** postavený na platformě
+  [Resonite](https://resonite.com) pomocí vizuálního programování. Ten webová
+  data přečte, dekóduje a automaticky **vygeneruje 3D model** sítě v imerzivním
+  prostoru, kde se model stává řídicím prvkem objektů scény.
+
+Dohromady demonstrují automatické generování modelu neuronové sítě z parametrů
+zadaných v prohlížeči – most mezi webovými technologiemi, AI a VR.
+
+## Výsledek
+
+- Kompletní pipeline: konfigurace v prohlížeči → zakódování → vygenerování sítě
+  ve VR → její použití k řízení 3D scény.
+- Forward pass, backprop i generování datasetů je reálný, běžící kód.
+- **Oživeno na tomto webu:** původní vizualizační web přestal fungovat, tak
+  jsem jeho interaktivní jádro postavil znovu přímo sem –
+  [otevřete Laboratoř neuronových sítí](/cs/neural-network), natrénujte síť
+  naživo a sledujte, jak se její 3D model rozsvěcuje vlastními aktivacemi.
+
+## Co jsem se naučil
+
+Udělat něco *čitelným* je samostatný inženýrský problém. Rozběhat trénink je ta
+snazší polovina; proměnit váhy, aktivace a tok signálu v něco, na co se člověk
+podívá a hned tomu rozumí – ve 2D i 3D – vyžadovalo víc iterací návrhu než
+samotná matematika.

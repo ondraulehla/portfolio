@@ -1,0 +1,149 @@
+---
+import Base from '@/layouts/Base.astro';
+import { locales, type Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+
+export function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = useTranslations(locale);
+
+const datasets = [
+  ['circle', 'Circle'],
+  ['xor', 'XOR'],
+  ['spiral', 'Spiral'],
+  ['gaussian', 'Gaussian'],
+] as const;
+const activations = ['tanh', 'sigmoid', 'relu'] as const;
+const archs = [
+  ['2-6-1', 'Small'],
+  ['2-8-8-1', 'Medium'],
+  ['2-8-8-8-1', 'Deep'],
+] as const;
+---
+
+<Base {locale} title={`${t('nn.title')} – Ondřej Úlehla`} description={t('nn.intro')}>
+  <section class="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
+    <div class="border-line mb-10 border-t pt-5">
+      <p class="text-accent font-mono text-xs font-semibold tracking-[0.2em] uppercase">{t('nn.kicker')}</p>
+      <h1 class="font-display text-ink mt-3 text-3xl font-bold tracking-[-0.02em] sm:text-4xl">{t('nn.title')}</h1>
+      <p class="text-ink-muted mt-4 max-w-3xl leading-relaxed">{t('nn.intro')}</p>
+    </div>
+
+    <!-- controls -->
+    <div class="border-line mb-6 flex flex-wrap items-end gap-x-8 gap-y-4 rounded-xl border p-4">
+      <div>
+        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.dataset')}</p>
+        <div class="flex gap-1.5" role="group">
+          {
+            datasets.map(([value, label], i) => (
+              <button
+                type="button"
+                data-nn-dataset
+                data-value={value}
+                aria-pressed={i === 0 ? 'true' : 'false'}
+                class="nn-chip"
+              >
+                {label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div>
+        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.activation')}</p>
+        <div class="flex gap-1.5" role="group">
+          {
+            activations.map((value, i) => (
+              <button type="button" data-nn-activation data-value={value} aria-pressed={i === 0 ? 'true' : 'false'} class="nn-chip">
+                {value}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div>
+        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.architecture')}</p>
+        <div class="flex gap-1.5" role="group">
+          {
+            archs.map(([value, label], i) => (
+              <button type="button" data-nn-arch data-value={value} aria-pressed={i === 1 ? 'true' : 'false'} class="nn-chip">
+                {label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="ml-auto flex items-end gap-4">
+        <div class="text-ink-faint font-mono text-xs">
+          <div>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></div>
+          <div>{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
+        </div>
+        <button type="button" id="nn-toggle" class="nn-chip nn-chip-solid">{t('nn.pause')}</button>
+        <button type="button" id="nn-reset" class="nn-chip">{t('nn.reset')}</button>
+      </div>
+    </div>
+
+    <!-- canvases -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <figure class="border-line rounded-xl border p-3">
+        <canvas id="nn-surface" class="mx-auto block aspect-square w-full max-w-[520px] rounded-lg"></canvas>
+        <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.surface')}</figcaption>
+      </figure>
+      <figure class="border-line rounded-xl border p-3">
+        <canvas id="nn-3d" class="block aspect-square w-full rounded-lg"></canvas>
+        <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.model')}</figcaption>
+      </figure>
+    </div>
+    <p id="nn-webgl" class="text-ink-faint mt-4 text-sm" hidden>{t('nn.webgl')}</p>
+  </section>
+</Base>
+
+<style>
+  .nn-chip {
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font:
+      600 0.8rem/1 var(--font-sans);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nn-chip:hover {
+    color: var(--ink);
+    border-color: var(--ink-faint);
+  }
+  .nn-chip[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--surface);
+  }
+  .nn-chip-solid {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+</style>
+
+<script>
+  function webglOk() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    } catch {
+      return false;
+    }
+  }
+  if (webglOk()) {
+    import('@/neural/experience').then((m) => m.initNeural());
+  } else {
+    const note = document.getElementById('nn-webgl');
+    if (note) note.hidden = false;
+  }
+</script>

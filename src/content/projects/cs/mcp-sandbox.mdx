@@ -1,14 +1,14 @@
 ---
 title: 'mcp-sandbox'
-summary: 'Spusťte libovolný MCP server v izolovaném cloudovém sandboxu místo na svém počítači — jedním příkazem, bez úprav kódu. Odstraní poloměr výbuchu nedůvěryhodných agentních nástrojů.'
+summary: 'Spusťte libovolný MCP server v izolovaném cloudovém sandboxu místo na svém počítači – jedním příkazem, bez úprav kódu. Odstraní poloměr výbuchu nedůvěryhodných agentních nástrojů.'
 role: 'Autor & maintainer'
 year: 2026
 order: 1
 featured: true
 tech: ['TypeScript', 'Node.js', 'E2B', 'MCP', 'Vitest', 'Security']
-problem: 'Lidé spouštějí MCP servery přímo z registru (`npx -y jakykoli-mcp`) s plným přístupem k souborům, tajemstvím a síti — škodlivý nebo kompromitovaný server přečte vše, na co dosáhne agent.'
+problem: 'Lidé spouštějí MCP servery přímo z registru (`npx -y jakykoli-mcp`) s plným přístupem k souborům, tajemstvím a síti – škodlivý nebo kompromitovaný server přečte vše, na co dosáhne agent.'
 solution: 'Transparentní stdio most, který server spustí v jednorázové E2B micro-VM. Pro klienta to je ten server; ve skutečnosti běží v cloudu s přístupem k prostředí jen přes allowlist.'
-outcome: 'Ověřeno end-to-end proti živému E2B sandboxu — nejhorší, co nepřátelský server zvládne, je zničit svou vlastní jednorázovou VM.'
+outcome: 'Ověřeno end-to-end proti živému E2B sandboxu – nejhorší, co nepřátelský server zvládne, je zničit svou vlastní jednorázovou VM.'
 cover: '@/assets/projects/mcp-sandbox/cover.svg'
 links:
   repo: 'https://github.com/ondraulehla/mcp-sandbox'
@@ -16,12 +16,12 @@ links:
 
 ## Kontext
 
-MCP servery jsou způsob, jak agenti získávají nástroje — přístup k souborům,
+MCP servery jsou způsob, jak agenti získávají nástroje – přístup k souborům,
 scraping webu, databázové dotazy. Jenže MCP server je *kód, který spouštíte
 s oprávněními svého agenta*, a komunitní zvyk je pustit ho rovnou z registru:
 `npx -y nejaky-mcp-server`. Nikdo si ho předtím nepřečte. Je to tentýž problém
 důvěry, který [agent-audit](https://github.com/ondraulehla/agent-audit)
-detekuje v konfiguraci — tady jsem chtěl nebezpečí odstranit, ne jen označit.
+detekuje v konfiguraci – tady jsem chtěl nebezpečí odstranit, ne jen označit.
 
 ## Problém
 
@@ -40,17 +40,17 @@ JSON-RPC oběma směry:
 npx mcp-sandbox run -- npx -y nejaky-mcp-server-z-internetu
 ```
 
-Pro MCP klienta (Claude Code, Cursor, …) to *je* ten server — protokol se
+Pro MCP klienta (Claude Code, Cursor, …) to *je* ten server – protokol se
 přenáší doslovně. Server ale běží v cloudu s:
 
 - **žádným přístupem** k vašim souborům, prostředí ani lokální síti
-- **přenosem env jen přes allowlist** (`--env KEY` / `--env KEY=value`) — přesný
+- **přenosem env jen přes allowlist** (`--env KEY` / `--env KEY=value`) – přesný
   opak obvyklého „zděď všechno"
 - **`--trace`** zachytávajícím každou JSON-RPC zprávu do JSONL k inspekci
 - **TTL**, které sandbox sklidí za všech okolností
 
 Most je line-buffered, takže klient nikdy neuvidí půlku JSON-RPC rámce, a celá
-E2B integrace sedí za injektovaným rozhraním `SandboxBackend` — díky tomu sada
+E2B integrace sedí za injektovaným rozhraním `SandboxBackend` – díky tomu sada
 11 testů běží offline s in-memory fake implementací.
 
 ## Výsledek
@@ -66,7 +66,7 @@ E2B integrace sedí za injektovaným rozhraním `SandboxBackend` — díky tomu 
 
 Zajímavým bugem byl cold-start závod: `npx` stahuje balík při prvním spuštění
 a uprostřed startu se re-execuje, takže okamžitý `initialize` od klienta se
-ztratil. Diagnostika znamenala sondovat sandbox přímo — ověřit runtime, izolovat
-okno nestabilního PID — a oprava (předinstalovat v setup kroku, spouštět hotový
+ztratil. Diagnostika znamenala sondovat sandbox přímo – ověřit runtime, izolovat
+okno nestabilního PID – a oprava (předinstalovat v setup kroku, spouštět hotový
 binárník) vzešla přímo z pochopení, *proč* se identita procesu mění. Stavba
 proti reálnému cloudovému runtime tenhle druh ladění od základů odměňuje.

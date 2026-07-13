@@ -1,14 +1,15 @@
 import type { Locale } from './config';
 
 const en = {
-  'site.title': 'Ondřej Úlehla — Fullstack Developer & AI Engineer',
+  'site.title': 'Ondřej Úlehla – Fullstack Developer & AI Engineer',
   'site.description':
-    'Fullstack developer and AI engineer building fast, well-crafted products — from client analysis to production deployment.',
+    'Fullstack developer and AI engineer building fast, well-crafted products – from client analysis to production deployment.',
   'nav.about': 'About',
   'nav.experience': 'Experience',
   'nav.projects': 'Projects',
   'nav.contact': 'Contact',
   'nav.playground': 'Playground',
+  'nav.lab': 'Neural Lab',
   'nav.menu': 'Menu',
   'theme.toggle': 'Toggle color theme',
   'lang.switch': 'Přepnout do češtiny',
@@ -19,7 +20,7 @@ const en = {
   'hero.title.line1': 'Fullstack developer',
   'hero.title.line2': '& AI engineer.',
   'hero.subtitle':
-    'I design, build and ship complete products — from client analysis and architecture to polished frontend, robust backend and AI integrations.',
+    'I design, build and ship complete products – from client analysis and architecture to polished frontend, robust backend and AI integrations.',
   'hero.cta.projects': 'View projects',
   'hero.cta.cv': 'Download CV',
   'hero.cta.playground': 'Explore in 3D',
@@ -62,7 +63,7 @@ const en = {
 
   'playground.title': '3D Playground',
   'playground.description':
-    'A small interactive 3D world. Take off, fly over the island and discover my projects — built with Three.js.',
+    'A small interactive 3D world. Take off, fly over the island and discover my projects – built with Three.js.',
   'playground.enter': 'Take off',
   'playground.loading': 'Loading world…',
   'playground.controls': '←→ turn · ↑↓ climb & dive (WASD works too)',
@@ -76,6 +77,21 @@ const en = {
   'playground.hint.gas': 'accelerate',
   'playground.hint.steer': 'steer',
 
+  'nn.title': 'Neural Network Lab',
+  'nn.kicker': 'From my master’s thesis',
+  'nn.intro':
+    'The interactive neural network from my thesis “Modeling Neural Networks in Virtual Reality”, revived here. Left: a decision surface that learns your dataset live via backpropagation. Right: a 3D model of the network – neurons light up with their activations, edges are coloured by weight sign.',
+  'nn.dataset': 'Dataset',
+  'nn.activation': 'Activation',
+  'nn.architecture': 'Architecture',
+  'nn.epoch': 'Epoch',
+  'nn.loss': 'Loss',
+  'nn.pause': '⏸ Pause',
+  'nn.reset': 'Reset',
+  'nn.surface': 'Decision surface',
+  'nn.model': '3D network – drag to orbit',
+  'nn.webgl': 'Your browser doesn’t support WebGL, so the 3D model can’t render – the decision surface still works.',
+
   'footer.rights': 'All rights reserved.',
   'footer.built':
     'Designed & built by Ondřej Úlehla with Astro, Tailwind, GSAP and Three.js.',
@@ -88,14 +104,15 @@ const en = {
 } as const;
 
 const cs = {
-  'site.title': 'Ondřej Úlehla — Fullstack vývojář & AI inženýr',
+  'site.title': 'Ondřej Úlehla – Fullstack vývojář & AI inženýr',
   'site.description':
-    'Fullstack vývojář a AI inženýr. Stavím rychlé a promyšlené produkty — od analýzy s klientem po nasazení do produkce.',
+    'Fullstack vývojář a AI inženýr. Stavím rychlé a promyšlené produkty – od analýzy s klientem po nasazení do produkce.',
   'nav.about': 'O mně',
   'nav.experience': 'Zkušenosti',
   'nav.projects': 'Projekty',
   'nav.contact': 'Kontakt',
   'nav.playground': 'Playground',
+  'nav.lab': 'Neural Lab',
   'nav.menu': 'Menu',
   'theme.toggle': 'Přepnout barevný režim',
   'lang.switch': 'Switch to English',
@@ -106,7 +123,7 @@ const cs = {
   'hero.title.line1': 'Fullstack vývojář',
   'hero.title.line2': '& AI inženýr.',
   'hero.subtitle':
-    'Navrhuji, stavím a dodávám kompletní produkty — od analýzy s klientem přes architekturu po vyladěný frontend, robustní backend a AI integrace.',
+    'Navrhuji, stavím a dodávám kompletní produkty – od analýzy s klientem přes architekturu po vyladěný frontend, robustní backend a AI integrace.',
   'hero.cta.projects': 'Prohlédnout projekty',
   'hero.cta.cv': 'Stáhnout CV',
   'hero.cta.playground': 'Prozkoumat ve 3D',
@@ -148,7 +165,7 @@ const cs = {
 
   'playground.title': '3D Playground',
   'playground.description':
-    'Malý interaktivní 3D svět. Vzlétněte, prolétněte se nad ostrovem a objevte mé projekty — postaveno na Three.js.',
+    'Malý interaktivní 3D svět. Vzlétněte, prolétněte se nad ostrovem a objevte mé projekty – postaveno na Three.js.',
   'playground.enter': 'Vzlétnout',
   'playground.loading': 'Načítám svět…',
   'playground.controls': '←→ zatáčení · ↑↓ stoupání a klesání (funguje i WASD)',
@@ -161,6 +178,21 @@ const cs = {
   'playground.back': 'Zpět na web',
   'playground.hint.gas': 'plyn',
   'playground.hint.steer': 'zatáčení',
+
+  'nn.title': 'Laboratoř neuronových sítí',
+  'nn.kicker': 'Z mé diplomové práce',
+  'nn.intro':
+    'Interaktivní neuronová síť z mé diplomky „Modelování neuronových sítí ve virtuální realitě", oživená přímo zde. Vlevo: rozhodovací plocha, která se váš dataset učí naživo backpropagací. Vpravo: 3D model sítě – neurony se rozsvěcují podle svých aktivací, hrany jsou obarvené podle znaménka váhy.',
+  'nn.dataset': 'Dataset',
+  'nn.activation': 'Aktivace',
+  'nn.architecture': 'Architektura',
+  'nn.epoch': 'Epocha',
+  'nn.loss': 'Ztráta',
+  'nn.pause': '⏸ Pauza',
+  'nn.reset': 'Reset',
+  'nn.surface': 'Rozhodovací plocha',
+  'nn.model': '3D síť – táhnutím otočíte',
+  'nn.webgl': 'Váš prohlížeč nepodporuje WebGL, 3D model nelze vykreslit – rozhodovací plocha ale funguje.',
 
   'footer.rights': 'Všechna práva vyhrazena.',
   'footer.built':

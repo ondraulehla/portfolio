@@ -24,7 +24,7 @@ const nav = [
     <a
       href={home}
       class="font-display text-ink text-lg font-bold tracking-tight"
-      aria-label="Ondřej Úlehla — home"
+      aria-label="Ondřej Úlehla – home"
     >
       OU<span class="text-accent">.</span>
     </a>
@@ -40,6 +40,13 @@ const nav = [
           </a>
         ))
       }
+      <a
+        href={localePath(locale, '/neural-network')}
+        data-astro-prefetch="hover"
+        class="text-ink-muted hover:text-ink text-sm font-medium transition-colors"
+      >
+        {t('nav.lab')}
+      </a>
       <a
         href={localePath(locale, '/playground')}
         data-astro-prefetch="hover"
@@ -76,7 +83,11 @@ const nav = [
           class="border-line bg-panel absolute top-12 right-0 z-50 flex w-52 flex-col gap-1 rounded-xl border p-2 shadow-xl"
         >
           {
-            [...nav, { href: localePath(locale, '/playground'), label: t('nav.playground') }].map(
+            [
+              ...nav,
+              { href: localePath(locale, '/neural-network'), label: t('nav.lab') },
+              { href: localePath(locale, '/playground'), label: t('nav.playground') },
+            ].map(
               (item) => (
                 <a
                   href={item.href}

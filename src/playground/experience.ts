@@ -1,5 +1,5 @@
 /**
- * The 3D playground: a toy plane flying over a hand-shaped island —
+ * The 3D playground: a toy plane flying over a hand-shaped island –
  * rolling hills, snowy mountains, a winding river, a little town and
  * organic forests. Fly close to a floating billboard and press Enter
  * to open the project it advertises. Everything is procedural.
@@ -54,7 +54,7 @@ const SKY = {
   },
 } as const;
 
-// Shared, theme-independent terrain colors — the lighting does the mood.
+// Shared, theme-independent terrain colors – the lighting does the mood.
 const COLORS = {
   sandDeep: 0xb3a071,
   sand: 0xe6d095,
@@ -123,7 +123,7 @@ function riverX(z: number): number {
   return r.a1 * Math.sin(z * r.f1) + r.offset + r.a2 * Math.sin(z * r.f2);
 }
 
-/** Terrain height — the single source of truth used by every builder. */
+/** Terrain height – the single source of truth used by every builder. */
 function getHeight(x: number, z: number): number {
   // rolling hills on a solid landmass base
   let h =
@@ -294,7 +294,7 @@ export async function startExperience(): Promise<void> {
     lastTime = now;
     elapsed += dt;
 
-    // banking drives the turn — lean in, then the nose follows
+    // banking drives the turn – lean in, then the nose follows
     const turnInput = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
     const bankTarget = turnInput * 0.62;
     bank += (bankTarget - bank) * (1 - Math.pow(0.002, dt));
@@ -485,7 +485,7 @@ function buildTerrain(): THREE.Mesh {
       // dusting of snow just under the snowline
       if (h > snowline - 1.4 && steep < 0.5) color.lerp(snow, 0.5);
     } else if (h > rockline - 1.3) {
-      // alpine meadow rim right below the rock — a crisp colour step
+      // alpine meadow rim right below the rock – a crisp colour step
       color.copy(alpine).offsetHSL(0, 0, (tint - 0.5) * 0.06);
     } else {
       const meadowMix = smoothstep(0.62, 0.78, fbm(x * 0.035 + 300, z * 0.035 + 300));
@@ -494,7 +494,7 @@ function buildTerrain(): THREE.Mesh {
         .lerp(meadow, meadowMix * 0.85);
     }
 
-    // subtle per-face brightness jitter — the "hand-cut facets" texture
+    // subtle per-face brightness jitter – the "hand-cut facets" texture
     color.offsetHSL(0, 0, (hash2(i, 977) - 0.5) * 0.035);
 
     for (let k = 0; k < 3; k++) {
@@ -551,7 +551,7 @@ function buildForests(): THREE.Group {
     if (h < WORLD.forest.minHeight || h > WORLD.forest.maxHeight) continue;
     if (Math.abs(x - riverX(z)) < 7) continue;
     if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.radius + 5) continue;
-    // forests grow where the forest-noise says so — organic patches with soft edges
+    // forests grow where the forest-noise says so – organic patches with soft edges
     const density = fbm(x * 0.03 + 700, z * 0.03 + 700);
     if (density < WORLD.forest.densityThreshold) continue;
     placements.push({
@@ -568,7 +568,7 @@ function buildForests(): THREE.Group {
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
 
-  // trunks (shared by both kinds) — tall enough to reach well into the crown
+  // trunks (shared by both kinds) – tall enough to reach well into the crown
   const trunkGeo = new THREE.CylinderGeometry(0.13, 0.24, 2.4, 7);
   const trunkMat = new THREE.MeshStandardMaterial({ color: COLORS.trunk, roughness: 0.9 });
   const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, placements.length);
@@ -658,7 +658,7 @@ function buildGableRoofGeometry(): THREE.BufferGeometry {
 }
 
 function buildRocks(): THREE.InstancedMesh {
-  // deliberate boulder groups at the foot of each mountain, like fallen scree —
+  // deliberate boulder groups at the foot of each mountain, like fallen scree –
   // a big anchor rock with a few smaller ones huddled around it
   const placements: { x: number; z: number; h: number; s: number }[] = [];
   MOUNTAINS.forEach((m, mi) => {
@@ -897,7 +897,7 @@ class PuffTrail {
   private cursor = 0;
 
   constructor(scene: THREE.Scene, size = 110) {
-    // smooth lit spheres — the shading is what makes them read as 3D volumes
+    // smooth lit spheres – the shading is what makes them read as 3D volumes
     const geometry = new THREE.IcosahedronGeometry(1, 2);
     for (let i = 0; i < size; i++) {
       const material = new THREE.MeshStandardMaterial({
@@ -955,7 +955,7 @@ function buildFloatingSign(project: ProjectSign): THREE.Group {
   const group = new THREE.Group();
   const texture = makePanelTexture(project);
 
-  // a single box — no stacked coplanar faces, so nothing to z-fight at distance;
+  // a single box – no stacked coplanar faces, so nothing to z-fight at distance;
   // box UVs are authored per-face from the outside, so both faces read correctly
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.4 });
   const faceMat = new THREE.MeshBasicMaterial({ map: texture });

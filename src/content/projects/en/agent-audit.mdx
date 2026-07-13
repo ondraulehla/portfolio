@@ -1,14 +1,14 @@
 ---
 title: 'agent-audit'
-summary: 'An open-source security auditor for AI agent configurations — finds inline secrets, unpinned supply chains, blanket permissions and prompt-injection surfaces before they hurt you.'
+summary: 'An open-source security auditor for AI agent configurations – finds inline secrets, unpinned supply chains, blanket permissions and prompt-injection surfaces before they hurt you.'
 role: 'Author & Maintainer'
 year: 2026
 order: 2
 featured: true
 tech: ['TypeScript', 'Node.js', 'Vitest', 'CLI', 'Security']
-problem: 'AI agents brought a new attack surface — MCP servers, permissions, skills and hooks — that classic linters and secret scanners simply do not see.'
+problem: 'AI agents brought a new attack surface – MCP servers, permissions, skills and hooks – that classic linters and secret scanners simply do not see.'
 solution: 'A zero-dependency CLI with a rules engine that scans agent configs for ten classes of risk, with redacted output, line numbers and CI-ready exit codes.'
-outcome: 'One command (npx agent-audit) turns an invisible attack surface into an actionable report — locally and as a CI gate.'
+outcome: 'One command (npx agent-audit) turns an invisible attack surface into an actionable report – locally and as a CI gate.'
 cover: '@/assets/projects/agent-audit/cover.svg'
 links:
   repo: 'https://github.com/ondraulehla/agent-audit'
@@ -17,7 +17,7 @@ links:
 ## Context
 
 Agentic tooling exploded in 2025–2026: MCP servers, Claude Code settings, skills from
-marketplaces, hooks that run unattended. Each of those is configuration that *acts* —
+marketplaces, hooks that run unattended. Each of those is configuration that *acts* –
 it executes commands, reaches the network, reads your filesystem. Yet the security
 tooling around it lagged behind: `eslint` doesn't know what `Bash(*)` means, and secret
 scanners don't understand that an unpinned `npx some-mcp` is a supply-chain time bomb.
@@ -26,13 +26,13 @@ scanners don't understand that an unpinned `npx some-mcp` is a supply-chain time
 
 Four classes of risk kept showing up in real-world agent setups:
 
-- **Supply chain** — MCP servers launched via `npx`/`uvx` without a pinned version:
+- **Supply chain** – MCP servers launched via `npx`/`uvx` without a pinned version:
   every session runs whatever was published last
-- **Blast radius** — `Bash(*)` permissions or `bypassPermissions`, turning any successful
+- **Blast radius** – `Bash(*)` permissions or `bypassPermissions`, turning any successful
   prompt injection into arbitrary code execution with no human in the loop
-- **Secrets** — API keys committed inline in `.mcp.json`, readable by every agent
+- **Secrets** – API keys committed inline in `.mcp.json`, readable by every agent
   and every collaborator
-- **Instructions as code** — third-party skills and agents carrying injection payloads
+- **Instructions as code** – third-party skills and agents carrying injection payloads
   ("ignore previous instructions…", remote instruction fetches, hidden base64)
 
 ## Solution
@@ -47,18 +47,18 @@ A **zero-runtime-dependency TypeScript CLI** built around a small rules engine:
 - **Reporting** prints findings with severity, line numbers and *redacted* secrets;
   `--json` for machines, exit codes for CI (`--fail-on warning`)
 
-The whole tool is designed to be run as `npx agent-audit` — no install, no config,
+The whole tool is designed to be run as `npx agent-audit` – no install, no config,
 useful output in seconds.
 
 ## Outcome
 
-- Ten risk classes covered by deterministic rules — no API keys or LLM calls needed
+- Ten risk classes covered by deterministic rules – no API keys or LLM calls needed
 - Redaction built in: the report never re-leaks the secret it just found
 - Drops into any pipeline as a one-line CI gate
 - Open source (MIT) with a roadmap: SARIF output, more dialects, allowlists, autofix
 
 ## What I learned
 
-Security tooling lives or dies by its false-positive rate — every rule needed an
+Security tooling lives or dies by its false-positive rate – every rule needed an
 explicit notion of what a *reference* (safe) versus a *literal* (risky) value looks
 like before the reports became trustworthy enough to gate CI on.

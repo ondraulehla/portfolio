@@ -19,7 +19,7 @@ const t = useTranslations(locale);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>{cv.profile.name} — {t('cv.print.title')}</title>
+    <title>{cv.profile.name} – {t('cv.print.title')}</title>
     <style>
       @page {
         size: A4;
@@ -58,7 +58,7 @@ const t = useTranslations(locale);
                 {job.role[locale]} · {job.company}
               </h3>
               <p class="font-mono text-xs text-neutral-500">
-                {formatMonth(job.start, locale)} — {job.end ? formatMonth(job.end, locale) : t('experience.present')}
+                {formatMonth(job.start, locale)} – {job.end ? formatMonth(job.end, locale) : t('experience.present')}
               </p>
             </div>
             <p class="mt-1 text-neutral-700">{job.summary[locale]}</p>
@@ -85,7 +85,7 @@ const t = useTranslations(locale);
               <p class="text-neutral-700">{item.degree[locale]}</p>
             </div>
             <p class="font-mono text-xs text-neutral-500">
-              {formatMonth(item.start, locale)} — {item.end ? formatMonth(item.end, locale) : t('experience.present')}
+              {formatMonth(item.start, locale)} – {item.end ? formatMonth(item.end, locale) : t('experience.present')}
             </p>
           </div>
         ))

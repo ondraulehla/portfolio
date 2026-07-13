@@ -48,7 +48,7 @@ export interface CV {
 }
 
 // ============================================================================
-// Real data. A few dates are approximate — search "CONFIRM" to verify before
+// Real data. A few dates are approximate – search "CONFIRM" to verify before
 // sending the PDF anywhere.
 // ============================================================================
 export const cv: CV = {
@@ -64,12 +64,12 @@ export const cv: CV = {
     },
     bio: [
       {
-        en: "I'm a fullstack developer at NetGenium, where over the last five years I've grown into the person who leads how AI gets built into our products and our own workflow. I work across the whole lifecycle — sitting down with clients, analysing their needs, designing the solution, and then shipping it across frontend, backend and infrastructure.",
-        cs: 'Jsem fullstack vývojář v NetGeniu, kde jsem se za posledních pět let vypracoval na člověka, který vede zavádění AI do našich produktů i vlastního fungování. Pracuji napříč celým životním cyklem — sednu si s klientem, zanalyzuji potřeby, navrhnu řešení a pak ho dodám na frontendu, backendu i infrastruktuře.',
+        en: "I'm a fullstack developer at NetGenium, where over the last five years I've grown into the person who leads how AI gets built into our products and our own workflow. I work across the whole lifecycle – sitting down with clients, analysing their needs, designing the solution, and then shipping it across frontend, backend and infrastructure.",
+        cs: 'Jsem fullstack vývojář v NetGeniu, kde jsem se za posledních pět let vypracoval na člověka, který vede zavádění AI do našich produktů i vlastního fungování. Pracuji napříč celým životním cyklem – sednu si s klientem, zanalyzuji potřeby, navrhnu řešení a pak ho dodám na frontendu, backendu i infrastruktuře.',
       },
       {
-        en: 'Lately my focus is AI engineering: RAG pipelines over real client implementations, MCP servers, and automating processes that used to eat entire days — from customs clearance for the Czech Post to resolving client tickets, where the AI has the concrete codebase on hand and can find and fix the reported issue itself.',
-        cs: 'V poslední době se soustředím na AI inženýrství: RAG pipeline nad reálnými implementacemi klientů, MCP servery a automatizaci procesů, které dřív zabraly celé dny — od proclení pro Českou poštu po řešení klientských ticketů, kde má AI po ruce konkrétní kód a dokáže nahlášený problém sama najít a opravit.',
+        en: 'Lately my focus is AI engineering: RAG pipelines over real client implementations, MCP servers, and automating processes that used to eat entire days – from customs clearance for the Czech Post to resolving client tickets, where the AI has the concrete codebase on hand and can find and fix the reported issue itself.',
+        cs: 'V poslední době se soustředím na AI inženýrství: RAG pipeline nad reálnými implementacemi klientů, MCP servery a automatizaci procesů, které dřív zabraly celé dny – od proclení pro Českou poštu po řešení klientských ticketů, kde má AI po ruce konkrétní kód a dokáže nahlášený problém sama najít a opravit.',
       },
     ],
     facts: [
@@ -92,15 +92,15 @@ export const cv: CV = {
       highlights: [
         {
           en: 'Led the end-to-end integration of AI into NetGenium’s systems, from data and retrieval to the tools and interfaces developers and clients use.',
-          cs: 'Vedl jsem integraci AI do systémů NetGenia end-to-end — od dat a retrievalu po nástroje a rozhraní, která používají vývojáři i klienti.',
+          cs: 'Vedl jsem integraci AI do systémů NetGenia end-to-end – od dat a retrievalu po nástroje a rozhraní, která používají vývojáři i klienti.',
         },
         {
           en: 'Built RAG pipelines for the LLMs we use with clients, grounding answers in each client’s real implementation so the models reason over actual code and data.',
-          cs: 'Postavil jsem RAG pipeline pro LLM, které používáme u klientů — odpovědi ukotvené v reálné implementaci daného klienta, takže modely pracují se skutečným kódem a daty.',
+          cs: 'Postavil jsem RAG pipeline pro LLM, které používáme u klientů – odpovědi ukotvené v reálné implementaci daného klienta, takže modely pracují se skutečným kódem a daty.',
         },
         {
-          en: 'Automated internal processes with AI: generating applications in our NetGenium framework, and near-automatic client-ticket resolution — the AI has the concrete implementation on hand, so it locates the reported problem and fixes it.',
-          cs: 'Zautomatizoval jsem interní procesy pomocí AI: generování aplikací v našem frameworku NetGenium a téměř automatické řešení klientských ticketů — AI má po ruce konkrétní implementaci, takže nahlášený problém najde a opraví.',
+          en: 'Automated internal processes with AI: generating applications in our NetGenium framework, and near-automatic client-ticket resolution – the AI has the concrete implementation on hand, so it locates the reported problem and fixes it.',
+          cs: 'Zautomatizoval jsem interní procesy pomocí AI: generování aplikací v našem frameworku NetGenium a téměř automatické řešení klientských ticketů – AI má po ruce konkrétní implementaci, takže nahlášený problém najde a opraví.',
         },
         {
           en: 'Automated the customs-clearance process for the Czech Post and built/customized their PostShop (postshop.cz) storefront.',
@@ -147,7 +147,7 @@ export const cv: CV = {
 
   education: [
     {
-      school: 'Czech Technical University — FIT',
+      school: 'Czech Technical University – FIT',
       degree: {
         en: 'Ing. (Master’s), Software Engineering',
         cs: 'Ing., Softwarové inženýrství',

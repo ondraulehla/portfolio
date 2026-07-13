@@ -11,7 +11,7 @@ function setup() {
   const mm = gsap.matchMedia();
 
   mm.add('(prefers-reduced-motion: no-preference)', () => {
-    // Only now hide reveal targets — no-JS / reduced-motion users never see hidden content.
+    // Only now hide reveal targets – no-JS / reduced-motion users never see hidden content.
     document.documentElement.classList.add('motion-ok');
 
     const targets = gsap.utils.toArray<HTMLElement>('[data-reveal]');

@@ -1,14 +1,14 @@
 ---
 title: 'mcp-sandbox'
-summary: 'Run any MCP server inside an isolated cloud sandbox instead of on your machine — one command, no code changes. Removes the blast radius of untrusted agent tooling.'
+summary: 'Run any MCP server inside an isolated cloud sandbox instead of on your machine – one command, no code changes. Removes the blast radius of untrusted agent tooling.'
 role: 'Author & Maintainer'
 year: 2026
 order: 1
 featured: true
 tech: ['TypeScript', 'Node.js', 'E2B', 'MCP', 'Vitest', 'Security']
-problem: 'People launch MCP servers straight from a registry (`npx -y whatever-mcp`) with full access to their filesystem, secrets and network — a malicious or compromised one can read everything the agent can.'
+problem: 'People launch MCP servers straight from a registry (`npx -y whatever-mcp`) with full access to their filesystem, secrets and network – a malicious or compromised one can read everything the agent can.'
 solution: 'A transparent stdio bridge that runs the server in a disposable E2B micro-VM. To the client it is the server; in reality it executes in the cloud with allowlist-only access to your environment.'
-outcome: 'Verified end-to-end against a live E2B sandbox — the worst a hostile server can do is trash its own throwaway VM.'
+outcome: 'Verified end-to-end against a live E2B sandbox – the worst a hostile server can do is trash its own throwaway VM.'
 cover: '@/assets/projects/mcp-sandbox/cover.svg'
 links:
   repo: 'https://github.com/ondraulehla/mcp-sandbox'
@@ -16,12 +16,12 @@ links:
 
 ## Context
 
-MCP servers are the way agents get tools — file access, web scraping, database
+MCP servers are the way agents get tools – file access, web scraping, database
 queries, and more. But an MCP server is *code you run with your agent's
 privileges*, and the community norm is to launch it straight from a registry:
 `npx -y some-mcp-server`. Nobody reads it first. This is the same trust problem
 [agent-audit](https://github.com/ondraulehla/agent-audit) detects in
-configuration — here I wanted to remove the danger, not just flag it.
+configuration – here I wanted to remove the danger, not just flag it.
 
 ## Problem
 
@@ -40,18 +40,18 @@ JSON-RPC both ways:
 npx mcp-sandbox run -- npx -y some-mcp-server-from-the-internet
 ```
 
-To the MCP client (Claude Code, Cursor, …) this *is* the server — the protocol
+To the MCP client (Claude Code, Cursor, …) this *is* the server – the protocol
 is bridged verbatim. But the server executes in the cloud with:
 
 - **no access** to your filesystem, environment or local network
-- **allowlist-only** env crossing (`--env KEY` / `--env KEY=value`) — the exact
+- **allowlist-only** env crossing (`--env KEY` / `--env KEY=value`) – the exact
   inverse of the usual "inherit everything" default
 - **`--trace`** capturing every JSON-RPC message to JSONL for inspection
 - a **TTL** that reaps the sandbox no matter what
 
 The bridge is line-buffered so the client never sees a partial JSON-RPC frame,
 and the whole E2B integration sits behind an injected `SandboxBackend`
-interface — so the 11-test suite runs offline with an in-memory fake.
+interface – so the 11-test suite runs offline with an in-memory fake.
 
 ## Outcome
 
@@ -66,8 +66,8 @@ interface — so the 11-test suite runs offline with an in-memory fake.
 
 The interesting bug was a cold-start race: `npx` downloads the package on first
 run and re-execs mid-startup, so a client's immediate `initialize` was lost.
-Diagnosing it meant probing the sandbox directly — confirming the runtime,
-isolating the unstable-PID window — and the fix (pre-install in a setup step,
+Diagnosing it meant probing the sandbox directly – confirming the runtime,
+isolating the unstable-PID window – and the fix (pre-install in a setup step,
 run the resulting binary) came straight from understanding *why* the process
 identity changed. Building against a real cloud runtime rewards that kind of
 first-principles debugging.
