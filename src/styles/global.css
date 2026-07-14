@@ -37,6 +37,77 @@
   color-scheme: dark;
 }
 
+/* ---------------------------------------------------------------------------
+   PALETTE EXPERIMENTS (branch-only preview). Each palette overrides the raw
+   tokens; the floating switcher in Base.astro stamps data-palette on <html>.
+--------------------------------------------------------------------------- */
+
+/* Indigo — cool graphite paper, deep indigo accent. Classic, serious tech. */
+[data-palette='indigo'] {
+  --surface: oklch(98.3% 0.004 265);
+  --panel: oklch(96% 0.007 265);
+  --ink: oklch(20% 0.02 270);
+  --ink-muted: oklch(43% 0.02 268);
+  --ink-faint: oklch(58% 0.018 265);
+  --line: oklch(89% 0.01 265);
+  --accent: oklch(48% 0.19 275);
+  --accent-strong: oklch(41% 0.19 276);
+  --accent-soft: oklch(93% 0.035 275);
+  --glow: oklch(48% 0.19 275 / 0.1);
+}
+[data-theme='dark'][data-palette='indigo'] {
+  --surface: oklch(16% 0.02 268);
+  --panel: oklch(20% 0.024 268);
+  --ink: oklch(93% 0.01 265);
+  --ink-muted: oklch(71% 0.016 265);
+  --ink-faint: oklch(56% 0.02 265);
+  --line: oklch(29% 0.024 268);
+  --accent: oklch(74% 0.13 278);
+  --accent-strong: oklch(80% 0.11 280);
+  --accent-soft: oklch(28% 0.06 275);
+  --glow: oklch(74% 0.13 278 / 0.12);
+}
+
+/* Forest — warm paper kept, deep pine-green accent. Calm and grounded. */
+[data-palette='forest'] {
+  --accent: oklch(48% 0.12 160);
+  --accent-strong: oklch(41% 0.12 162);
+  --accent-soft: oklch(93% 0.035 160);
+  --glow: oklch(48% 0.12 160 / 0.1);
+}
+[data-theme='dark'][data-palette='forest'] {
+  --accent: oklch(74% 0.12 162);
+  --accent-strong: oklch(80% 0.11 165);
+  --accent-soft: oklch(27% 0.05 162);
+  --glow: oklch(74% 0.12 162 / 0.12);
+}
+
+/* Cobalt — neutral mono greys, saturated cobalt accent. Crisp, modern. */
+[data-palette='cobalt'] {
+  --surface: oklch(98.5% 0.002 250);
+  --panel: oklch(96.2% 0.004 250);
+  --ink: oklch(20% 0.008 255);
+  --ink-muted: oklch(43% 0.01 255);
+  --ink-faint: oklch(58% 0.01 255);
+  --line: oklch(89.5% 0.006 250);
+  --accent: oklch(52% 0.2 255);
+  --accent-strong: oklch(44% 0.2 256);
+  --accent-soft: oklch(93% 0.04 255);
+  --glow: oklch(52% 0.2 255 / 0.1);
+}
+[data-theme='dark'][data-palette='cobalt'] {
+  --surface: oklch(15.5% 0.01 255);
+  --panel: oklch(19.5% 0.012 255);
+  --ink: oklch(93% 0.008 255);
+  --ink-muted: oklch(71% 0.012 255);
+  --ink-faint: oklch(56% 0.014 255);
+  --line: oklch(28.5% 0.014 255);
+  --accent: oklch(70% 0.15 252);
+  --accent-strong: oklch(77% 0.12 250);
+  --accent-soft: oklch(27% 0.06 252);
+  --glow: oklch(70% 0.15 252 / 0.12);
+}
+
 @theme inline {
   --color-surface: var(--surface);
   --color-panel: var(--panel);

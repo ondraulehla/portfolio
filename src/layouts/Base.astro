@@ -40,6 +40,11 @@ const { locale, title, description, ogImage, noindex, chrome = true } = Astro.pr
             stored ||
             (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
           document.documentElement.dataset.theme = theme;
+          try {
+            var palette = localStorage.getItem('palette');
+            if (palette && palette !== 'original') document.documentElement.dataset.palette = palette;
+            else delete document.documentElement.dataset.palette;
+          } catch {}
         }
         apply();
         // Re-apply after View Transitions swap in a fresh <html>.
@@ -58,5 +63,40 @@ const { locale, title, description, ogImage, noindex, chrome = true } = Astro.pr
     </main>
     {chrome && <Footer {locale} />}
     <script src="@/scripts/animations.ts"></script>
+
+    <!-- palette-experiments branch only: floating palette switcher -->
+    <div
+      id="palette-switcher"
+      style="position:fixed;bottom:1rem;left:1rem;z-index:60;display:flex;gap:.35rem;padding:.4rem .5rem;border:1px solid var(--line);border-radius:.6rem;background:var(--panel);font:600 .72rem/1 var(--font-mono)"
+    >
+      {
+        ['original', 'indigo', 'forest', 'cobalt'].map((p) => (
+          <button
+            type="button"
+            data-palette-pick={p}
+            style="cursor:pointer;padding:.35rem .55rem;border-radius:.4rem;border:1px solid var(--line);color:var(--ink-muted);background:transparent"
+          >
+            {p}
+          </button>
+        ))
+      }
+    </div>
+    <script>
+      function initPaletteSwitcher() {
+        document.querySelectorAll<HTMLElement>('[data-palette-pick]').forEach((btn) => {
+          const pick = btn.dataset.palettePick!;
+          const current = localStorage.getItem('palette') || 'original';
+          btn.style.borderColor = current === pick ? 'var(--accent)' : 'var(--line)';
+          btn.style.color = current === pick ? 'var(--accent)' : 'var(--ink-muted)';
+          btn.onclick = () => {
+            localStorage.setItem('palette', pick);
+            if (pick === 'original') delete document.documentElement.dataset.palette;
+            else document.documentElement.dataset.palette = pick;
+            initPaletteSwitcher();
+          };
+        });
+      }
+      document.addEventListener('astro:page-load', initPaletteSwitcher);
+    </script>
   </body>
 </html>
