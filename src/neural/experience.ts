@@ -925,7 +925,10 @@ export function initNeural(): void {
     drawSurface();
     paintActivations();
   });
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme', 'data-palette'],
+  });
 
   document.addEventListener(
     'astro:before-swap',

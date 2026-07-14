@@ -6,44 +6,89 @@ interface Props {
   locale: Locale;
 }
 const t = useTranslations(Astro.props.locale);
+
+/** Light-mode accent of each palette – shown as the swatch dot. */
+const palettes = [
+  { id: 'original', label: t('palette.original'), accent: 'oklch(55% 0.2 33)' },
+  { id: 'indigo', label: 'Indigo', accent: 'oklch(48% 0.19 275)' },
+  { id: 'forest', label: 'Forest', accent: 'oklch(48% 0.12 160)' },
+  { id: 'cobalt', label: 'Cobalt', accent: 'oklch(52% 0.2 255)' },
+];
 ---
 
-<button
-  type="button"
-  data-theme-toggle
-  aria-label={t('theme.toggle')}
-  class="border-line text-ink-muted hover:text-ink hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
->
-  <svg
-    class="size-4 dark-hidden"
-    data-icon-sun
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
+<div class="relative flex items-center gap-2" data-theme-controls>
+  <button
+    type="button"
+    data-palette-toggle
+    aria-label={t('theme.palette')}
+    aria-expanded="false"
+    class="border-line hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
   >
-    <circle cx="12" cy="12" r="4"></circle>
-    <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
-  </svg>
-  <svg
-    class="size-4"
-    data-icon-moon
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
+    <span
+      class="block size-4 rounded-full"
+      style={`background: conic-gradient(${palettes.map((p) => p.accent).join(', ')}, ${palettes[0]!.accent})`}
+      aria-hidden="true"></span>
+  </button>
+
+  <div
+    data-palette-menu
+    hidden
+    class="border-line bg-panel absolute top-11 right-0 z-50 min-w-40 rounded-xl border p-1.5 shadow-lg"
   >
-    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
-  </svg>
-</button>
+    {
+      palettes.map((p) => (
+        <button
+          type="button"
+          data-palette-pick={p.id}
+          class="text-ink-muted hover:bg-surface hover:text-ink flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors"
+        >
+          <span class="border-line block size-3.5 rounded-full border" style={`background:${p.accent}`} aria-hidden="true" />
+          {p.label}
+          <span class="text-accent ml-auto hidden" data-palette-check aria-hidden="true">
+            ✓
+          </span>
+        </button>
+      ))
+    }
+  </div>
+
+  <button
+    type="button"
+    data-theme-toggle
+    aria-label={t('theme.toggle')}
+    class="border-line text-ink-muted hover:text-ink hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
+  >
+    <svg
+      class="size-4 dark-hidden"
+      data-icon-sun
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+    </svg>
+    <svg
+      class="size-4"
+      data-icon-moon
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+    </svg>
+  </button>
+</div>
 
 <style>
   /* Show sun in dark mode (click → light), moon in light mode. */
@@ -59,6 +104,22 @@ const t = useTranslations(Astro.props.locale);
 </style>
 
 <script>
+  function currentPalette(): string {
+    try {
+      return localStorage.getItem('palette') || 'original';
+    } catch {
+      return 'original';
+    }
+  }
+
+  function markActive(root: HTMLElement) {
+    const active = currentPalette();
+    root.querySelectorAll<HTMLElement>('[data-palette-pick]').forEach((b) => {
+      const check = b.querySelector<HTMLElement>('[data-palette-check]');
+      if (check) check.classList.toggle('hidden', b.dataset.palettePick !== active);
+    });
+  }
+
   function initThemeToggles() {
     document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((btn) => {
       if (btn.dataset.bound) return;
@@ -69,6 +130,43 @@ const t = useTranslations(Astro.props.locale);
         try {
           localStorage.setItem('theme', next);
         } catch {}
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-theme-controls]').forEach((root) => {
+      if (root.dataset.bound) return;
+      root.dataset.bound = 'true';
+      const toggle = root.querySelector<HTMLButtonElement>('[data-palette-toggle]')!;
+      const menu = root.querySelector<HTMLElement>('[data-palette-menu]')!;
+
+      const close = () => {
+        menu.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+      };
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.hidden = !menu.hidden;
+        toggle.setAttribute('aria-expanded', String(!menu.hidden));
+        if (!menu.hidden) markActive(root);
+      });
+      document.addEventListener('click', (e) => {
+        if (!menu.hidden && !root.contains(e.target as Node)) close();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+
+      root.querySelectorAll<HTMLButtonElement>('[data-palette-pick]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const pick = btn.dataset.palettePick!;
+          try {
+            localStorage.setItem('palette', pick);
+          } catch {}
+          if (pick === 'original') delete document.documentElement.dataset.palette;
+          else document.documentElement.dataset.palette = pick;
+          markActive(root);
+          close();
+        });
       });
     });
   }

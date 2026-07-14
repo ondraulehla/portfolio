@@ -40,6 +40,11 @@ const { locale, title, description, ogImage, noindex, chrome = true } = Astro.pr
             stored ||
             (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
           document.documentElement.dataset.theme = theme;
+          try {
+            var palette = localStorage.getItem('palette');
+            if (palette && palette !== 'original') document.documentElement.dataset.palette = palette;
+            else delete document.documentElement.dataset.palette;
+          } catch {}
         }
         apply();
         // Re-apply after View Transitions swap in a fresh <html>.

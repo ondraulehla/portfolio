@@ -64,8 +64,8 @@ export const cv: CV = {
     },
     bio: [
       {
-        en: "I'm a fullstack developer at NetGenium, where over the last five years I've grown into the person who leads how AI gets built into our products and our own workflow. I work across the whole lifecycle – sitting down with clients, analysing their needs, designing the solution, and then shipping it across frontend, backend and infrastructure.",
-        cs: 'Jsem fullstack vývojář v NetGeniu, kde jsem se za posledních pět let vypracoval na člověka, který vede zavádění AI do našich produktů i vlastního fungování. Pracuji napříč celým životním cyklem – sednu si s klientem, zanalyzuji potřeby, navrhnu řešení a pak ho dodám na frontendu, backendu i infrastruktuře.',
+        en: "I'm a fullstack developer at NetGenium. I work across the whole lifecycle – sitting down with clients, analysing their needs, designing the solution, and then shipping it across frontend, backend and infrastructure. Over the past two years a growing part of that work has been bringing AI into our products and our own workflow.",
+        cs: 'Jsem fullstack vývojář v NetGeniu. Pracuji napříč celým životním cyklem – sednu si s klientem, zanalyzuji potřeby, navrhnu řešení a pak ho dodám na frontendu, backendu i infrastruktuře. V posledních dvou letech je stále větší částí té práce zavádění AI do našich produktů i vlastního fungování.',
       },
       {
         en: 'Lately my focus is AI engineering: RAG pipelines over real client implementations, MCP servers, and automating processes that used to eat entire days – from customs clearance for the Czech Post to resolving client tickets, where the AI has the concrete codebase on hand and can find and fix the reported issue itself.',
@@ -86,21 +86,21 @@ export const cv: CV = {
       role: { en: 'Fullstack Developer & AI Engineer', cs: 'Fullstack vývojář & AI inženýr' },
       start: '2021-01', // CONFIRM start month
       summary: {
-        en: 'Enterprise applications on our low-code platform, client delivery, and leading the integration of AI across the company’s products and internal workflow.',
-        cs: 'Podnikové aplikace na naší low-code platformě, dodávky pro klienty a vedení integrace AI napříč produkty firmy i interním fungováním.',
+        en: 'Enterprise applications on a low-code platform, client delivery, and integrating AI into the company’s products and internal workflow.',
+        cs: 'Podnikové aplikace na low-code platformě, dodávky pro klienty a integrace AI do produktů firmy i interního fungování.',
       },
       highlights: [
         {
-          en: 'Led the end-to-end integration of AI into NetGenium’s systems, from data and retrieval to the tools and interfaces developers and clients use.',
-          cs: 'Vedl jsem integraci AI do systémů NetGenia end-to-end – od dat a retrievalu po nástroje a rozhraní, která používají vývojáři i klienti.',
+          en: 'Integrated AI across the platform end to end – from data and retrieval to the tools and interfaces used by developers and clients.',
+          cs: 'Integroval jsem AI napříč platformou end-to-end – od dat a retrievalu po nástroje a rozhraní, která používají vývojáři i klienti.',
         },
         {
           en: 'Built RAG pipelines for the LLMs we use with clients, grounding answers in each client’s real implementation so the models reason over actual code and data.',
           cs: 'Postavil jsem RAG pipeline pro LLM, které používáme u klientů – odpovědi ukotvené v reálné implementaci daného klienta, takže modely pracují se skutečným kódem a daty.',
         },
         {
-          en: 'Automated internal processes with AI: generating applications in our NetGenium framework, and near-automatic client-ticket resolution – the AI has the concrete implementation on hand, so it locates the reported problem and fixes it.',
-          cs: 'Zautomatizoval jsem interní procesy pomocí AI: generování aplikací v našem frameworku NetGenium a téměř automatické řešení klientských ticketů – AI má po ruce konkrétní implementaci, takže nahlášený problém najde a opraví.',
+          en: 'Automated internal processes with AI: generating applications in our low-code framework, and near-automatic client-ticket resolution – the AI has the concrete implementation on hand, so it locates the reported problem and fixes it.',
+          cs: 'Zautomatizoval jsem interní procesy pomocí AI: generování aplikací v našem low-code frameworku a téměř automatické řešení klientských ticketů – AI má po ruce konkrétní implementaci, takže nahlášený problém najde a opraví.',
         },
         {
           en: 'Automated the customs-clearance process for the Czech Post and built/customized their PostShop (postshop.cz) storefront.',

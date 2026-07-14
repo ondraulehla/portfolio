@@ -76,7 +76,7 @@ const COLORS = {
   planeDark: 0x3a3f4c,
   panel: '#fffdf8',
   panelText: '#232838',
-  panelAccent: '#4f46e5',
+  panelAccent: '#c94b3d',
 };
 
 // --- deterministic value noise --------------------------------------------------
@@ -213,7 +213,7 @@ export async function startExperience(): Promise<void> {
   data.projects.forEach((project, i) => {
     const spot = SIGN_SPOTS[i % SIGN_SPOTS.length]!;
     const y = Math.max(getHeight(spot.x, spot.z), 0) + 13;
-    const group = buildFloatingSign(project);
+    const group = buildFloatingSign(project, data.labels.pressEnter);
     group.position.set(spot.x, y, spot.z);
     group.lookAt(0, y, 0);
     scene.add(group);
@@ -470,7 +470,8 @@ function buildTerrain(): THREE.Mesh {
 
     const tint = fbm(x * 0.08 + 90, z * 0.08 + 90); // gentle variation everywhere
     // irregular but CRISP feature lines instead of long smooth blends
-    const snowline = 13.8 + (fbm(x * 0.09 + 55, z * 0.09 + 55) - 0.5) * 5;
+    // snow only near the summits – the massifs peak around 25–30
+    const snowline = 19.2 + (fbm(x * 0.09 + 55, z * 0.09 + 55) - 0.5) * 4.5;
     const rockline = 7.6 + (fbm(x * 0.07 + 21, z * 0.07 + 21) - 0.5) * 4;
 
     if (h < WATER_LEVEL + 0.25) {
@@ -488,7 +489,7 @@ function buildTerrain(): THREE.Mesh {
         .copy(strata[((Math.floor(band) % 3) + 3) % 3]!)
         .offsetHSL(0, 0, (tint - 0.5) * 0.06);
       // dusting of snow just under the snowline
-      if (h > snowline - 1.4 && steep < 0.5) color.lerp(snow, 0.5);
+      if (h > snowline - 1.1 && steep < 0.5) color.lerp(snow, 0.5);
     } else if (h > rockline - 1.3) {
       // alpine meadow rim right below the rock – a crisp colour step
       color.copy(alpine).offsetHSL(0, 0, (tint - 0.5) * 0.06);
@@ -956,13 +957,13 @@ class PuffTrail {
   }
 }
 
-function buildFloatingSign(project: ProjectSign): THREE.Group {
+function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
   const group = new THREE.Group();
-  const texture = makePanelTexture(project);
+  const texture = makePanelTexture(project, hint);
 
   // a single box – no stacked coplanar faces, so nothing to z-fight at distance;
   // box UVs are authored per-face from the outside, so both faces read correctly
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, roughness: 0.4 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: COLORS.planeDark, roughness: 0.45 });
   const faceMat = new THREE.MeshBasicMaterial({ map: texture });
   const panel = new THREE.Mesh(new THREE.BoxGeometry(7.7, 3.35, 0.3), [
     frameMat,
@@ -975,9 +976,10 @@ function buildFloatingSign(project: ProjectSign): THREE.Group {
   panel.castShadow = true;
   group.add(panel);
 
+  // warm vermilion ring – the same red as the plane, so the signs feel native
   const ring = new THREE.Mesh(
     new THREE.TorusGeometry(4.7, 0.1, 10, 48),
-    new THREE.MeshBasicMaterial({ color: 0x8b85f4, transparent: true, opacity: 0.75 }),
+    new THREE.MeshBasicMaterial({ color: COLORS.planeBody, transparent: true, opacity: 0.6 }),
   );
   ring.name = 'ring';
   group.add(ring);
@@ -986,9 +988,9 @@ function buildFloatingSign(project: ProjectSign): THREE.Group {
   const beam = new THREE.Mesh(
     new THREE.CylinderGeometry(0.35, 0.9, 26, 10, 1, true),
     new THREE.MeshBasicMaterial({
-      color: 0x8b85f4,
+      color: COLORS.planeBody,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.13,
       side: THREE.DoubleSide,
       depthWrite: false,
     }),
@@ -999,27 +1001,49 @@ function buildFloatingSign(project: ProjectSign): THREE.Group {
   return group;
 }
 
-function makePanelTexture(project: ProjectSign): THREE.CanvasTexture {
+function makePanelTexture(project: ProjectSign, hint: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
   canvas.height = 424;
   const ctx = canvas.getContext('2d')!;
+  const W = canvas.width;
+  const H = canvas.height;
 
+  // warm paper card in the site's editorial language: hairline frame, short
+  // accent rule, mono year, bold title, and a small call-to-action pill
   ctx.fillStyle = COLORS.panel;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = COLORS.panelAccent;
-  ctx.fillRect(0, 0, canvas.width, 26);
-  ctx.strokeStyle = COLORS.panelAccent;
-  ctx.lineWidth = 12;
-  ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(35, 40, 56, 0.3)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(16, 16, W - 32, H - 32);
 
   ctx.fillStyle = COLORS.panelAccent;
-  ctx.font = '600 46px ui-monospace, monospace';
-  ctx.fillText(String(project.year), 62, 120);
+  ctx.fillRect(62, 58, 116, 10);
+
+  ctx.fillStyle = COLORS.panelAccent;
+  ctx.font = '600 42px ui-monospace, monospace';
+  ctx.fillText(String(project.year), 62, 136);
 
   ctx.fillStyle = COLORS.panelText;
-  ctx.font = 'bold 78px system-ui, sans-serif';
-  wrapText(ctx, project.title, 62, 218, canvas.width - 124, 90);
+  ctx.font = 'bold 74px system-ui, sans-serif';
+  wrapText(ctx, project.title, 62, 226, W - 124, 86);
+
+  // hint pill, bottom-right ("Press Enter" / "Stiskněte Enter")
+  ctx.font = '600 34px ui-monospace, monospace';
+  const label = `⏎ ${hint}`;
+  const tw = ctx.measureText(label).width;
+  const padX = 30;
+  const pillW = tw + padX * 2;
+  const pillH = 62;
+  const px = W - 62 - pillW;
+  const py = H - 60 - pillH;
+  ctx.fillStyle = COLORS.panelAccent;
+  ctx.beginPath();
+  ctx.roundRect(px, py, pillW, pillH, 31);
+  ctx.fill();
+  ctx.fillStyle = COLORS.panel;
+  ctx.fillText(label, px + padX, py + 42);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;
