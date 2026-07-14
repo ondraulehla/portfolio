@@ -82,8 +82,14 @@ export function initNeural(): void {
 
   const feats = (x: number, y: number) => features(x, y, state.inputs);
 
-  /** Point the activation colours refer to; set by hovering the surface. */
-  let probe: { x: number; y: number } | null = null;
+  /**
+   * Point the activation colours refer to. Clicking the surface pins a point
+   * (until it is clicked again or another point is picked); hovering
+   * previews a point temporarily on top of the pin.
+   */
+  let pinned: { x: number; y: number } | null = null;
+  let hover: { x: number; y: number } | null = null;
+  const probePoint = () => hover ?? pinned ?? { x: 0.5, y: 0.5 };
 
   // ---- 2D decision surface --------------------------------------------------
   const sctx = surface.getContext('2d')!;
@@ -131,39 +137,59 @@ export function initNeural(): void {
       sctx.strokeStyle = 'rgba(255,255,255,0.7)';
       sctx.stroke();
     }
-    // probe marker – the point whose activations colour the network views
-    if (probe) {
-      const px = ((probe.x + 1) / 2) * S;
-      const py = ((1 - probe.y) / 2) * S;
+    // probe markers – the pinned point (strong) and the hover preview (light)
+    const marker = (pt: { x: number; y: number }, strong: boolean) => {
+      const px = ((pt.x + 1) / 2) * S;
+      const py = ((1 - pt.y) / 2) * S;
       sctx.beginPath();
-      sctx.arc(px, py, 7, 0, Math.PI * 2);
-      sctx.lineWidth = 2;
+      sctx.arc(px, py, strong ? 8 : 6, 0, Math.PI * 2);
+      sctx.lineWidth = strong ? 4.5 : 2;
+      sctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      sctx.stroke();
+      sctx.beginPath();
+      sctx.arc(px, py, strong ? 8 : 6, 0, Math.PI * 2);
+      sctx.lineWidth = strong ? 2.5 : 1.2;
       sctx.strokeStyle = theme.ink;
       sctx.stroke();
       sctx.beginPath();
       sctx.arc(px, py, 2, 0, Math.PI * 2);
       sctx.fillStyle = theme.ink;
       sctx.fill();
+    };
+    if (pinned) marker(pinned, true);
+    if (hover) marker(hover, false);
+  }
+
+  function surfacePoint(e: MouseEvent): { x: number; y: number } {
+    const r = surface.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * 2 - 1,
+      y: 1 - ((e.clientY - r.top) / r.height) * 2,
+    };
+  }
+
+  /** Repaint the probe-dependent views immediately while training is paused. */
+  function probeChanged() {
+    if (!state.running) {
+      drawSurface();
+      paintActivations();
     }
   }
 
   surface.addEventListener('mousemove', (e) => {
-    const r = surface.getBoundingClientRect();
-    probe = {
-      x: ((e.clientX - r.left) / r.width) * 2 - 1,
-      y: 1 - ((e.clientY - r.top) / r.height) * 2,
-    };
-    if (!state.running) {
-      drawSurface();
-      paintActivations();
-    }
+    hover = surfacePoint(e);
+    probeChanged();
   });
   surface.addEventListener('mouseleave', () => {
-    probe = null;
-    if (!state.running) {
-      drawSurface();
-      paintActivations();
-    }
+    hover = null;
+    probeChanged();
+  });
+  surface.addEventListener('click', (e) => {
+    const pt = surfacePoint(e);
+    // clicking the already-pinned point releases it
+    pinned = pinned && Math.hypot(pt.x - pinned.x, pt.y - pinned.y) < 0.07 ? null : pt;
+    drawSurface();
+    paintActivations();
   });
 
   // ---- 2D network schematic (editable weights) ------------------------------
@@ -183,6 +209,8 @@ export function initNeural(): void {
   }
   let schemEdges: SchemEdge[] = [];
   let schemNeurons: SVGCircleElement[][] = [];
+  /** highlight ring around each neuron; opacity follows its activation */
+  let schemHalos: SVGCircleElement[][] = [];
   /** what the inline editor is bound to: an edge's weight or a neuron's bias */
   type EditTarget =
     | { kind: 'weight'; l: number; j: number; k: number; cx: number; cy: number }
@@ -218,6 +246,7 @@ export function initNeural(): void {
     schematic.innerHTML = '';
     schemEdges = [];
     schemNeurons = [];
+    schemHalos = [];
     const svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
@@ -266,11 +295,24 @@ export function initNeural(): void {
     // neurons
     layers.forEach((count, l) => {
       const circles: SVGCircleElement[] = [];
+      const halos: SVGCircleElement[] = [];
       const isInput = l === 0;
       const isOutput = l === layers.length - 1;
       for (let j = 0; j < count; j++) {
         const px = pos[l]![j]!.x;
         const py = pos[l]![j]!.y;
+        // activation halo – a ring that lights up when the neuron fires
+        const halo = document.createElementNS(SVG_NS, 'circle');
+        halo.setAttribute('cx', String(px));
+        halo.setAttribute('cy', String(py));
+        halo.setAttribute('r', '13');
+        halo.setAttribute('fill', 'none');
+        halo.setAttribute('stroke', theme.classes[1]!);
+        halo.setAttribute('stroke-width', '2.5');
+        halo.setAttribute('stroke-opacity', '0');
+        halo.setAttribute('pointer-events', 'none');
+        svg.appendChild(halo);
+        halos.push(halo);
         const c = document.createElementNS(SVG_NS, 'circle');
         c.setAttribute('cx', String(px));
         c.setAttribute('cy', String(py));
@@ -311,6 +353,7 @@ export function initNeural(): void {
         }
       }
       schemNeurons.push(circles);
+      schemHalos.push(halos);
 
       const label = document.createElementNS(SVG_NS, 'text');
       label.setAttribute('x', String(pos[l]![0]!.x));
@@ -580,7 +623,10 @@ export function initNeural(): void {
   let netGroup = new THREE.Group();
   scene.add(netGroup);
   const neuronGeo = new THREE.SphereGeometry(0.16, 20, 16);
+  const haloGeo = new THREE.SphereGeometry(0.24, 16, 12);
   let neuronMeshes: THREE.Mesh[][] = [];
+  /** translucent shells around the neurons; opacity follows activation */
+  let haloMeshes: THREE.Mesh[][] = [];
   interface Edge {
     mat: THREE.LineBasicMaterial;
     l: number;
@@ -595,7 +641,7 @@ export function initNeural(): void {
       const any = obj as THREE.Mesh | THREE.Line;
       if ((any as THREE.Mesh).geometry && any !== undefined) {
         const g = (any as THREE.Mesh).geometry;
-        if (g && g !== neuronGeo) g.dispose();
+        if (g && g !== neuronGeo && g !== haloGeo) g.dispose();
         const m = (any as THREE.Mesh).material;
         if (Array.isArray(m)) m.forEach((x) => x.dispose());
         else if (m) m.dispose();
@@ -618,6 +664,7 @@ export function initNeural(): void {
     scene.remove(netGroup);
     netGroup = new THREE.Group();
     neuronMeshes = [];
+    haloMeshes = [];
     edges = [];
     const layers = net.sizes;
     const xGap = 1.5;
@@ -626,6 +673,7 @@ export function initNeural(): void {
 
     layers.forEach((count, l) => {
       const meshes: THREE.Mesh[] = [];
+      const halos: THREE.Mesh[] = [];
       const layerPos: THREE.Vector3[] = [];
       for (let j = 0; j < count; j++) {
         const pos = ringPosition(l, j, count, xGap, totalW);
@@ -634,9 +682,21 @@ export function initNeural(): void {
         mesh.position.copy(pos);
         netGroup.add(mesh);
         meshes.push(mesh);
+        // activation shell – invisible until the neuron fires
+        const haloMat = new THREE.MeshBasicMaterial({
+          color: theme.edgePos,
+          transparent: true,
+          opacity: 0,
+          depthWrite: false,
+        });
+        const halo = new THREE.Mesh(haloGeo, haloMat);
+        halo.position.copy(pos);
+        netGroup.add(halo);
+        halos.push(halo);
         layerPos.push(pos);
       }
       neuronMeshes.push(meshes);
+      haloMeshes.push(halos);
       positions.push(layerPos);
     });
 
@@ -680,8 +740,8 @@ export function initNeural(): void {
   }
 
   function paintActivations() {
-    // forward pass for the probed point (or a representative default)
-    const p = probe ?? { x: 0.5, y: 0.5 };
+    // forward pass for the probed point (pinned/hovered, or a default)
+    const p = probePoint();
     net.forward(feats(p.x, p.y));
     const c = new THREE.Color();
     const pr = new THREE.Color(theme.classes[1]);
@@ -690,6 +750,9 @@ export function initNeural(): void {
       layer.forEach((aRaw, j) => {
         // map activation to 0..1 (tanh is -1..1, sigmoid/softmax 0..1, relu 0..)
         const a = l === 0 ? (aRaw + 1) / 2 : Math.max(0, Math.min(1, (aRaw + 1) / 2));
+        // ring highlight only for genuinely firing neurons, so the eye can
+        // follow the active path through the network
+        const ring = Math.max(0, a * 1.5 - 0.75);
         c.copy(ng).lerp(pr, a);
         const mesh = neuronMeshes[l]?.[j];
         if (mesh) {
@@ -699,8 +762,12 @@ export function initNeural(): void {
           // activation also breathes into the neuron's size
           mesh.scale.setScalar(0.75 + a * 0.5);
         }
+        const halo3d = haloMeshes[l]?.[j];
+        if (halo3d) (halo3d.material as THREE.MeshBasicMaterial).opacity = ring * 0.45;
         const circle = schemNeurons[l]?.[j];
         if (circle) circle.setAttribute('fill', `#${c.getHexString()}`);
+        const halo = schemHalos[l]?.[j];
+        if (halo) halo.setAttribute('stroke-opacity', ring.toFixed(2));
       });
     });
   }

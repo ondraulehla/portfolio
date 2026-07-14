@@ -96,7 +96,7 @@ const en = {
   'nn.resume': '▶ Resume',
   'nn.reset': 'Reset',
   'nn.surface':
-    'Decision surface – every point of the plane gets the colour of the class the network predicts there; hover a point to inspect it in the network views',
+    'Decision surface – every point gets the colour of the class the network predicts there; hover to probe the network, click to pin the point (rings mark the neurons it fires)',
   'nn.class': 'Class',
   'nn.schematic':
     'Network – neuron colour = its activation for the probed point (blue low, orange high); click an edge to edit its weight, a neuron to edit its bias',
@@ -219,7 +219,7 @@ const cs = {
   'nn.resume': '▶ Pokračovat',
   'nn.reset': 'Reset',
   'nn.surface':
-    'Rozhodovací plocha – každý bod roviny dostane barvu třídy, kterou tam síť právě predikuje; najetím myší si bod prohlédnete v pohledech na síť',
+    'Rozhodovací plocha – každý bod dostane barvu třídy, kterou tam síť predikuje; najetím síť sondujete, kliknutím bod připnete (prstence označí neurony, které pro něj pálí)',
   'nn.class': 'Třída',
   'nn.schematic':
     'Síť – barva neuronu = jeho aktivace pro zvolený bod (modrá nízká, oranžová vysoká); kliknutím na hranu upravíte váhu, na neuron jeho bias',
