@@ -180,7 +180,11 @@ export function initNeural(): void {
   }
   let schemEdges: SchemEdge[] = [];
   let schemNeurons: SVGCircleElement[][] = [];
-  let editing: SchemEdge | null = null;
+  /** what the inline editor is bound to: an edge's weight or a neuron's bias */
+  type EditTarget =
+    | { kind: 'weight'; l: number; j: number; k: number; cx: number; cy: number }
+    | { kind: 'bias'; l: number; j: number; cx: number; cy: number };
+  let editing: EditTarget | null = null;
 
   function schemPositions(): { x: number; y: number }[][] {
     const layers = net.sizes;
@@ -249,7 +253,7 @@ export function initNeural(): void {
           hit.addEventListener('mouseleave', () => (tip.hidden = true));
           hit.addEventListener('click', (e) => {
             e.stopPropagation();
-            openWeightEditor(edge);
+            openEditor({ kind: 'weight', l: edge.l, j: edge.j, k: edge.k, cx: edge.cx, cy: edge.cy });
           });
           svg.appendChild(hit);
         }
@@ -262,10 +266,23 @@ export function initNeural(): void {
       const isInput = l === 0;
       const isOutput = l === layers.length - 1;
       for (let j = 0; j < count; j++) {
+        const px = pos[l]![j]!.x;
+        const py = pos[l]![j]!.y;
         const c = document.createElementNS(SVG_NS, 'circle');
-        c.setAttribute('cx', String(pos[l]![j]!.x));
-        c.setAttribute('cy', String(pos[l]![j]!.y));
+        c.setAttribute('cx', String(px));
+        c.setAttribute('cy', String(py));
         c.setAttribute('r', '9');
+        // hover shows the neuron's live activation (and bias); clicking a
+        // non-input neuron opens the inline editor on its bias
+        c.addEventListener('mouseenter', () => showNeuronTip(l, j, px, py));
+        c.addEventListener('mouseleave', () => (tip.hidden = true));
+        if (!isInput) {
+          c.setAttribute('class', 'nn-neuron-hit');
+          c.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditor({ kind: 'bias', l: l - 1, j, cx: px, cy: py });
+          });
+        }
         // output neurons carry their class colour as a ring when multi-class
         if (isOutput && count > 1) {
           c.setAttribute('stroke', theme.classes[j] ?? 'var(--line)');
@@ -332,13 +349,28 @@ export function initNeural(): void {
     tip.hidden = false;
   }
 
-  function openWeightEditor(edge: SchemEdge) {
+  function showNeuronTip(l: number, j: number, cx: number, cy: number) {
+    if (editing) return;
+    const a = net.activations[l]?.[j] ?? 0;
+    const parts = [`a = ${a.toFixed(2)}`];
+    if (l > 0) parts.push(`b = ${net.biases[l - 1]![j]!.toFixed(2)}`);
+    const { left, top } = toWrapPx(cx, cy);
+    tip.textContent = parts.join(' · ');
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+    tip.hidden = false;
+  }
+
+  function openEditor(target: EditTarget) {
     // pause so backprop doesn't immediately overwrite the manual edit
     setRunning(false);
     tip.hidden = true;
-    editing = edge;
-    const v = net.weights[edge.l]![edge.j]![edge.k]!;
-    const { left, top } = toWrapPx(edge.cx, edge.cy);
+    editing = target;
+    const v =
+      target.kind === 'weight'
+        ? net.weights[target.l]![target.j]![target.k]!
+        : net.biases[target.l]![target.j]!;
+    const { left, top } = toWrapPx(target.cx, target.cy);
     editInput.value = v.toFixed(2);
     editInput.style.left = `${left}px`;
     editInput.style.top = `${top}px`;
@@ -352,7 +384,11 @@ export function initNeural(): void {
     if (commit) {
       const v = parseFloat(editInput.value);
       if (!isNaN(v)) {
-        net.weights[editing.l]![editing.j]![editing.k] = v;
+        if (editing.kind === 'weight') {
+          net.weights[editing.l]![editing.j]![editing.k] = v;
+        } else {
+          net.biases[editing.l]![editing.j] = v;
+        }
         drawSurface();
         updateSchematic();
         updateEdges();

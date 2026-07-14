@@ -80,7 +80,7 @@ const en = {
   'nn.title': 'Neural Network Lab',
   'nn.kicker': 'From my master’s thesis',
   'nn.intro':
-    'The interactive neural network from my thesis “Modeling Neural Networks in Virtual Reality”, revived here. Build the network layer by layer, click any edge in the schematic to edit that weight, and watch the decision surface learn your dataset live via backpropagation – with a 3D model of the network lighting up below.',
+    'The interactive neural network from my master’s thesis “Modeling Neural Networks in Virtual Reality”. Build your own network: pick the input features, add layers and neurons, click an edge to change a single weight – and watch the decision surface learn your dataset by backpropagation, live in the browser, while the 3D model lights up below.',
   'nn.dataset': 'Dataset',
   'nn.activation': 'Activation',
   'nn.layers': 'Layers',
@@ -97,7 +97,7 @@ const en = {
   'nn.reset': 'Reset',
   'nn.surface': 'Decision surface – hover it to send that point through the network',
   'nn.schematic':
-    'Network – neuron colour = its activation for the probed point (blue low, orange high); hover an edge for its weight, click to edit it',
+    'Network – neuron colour = its activation for the probed point (blue low, orange high); click an edge to edit its weight, a neuron to edit its bias',
   'nn.model': '3D network – same activation colours, neurons on rings glow and grow, drag to orbit',
   'nn.webgl': 'Your browser doesn’t support WebGL, so the 3D model can’t render – the decision surface still works.',
   'nn.links.thesis': 'Download the thesis (PDF, 1.4 MB)',
@@ -201,7 +201,7 @@ const cs = {
   'nn.title': 'Laboratoř neuronových sítí',
   'nn.kicker': 'Z mé diplomové práce',
   'nn.intro':
-    'Interaktivní neuronová síť z mé diplomky „Modelování neuronových sítí ve virtuální realitě", oživená přímo zde. Sestavte síť po vrstvách, kliknutím na hranu ve schématu upravte konkrétní váhu a sledujte, jak se rozhodovací plocha učí váš dataset naživo backpropagací – dole se rozsvěcuje 3D model sítě.',
+    'Interaktivní neuronová síť z mé diplomové práce „Modelování neuronových sítí ve virtuální realitě". Postavte si vlastní síť: zvolte vstupní příznaky, přidejte vrstvy a neurony, kliknutím na hranu změňte jednotlivou váhu – a sledujte, jak se rozhodovací plocha učí váš dataset backpropagací, naživo v prohlížeči. 3D model dole se u toho rozsvěcuje.',
   'nn.dataset': 'Dataset',
   'nn.activation': 'Aktivace',
   'nn.layers': 'Vrstvy',
@@ -218,7 +218,7 @@ const cs = {
   'nn.reset': 'Reset',
   'nn.surface': 'Rozhodovací plocha – najetím myší pošlete daný bod sítí',
   'nn.schematic':
-    'Síť – barva neuronu = jeho aktivace pro zvolený bod (modrá nízká, oranžová vysoká); najetím na hranu zobrazíte váhu, kliknutím ji upravíte',
+    'Síť – barva neuronu = jeho aktivace pro zvolený bod (modrá nízká, oranžová vysoká); kliknutím na hranu upravíte váhu, na neuron jeho bias',
   'nn.model': '3D síť – stejné barvy aktivací, neurony na prstencích září a rostou, táhnutím otočíte',
   'nn.webgl': 'Váš prohlížeč nepodporuje WebGL, 3D model nelze vykreslit – rozhodovací plocha ale funguje.',
   'nn.links.thesis': 'Stáhnout diplomku (PDF, 1,4 MB)',
