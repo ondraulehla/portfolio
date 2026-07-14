@@ -41,13 +41,13 @@ export const WORLD = {
    * mountains and river so each sign stands alone.
    */
   signSpots: [
-    { x: -18, z: -70 },
-    { x: 68, z: -14 },
-    { x: -10, z: 78 },
-    { x: 40, z: -60 },
-    { x: -66, z: 46 },
-    { x: 74, z: 40 },
-    { x: 18, z: 8 },
+    { x: -18, z: -70, h: 15 },
+    { x: 68, z: -14, h: 11 },
+    { x: -10, z: 78, h: 19 },
+    { x: 40, z: -60, h: 23 },
+    { x: -66, z: 46, h: 12 },
+    { x: 74, z: 40, h: 17 },
+    { x: 18, z: 8, h: 21 },
   ],
 
   /** Forests: lower densityThreshold (0..1) → more/larger woods. */

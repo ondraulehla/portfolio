@@ -202,17 +202,22 @@ export async function startExperience(): Promise<void> {
 
   // --- world ---------------------------------------------------------------------
   scene.add(buildTerrain());
-  scene.add(buildSea(sky.water));
+  const sea = buildSea(sky.water);
+  scene.add(sea);
   scene.add(buildForests());
   scene.add(buildRocks());
   scene.add(buildTown());
+  const boats = buildBoats();
+  scene.add(boats);
+  const lighthouse = buildLighthouse();
+  scene.add(lighthouse);
   const clouds = buildClouds();
   scene.add(clouds);
 
   const signs: { group: THREE.Group; project: ProjectSign; base: number }[] = [];
   data.projects.forEach((project, i) => {
     const spot = SIGN_SPOTS[i % SIGN_SPOTS.length]!;
-    const y = Math.max(getHeight(spot.x, spot.z), 0) + 13;
+    const y = Math.max(getHeight(spot.x, spot.z), 0) + (spot.h ?? 13);
     const group = buildFloatingSign(project, data.labels.pressEnter);
     group.position.set(spot.x, y, spot.z);
     group.lookAt(0, y, 0);
@@ -371,11 +376,27 @@ export async function startExperience(): Promise<void> {
       if (cloud.position.x > 170) cloud.position.x = -170;
     });
 
-    // floating signs bob and shimmer
+    // gentle sea swell, drifting sailboats, lighthouse beacon
+    animateSea(sea, elapsed);
+    boats.children.forEach((boat, i) => {
+      const b = boat.userData as { angle: number; radius: number; speed: number };
+      b.angle += b.speed * dt;
+      boat.position.set(Math.cos(b.angle) * b.radius, WATER_LEVEL + 0.12, Math.sin(b.angle) * b.radius);
+      boat.rotation.y = -b.angle;
+      boat.rotation.z = Math.sin(elapsed * 1.3 + i * 2) * 0.045;
+      boat.position.y += Math.sin(elapsed * 1.1 + i * 1.7) * 0.08;
+    });
+    const beacon = lighthouse.getObjectByName('beacon') as THREE.Mesh | null;
+    if (beacon) {
+      (beacon.material as THREE.MeshStandardMaterial).emissiveIntensity =
+        1.6 + Math.sin(elapsed * 2.6) * 1.3;
+    }
+
+    // blimps bob and sway gently on their moorings
     signs.forEach((sign, i) => {
-      sign.group.position.y = sign.base + Math.sin(elapsed * 1.1 + i * 2.1) * 0.5;
-      const ring = sign.group.getObjectByName('ring');
-      if (ring) ring.rotation.z += 0.4 * dt;
+      sign.group.position.y = sign.base + Math.sin(elapsed * 1.1 + i * 2.1) * 0.55;
+      const rig = sign.group.getObjectByName('rig');
+      if (rig) rig.rotation.z = Math.sin(elapsed * 0.8 + i * 1.4) * 0.028;
     });
 
     // proximity
@@ -522,8 +543,11 @@ function buildTerrain(): THREE.Mesh {
 }
 
 function buildSea(waterColor: number): THREE.Mesh {
+  // segmented plane so animateSea() can roll a gentle swell through it
+  const geometry = new THREE.PlaneGeometry(820, 820, 46, 46);
+  geometry.rotateX(-Math.PI / 2);
   const sea = new THREE.Mesh(
-    new THREE.CircleGeometry(400, 64),
+    geometry,
     new THREE.MeshStandardMaterial({
       color: waterColor,
       roughness: 0.35,
@@ -532,9 +556,113 @@ function buildSea(waterColor: number): THREE.Mesh {
       opacity: 0.92,
     }),
   );
-  sea.rotation.x = -Math.PI / 2;
   sea.position.y = WATER_LEVEL;
   return sea;
+}
+
+/** Gentle two-directional swell; recomputed normals keep the specular alive. */
+function animateSea(sea: THREE.Mesh, t: number): void {
+  const pos = sea.geometry.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    pos.setY(i, Math.sin(x * 0.085 + t * 0.9) * 0.17 + Math.cos(z * 0.105 + t * 0.65) * 0.15);
+  }
+  pos.needsUpdate = true;
+  sea.geometry.computeVertexNormals();
+}
+
+/** Little toy sailboats drifting in slow circles around the island. */
+function buildBoats(): THREE.Group {
+  const group = new THREE.Group();
+  const configs = [
+    { angle: 0.7, radius: 128, speed: 0.03, hull: 0xc0504a, sail: 0xffffff },
+    { angle: 2.8, radius: 152, speed: -0.022, hull: 0x4f6a8f, sail: 0xf7f2e8 },
+    { angle: 4.7, radius: 138, speed: 0.026, hull: 0x6d4c41, sail: 0xffe9c9 },
+  ];
+  for (const cfg of configs) {
+    const boat = new THREE.Group();
+    const hull = new THREE.Mesh(
+      new THREE.BoxGeometry(2.5, 0.55, 0.95),
+      new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
+    );
+    hull.position.y = 0.28;
+    boat.add(hull);
+    const bow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.48, 1, 4),
+      new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
+    );
+    bow.rotation.z = -Math.PI / 2;
+    bow.rotation.y = Math.PI / 4;
+    bow.position.set(1.7, 0.28, 0);
+    boat.add(bow);
+    const mast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 2.2, 6),
+      new THREE.MeshStandardMaterial({ color: COLORS.trunk, roughness: 1 }),
+    );
+    mast.position.y = 1.55;
+    boat.add(mast);
+    const sailGeo = new THREE.BufferGeometry();
+    sailGeo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0.65, 0, 0, 2.5, 0, 1.35, 0.95, 0], 3),
+    );
+    sailGeo.computeVertexNormals();
+    const sail = new THREE.Mesh(
+      sailGeo,
+      new THREE.MeshStandardMaterial({ color: cfg.sail, roughness: 0.9, side: THREE.DoubleSide }),
+    );
+    sail.position.x = 0.06;
+    boat.add(sail);
+    boat.userData = { angle: cfg.angle, radius: cfg.radius, speed: cfg.speed };
+    group.add(boat);
+  }
+  return group;
+}
+
+/** Striped lighthouse on a rocky islet off the coast, with a pulsing beacon. */
+function buildLighthouse(): THREE.Group {
+  const group = new THREE.Group();
+  const rock = new THREE.Mesh(
+    new THREE.ConeGeometry(5.6, 9.5, 7),
+    new THREE.MeshStandardMaterial({ color: COLORS.rock, roughness: 1, flatShading: true }),
+  );
+  rock.position.y = WATER_LEVEL + 0.6;
+  group.add(rock);
+
+  const bands = [0xffffff, 0xc0504a, 0xffffff, 0xc0504a];
+  const baseY = WATER_LEVEL + 5.1;
+  bands.forEach((c, i) => {
+    const seg = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.06 - i * 0.08, 1.16 - i * 0.08, 1.55, 10),
+      new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }),
+    );
+    seg.position.y = baseY + i * 1.55;
+    group.add(seg);
+  });
+
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.55, 12, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0xffe9a8,
+      emissive: 0xffc45e,
+      emissiveIntensity: 1.6,
+      roughness: 0.4,
+    }),
+  );
+  beacon.name = 'beacon';
+  beacon.position.y = baseY + bands.length * 1.55 + 0.15;
+  group.add(beacon);
+
+  const cap = new THREE.Mesh(
+    new THREE.ConeGeometry(0.9, 0.95, 8),
+    new THREE.MeshStandardMaterial({ color: COLORS.planeDark, roughness: 0.7 }),
+  );
+  cap.position.y = beacon.position.y + 0.9;
+  group.add(cap);
+
+  group.position.set(118, 0, -64);
+  return group;
 }
 
 /** Trees in organic noise-driven clusters; instanced for cheap draw calls. */
@@ -895,7 +1023,7 @@ function buildPlane(): { plane: THREE.Group; propeller: THREE.Group } {
 class PuffTrail {
   private pool: {
     mesh: THREE.Mesh;
-    material: THREE.MeshBasicMaterial;
+    material: THREE.MeshStandardMaterial;
     age: number;
     life: number;
     size: number;
@@ -907,13 +1035,15 @@ class PuffTrail {
     const geometry = new THREE.IcosahedronGeometry(1, 2);
     for (let i = 0; i < size; i++) {
       const material = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
+        color: 0xf6f0e4,
         roughness: 1,
         transparent: true,
         opacity: 0,
         depthWrite: false,
       });
       const mesh = new THREE.Mesh(geometry, material);
+      // composite after the (transparent) sea so the trail stays visible over water
+      mesh.renderOrder = 10;
       mesh.visible = false;
       scene.add(mesh);
       this.pool.push({ mesh, material, age: 0, life: 1, size: 1 });
@@ -958,14 +1088,19 @@ class PuffTrail {
 }
 
 function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
+  const outer = new THREE.Group();
+  // everything lives on an inner rig so the bob/sway animation can rotate it
+  // without disturbing the outer group's lookAt orientation
   const group = new THREE.Group();
+  group.name = 'rig';
+  outer.add(group);
   const texture = makePanelTexture(project, hint);
 
-  // a single box – no stacked coplanar faces, so nothing to z-fight at distance;
-  // box UVs are authored per-face from the outside, so both faces read correctly
+  // hanging card – a single box so nothing z-fights at distance; box UVs are
+  // authored per-face from the outside, so both faces read correctly
   const frameMat = new THREE.MeshStandardMaterial({ color: COLORS.planeDark, roughness: 0.45 });
   const faceMat = new THREE.MeshBasicMaterial({ map: texture });
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(7.7, 3.35, 0.3), [
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(7.4, 3.2, 0.26), [
     frameMat,
     frameMat,
     frameMat,
@@ -976,21 +1111,43 @@ function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
   panel.castShadow = true;
   group.add(panel);
 
-  // warm vermilion ring – the same red as the plane, so the signs feel native
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(4.7, 0.1, 10, 48),
-    new THREE.MeshBasicMaterial({ color: COLORS.planeBody, transparent: true, opacity: 0.6 }),
-  );
-  ring.name = 'ring';
-  group.add(ring);
+  // a little blimp carries the card – native to a world about flying
+  const hullMat = new THREE.MeshStandardMaterial({ color: COLORS.planeWing, roughness: 0.55 });
+  const hull = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 14), hullMat);
+  hull.scale.set(2.55, 1, 1);
+  hull.position.y = 4;
+  hull.castShadow = true;
+  group.add(hull);
+
+  const noseMat = new THREE.MeshStandardMaterial({ color: COLORS.planeBody, roughness: 0.5 });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 10), noseMat);
+  nose.scale.set(1.15, 0.78, 0.78);
+  nose.position.set(3.35, 4, 0);
+  group.add(nose);
+
+  const finGeoV = new THREE.BoxGeometry(1.05, 1.7, 0.12);
+  const finGeoH = new THREE.BoxGeometry(1.05, 0.12, 1.7);
+  const finV = new THREE.Mesh(finGeoV, noseMat);
+  finV.position.set(-3.5, 4, 0);
+  const finH = new THREE.Mesh(finGeoH, noseMat);
+  finH.position.set(-3.5, 4, 0);
+  group.add(finV, finH);
+
+  // rigging cables from the hull down to the card
+  const cableMat = new THREE.MeshBasicMaterial({ color: COLORS.planeDark });
+  for (const cx of [-2.4, 2.4]) {
+    const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.5, 5), cableMat);
+    cable.position.set(cx, 2.35, 0);
+    group.add(cable);
+  }
 
   // soft light beam anchoring the sign to the ground
   const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.35, 0.9, 26, 10, 1, true),
+    new THREE.CylinderGeometry(0.3, 0.75, 26, 10, 1, true),
     new THREE.MeshBasicMaterial({
       color: COLORS.planeBody,
       transparent: true,
-      opacity: 0.13,
+      opacity: 0.11,
       side: THREE.DoubleSide,
       depthWrite: false,
     }),
@@ -998,52 +1155,55 @@ function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
   beam.position.y = -13;
   group.add(beam);
 
-  return group;
+  return outer;
 }
 
 function makePanelTexture(project: ProjectSign, hint: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 424;
+  canvas.height = 444;
   const ctx = canvas.getContext('2d')!;
   const W = canvas.width;
   const H = canvas.height;
 
-  // warm paper card in the site's editorial language: hairline frame, short
-  // accent rule, mono year, bold title, and a small call-to-action pill
-  ctx.fillStyle = COLORS.panel;
+  // warm paper card in the site's editorial language: soft gradient, hairline
+  // frame, accent rule, mono year, display title, call-to-action pill
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#fffdf8');
+  bg.addColorStop(1, '#f3ebdc');
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.strokeStyle = 'rgba(35, 40, 56, 0.3)';
+  ctx.strokeStyle = 'rgba(35, 40, 56, 0.22)';
   ctx.lineWidth = 3;
-  ctx.strokeRect(16, 16, W - 32, H - 32);
+  ctx.strokeRect(18, 18, W - 36, H - 36);
 
   ctx.fillStyle = COLORS.panelAccent;
-  ctx.fillRect(62, 58, 116, 10);
+  ctx.fillRect(64, 62, 112, 9);
 
   ctx.fillStyle = COLORS.panelAccent;
-  ctx.font = '600 42px ui-monospace, monospace';
-  ctx.fillText(String(project.year), 62, 136);
+  ctx.font = '600 40px ui-monospace, monospace';
+  ctx.fillText(String(project.year), 64, 138);
 
   ctx.fillStyle = COLORS.panelText;
-  ctx.font = 'bold 74px system-ui, sans-serif';
-  wrapText(ctx, project.title, 62, 226, W - 124, 86);
+  ctx.font = 'bold 76px "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif';
+  wrapText(ctx, project.title, 64, 232, W - 128, 88);
 
   // hint pill, bottom-right ("Press Enter" / "Stiskněte Enter")
-  ctx.font = '600 34px ui-monospace, monospace';
+  ctx.font = '600 33px ui-monospace, monospace';
   const label = `⏎ ${hint}`;
   const tw = ctx.measureText(label).width;
   const padX = 30;
   const pillW = tw + padX * 2;
-  const pillH = 62;
-  const px = W - 62 - pillW;
-  const py = H - 60 - pillH;
+  const pillH = 60;
+  const px = W - 64 - pillW;
+  const py = H - 62 - pillH;
   ctx.fillStyle = COLORS.panelAccent;
   ctx.beginPath();
-  ctx.roundRect(px, py, pillW, pillH, 31);
+  ctx.roundRect(px, py, pillW, pillH, 30);
   ctx.fill();
-  ctx.fillStyle = COLORS.panel;
-  ctx.fillText(label, px + padX, py + 42);
+  ctx.fillStyle = '#fffdf8';
+  ctx.fillText(label, px + padX, py + 41);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;
