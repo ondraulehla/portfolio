@@ -18,6 +18,10 @@ export function initGate(): void {
   const note = document.getElementById('gate-note');
   const loading = document.getElementById('gate-loading');
   if (!gate || !enter || !note || !loading) return;
+  // Guard against double-binding when init runs more than once on the same DOM
+  // (initial load fires both the module script and astro:page-load).
+  if (gate.dataset.bound) return;
+  gate.dataset.bound = 'true';
 
   const strings = readStrings();
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -126,7 +126,14 @@ const worldData = {
 
   <script>
     import { initGate } from '@/playground/gate';
-    initGate();
+
+    // Module scripts run once per session, so re-init on every client-side
+    // navigation; the root check keeps this a no-op on other pages.
+    function init() {
+      if (document.getElementById('playground-root')) initGate();
+    }
+    init();
+    document.addEventListener('astro:page-load', init);
   </script>
 </Base>
 

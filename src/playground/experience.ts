@@ -247,8 +247,10 @@ export async function startExperience(): Promise<void> {
     }
     if (down && e.code === 'Enter' && activeSign) location.href = activeSign.url;
   };
-  addEventListener('keydown', onKey(true));
-  addEventListener('keyup', onKey(false));
+  const onKeyDown = onKey(true);
+  const onKeyUp = onKey(false);
+  addEventListener('keydown', onKeyDown);
+  addEventListener('keyup', onKeyUp);
 
   const pad = document.getElementById('touch-pad');
   if (pad && matchMedia('(pointer: coarse)').matches) {
@@ -409,6 +411,9 @@ export async function startExperience(): Promise<void> {
     'astro:before-swap',
     () => {
       cancelAnimationFrame(raf);
+      removeEventListener('resize', onResize);
+      removeEventListener('keydown', onKeyDown);
+      removeEventListener('keyup', onKeyUp);
       renderer.dispose();
     },
     { once: true },
