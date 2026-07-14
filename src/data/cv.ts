@@ -164,29 +164,32 @@ export const cv: CV = {
   skills: [
     {
       category: { en: 'Languages', cs: 'Jazyky' },
-      items: ['TypeScript', 'JavaScript', 'C#', 'C/C++', 'Java', 'SQL'],
+      items: ['TypeScript', 'JavaScript', 'Python', 'C#', 'C/C++', 'Java', 'SQL'],
     },
     {
       category: { en: 'Frontend', cs: 'Frontend' },
-      items: ['React', 'Vue', 'Astro', 'Tailwind CSS', 'HTML/CSS'],
+      items: ['React', 'Next.js', 'Vue', 'Astro', 'Tailwind CSS', 'HTML/CSS'],
     },
     {
       category: { en: 'AI Engineering', cs: 'AI inženýrství' },
       items: [
+        { en: 'AI agents & tool use', cs: 'AI agenti & tool use' },
         { en: 'RAG pipelines', cs: 'RAG pipeline' },
         'MCP servers',
         'Claude API',
-        { en: 'Agentic workflows', cs: 'Agentní workflow' },
+        'Claude Agent SDK',
+        'OpenAI API',
+        { en: 'Sandboxed code execution', cs: 'Sandboxované spouštění kódu' },
         { en: 'Prompt engineering', cs: 'Prompt engineering' },
       ],
     },
     {
       category: { en: 'Backend & Data', cs: 'Backend & data' },
-      items: ['Node.js', '.NET', 'PostgreSQL', 'Oracle', 'Redis'],
+      items: ['Node.js', 'FastAPI', '.NET', 'PostgreSQL', 'Oracle', 'Redis'],
     },
     {
       category: { en: 'Infrastructure', cs: 'Infrastruktura' },
-      items: ['Docker', 'Kubernetes', 'Git', 'CI/CD'],
+      items: ['Docker', 'Kubernetes', 'Google Cloud', 'Git', 'CI/CD'],
     },
     {
       category: { en: 'Client work', cs: 'Práce s klienty' },
@@ -203,7 +206,7 @@ export const cv: CV = {
     { name: { en: 'Czech', cs: 'Čeština' }, level: { en: 'Native', cs: 'Rodilý mluvčí' } },
     {
       name: { en: 'English', cs: 'Angličtina' },
-      level: { en: 'C1 · TOEFL iBT 101/120', cs: 'C1 · TOEFL iBT 101/120' },
+      level: { en: 'Fluent · C1', cs: 'Plynulá · C1' },
     },
     { name: { en: 'French', cs: 'Francouzština' }, level: { en: 'Intermediate · B1', cs: 'Středně pokročilá · B1' } },
     { name: { en: 'German', cs: 'Němčina' }, level: { en: 'Basic · A2', cs: 'Základní · A2' } },

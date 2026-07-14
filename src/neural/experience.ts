@@ -315,7 +315,7 @@ export function initNeural(): void {
         const halo = document.createElementNS(SVG_NS, 'circle');
         halo.setAttribute('cx', String(px));
         halo.setAttribute('cy', String(py));
-        halo.setAttribute('r', '13');
+        halo.setAttribute('r', '14.5');
         halo.setAttribute('fill', 'none');
         halo.setAttribute('stroke', theme.classes[1]!);
         halo.setAttribute('stroke-width', '2.5');
@@ -326,7 +326,7 @@ export function initNeural(): void {
         const c = document.createElementNS(SVG_NS, 'circle');
         c.setAttribute('cx', String(px));
         c.setAttribute('cy', String(py));
-        c.setAttribute('r', '9');
+        c.setAttribute('r', '10');
         // hover shows the neuron's live activation (and bias); clicking a
         // non-input neuron opens the inline editor on its bias
         c.addEventListener('mouseenter', () => showNeuronTip(l, j, px, py));
@@ -343,8 +343,9 @@ export function initNeural(): void {
           c.setAttribute('stroke', theme.classes[j] ?? 'var(--line)');
           c.setAttribute('stroke-width', '2.5');
         } else {
-          c.setAttribute('stroke', 'var(--line)');
+          c.setAttribute('stroke', 'var(--ink-faint)');
           c.setAttribute('stroke-width', '1');
+          c.setAttribute('stroke-opacity', '0.55');
         }
         svg.appendChild(c);
         circles.push(c);
@@ -402,8 +403,8 @@ export function initNeural(): void {
       const v = edgeValue(e.l, e.j, e.k);
       const norm = Math.min(1, Math.abs(v) / maxAbs[e.l]!);
       e.path.setAttribute('stroke', v >= 0 ? theme.classes[1]! : theme.classes[0]!);
-      e.path.setAttribute('stroke-width', (0.5 + norm * 2.6).toFixed(2));
-      e.path.setAttribute('stroke-opacity', (0.25 + norm * 0.6).toFixed(2));
+      e.path.setAttribute('stroke-width', (0.7 + norm * 3.4).toFixed(2));
+      e.path.setAttribute('stroke-opacity', (0.3 + norm * 0.62).toFixed(2));
     }
   }
 
@@ -649,11 +650,15 @@ export function initNeural(): void {
   scene.add(netGroup);
   const neuronGeo = new THREE.SphereGeometry(0.16, 20, 16);
   const haloGeo = new THREE.SphereGeometry(0.24, 16, 12);
+  // unit cylinder along Y – scaled/rotated per edge so connections have real
+  // thickness (WebGL ignores line widths above 1px)
+  const edgeGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
   let neuronMeshes: THREE.Mesh[][] = [];
   /** translucent shells around the neurons; opacity follows activation */
   let haloMeshes: THREE.Mesh[][] = [];
   interface Edge {
-    mat: THREE.LineBasicMaterial;
+    mat: THREE.MeshBasicMaterial;
+    mesh: THREE.Mesh;
     l: number;
     j: number;
     k: number;
@@ -666,7 +671,7 @@ export function initNeural(): void {
       const any = obj as THREE.Mesh | THREE.Line;
       if ((any as THREE.Mesh).geometry && any !== undefined) {
         const g = (any as THREE.Mesh).geometry;
-        if (g && g !== neuronGeo && g !== haloGeo) g.dispose();
+        if (g && g !== neuronGeo && g !== haloGeo && g !== edgeGeo) g.dispose();
         const m = (any as THREE.Mesh).material;
         if (Array.isArray(m)) m.forEach((x) => x.dispose());
         else if (m) m.dispose();
@@ -725,15 +730,22 @@ export function initNeural(): void {
       positions.push(layerPos);
     });
 
-    // edges — geometry built once; material opacity/colour updated in place
+    // edges — cylinders placed once; radius/colour/opacity updated in place
+    const up = new THREE.Vector3(0, 1, 0);
     for (let l = 0; l < net.weights.length; l++) {
       const w = net.weights[l]!;
       for (let j = 0; j < w.length; j++) {
         for (let k = 0; k < w[j]!.length; k++) {
-          const geom = new THREE.BufferGeometry().setFromPoints([positions[l]![k]!, positions[l + 1]![j]!]);
-          const mat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.3 });
-          netGroup.add(new THREE.Line(geom, mat));
-          edges.push({ mat, l, j, k });
+          const a = positions[l]![k]!;
+          const b = positions[l + 1]![j]!;
+          const dir = new THREE.Vector3().subVectors(b, a);
+          const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3, depthWrite: false });
+          const mesh = new THREE.Mesh(edgeGeo, mat);
+          mesh.position.copy(a).add(b).multiplyScalar(0.5);
+          mesh.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+          mesh.scale.set(0.01, dir.length(), 0.01);
+          netGroup.add(mesh);
+          edges.push({ mat, mesh, l, j, k });
         }
       }
     }
@@ -751,12 +763,16 @@ export function initNeural(): void {
   const edgePos = new THREE.Color(theme.edgePos);
   const edgeNeg = new THREE.Color(theme.edgeNeg);
   function updateEdges() {
-    // normalise opacity against the largest current value per layer
+    // normalise radius/opacity against the largest current value per layer
     const maxAbs = edgeMaxAbs();
     for (const e of edges) {
       const v = edgeValue(e.l, e.j, e.k);
+      const norm = Math.min(1, Math.abs(v) / maxAbs[e.l]!);
       e.mat.color.copy(v >= 0 ? edgePos : edgeNeg);
-      e.mat.opacity = 0.1 + Math.min(1, Math.abs(v) / maxAbs[e.l]!) * 0.65;
+      e.mat.opacity = 0.2 + norm * 0.65;
+      const r = 0.008 + norm * 0.035;
+      e.mesh.scale.x = r;
+      e.mesh.scale.z = r;
     }
   }
 
