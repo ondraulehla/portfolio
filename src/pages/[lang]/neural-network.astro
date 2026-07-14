@@ -117,7 +117,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       <figure id="nn-schem-wrap" class="border-line relative rounded-xl border p-3">
         <div id="nn-schematic" class="aspect-[56/43] w-full"></div>
         <div id="nn-tip" class="nn-tip" hidden></div>
-        <input id="nn-weight-edit" class="nn-weight-edit" type="number" step="0.1" hidden />
+        <input id="nn-weight-edit" class="nn-weight-edit" type="number" step="0.01" hidden />
         <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.schematic')}</figcaption>
       </figure>
       <figure class="border-line rounded-xl border p-3 lg:col-span-2">
@@ -287,10 +287,16 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       return false;
     }
   }
-  if (webglOk()) {
-    import('@/neural/experience').then((m) => m.initNeural());
-  } else {
-    const note = document.getElementById('nn-webgl');
-    if (note) note.hidden = false;
+  // astro:page-load fires on the initial load AND after every client-side
+  // navigation, so the lab re-initializes when the user comes back to it
+  function initLab() {
+    if (!document.getElementById('nn-surface')) return;
+    if (webglOk()) {
+      import('@/neural/experience').then((m) => m.initNeural());
+    } else {
+      const note = document.getElementById('nn-webgl');
+      if (note) note.hidden = false;
+    }
   }
+  document.addEventListener('astro:page-load', initLab);
 </script>

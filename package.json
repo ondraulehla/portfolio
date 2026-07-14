@@ -10,7 +10,8 @@
     "check": "astro check",
     "check:i18n": "node scripts/check-i18n-parity.mjs",
     "pdf": "node scripts/export-pdf.mjs",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.2",
@@ -30,6 +31,7 @@
     "prettier": "^3.9.5",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
   }
 }

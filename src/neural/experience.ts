@@ -52,6 +52,10 @@ export function initNeural(): void {
   const schemWrap = document.getElementById('nn-schem-wrap') as HTMLElement;
   const layersEl = document.getElementById('nn-layers') as HTMLDivElement;
   if (!surface || !canvas3d || !schematic || !schemWrap || !layersEl) return;
+  // guard against double-init (astro:page-load fires once per navigation, but
+  // the swapped-in DOM is fresh, so the marker resets on every visit)
+  if (surface.dataset.nnInit) return;
+  surface.dataset.nnInit = '1';
 
   const state = {
     dataset: 'circle' as DatasetKind,
@@ -74,6 +78,9 @@ export function initNeural(): void {
   let theme = readTheme();
 
   const feats = (x: number, y: number) => features(x, y, state.inputs);
+
+  /** Point the activation colours refer to; set by hovering the surface. */
+  let probe: { x: number; y: number } | null = null;
 
   // ---- 2D decision surface --------------------------------------------------
   const sctx = surface.getContext('2d')!;
@@ -121,7 +128,40 @@ export function initNeural(): void {
       sctx.strokeStyle = 'rgba(255,255,255,0.7)';
       sctx.stroke();
     }
+    // probe marker – the point whose activations colour the network views
+    if (probe) {
+      const px = ((probe.x + 1) / 2) * S;
+      const py = ((1 - probe.y) / 2) * S;
+      sctx.beginPath();
+      sctx.arc(px, py, 7, 0, Math.PI * 2);
+      sctx.lineWidth = 2;
+      sctx.strokeStyle = theme.ink;
+      sctx.stroke();
+      sctx.beginPath();
+      sctx.arc(px, py, 2, 0, Math.PI * 2);
+      sctx.fillStyle = theme.ink;
+      sctx.fill();
+    }
   }
+
+  surface.addEventListener('mousemove', (e) => {
+    const r = surface.getBoundingClientRect();
+    probe = {
+      x: ((e.clientX - r.left) / r.width) * 2 - 1,
+      y: 1 - ((e.clientY - r.top) / r.height) * 2,
+    };
+    if (!state.running) {
+      drawSurface();
+      paintActivations();
+    }
+  });
+  surface.addEventListener('mouseleave', () => {
+    probe = null;
+    if (!state.running) {
+      drawSurface();
+      paintActivations();
+    }
+  });
 
   // ---- 2D network schematic (editable weights) ------------------------------
   const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -423,13 +463,10 @@ export function initNeural(): void {
             state.hidden[i] = v;
             rebuild(false);
           },
-          onRemove:
-            state.hidden.length > 1
-              ? () => {
-                  state.hidden.splice(i, 1);
-                  rebuild(false);
-                }
-              : undefined,
+          onRemove: () => {
+            state.hidden.splice(i, 1);
+            rebuild(false);
+          },
           removeLabel: d.lRemove,
         }),
       );
@@ -583,8 +620,9 @@ export function initNeural(): void {
   }
 
   function paintActivations() {
-    // one representative forward pass (dataset centroid-ish sample)
-    net.forward(feats(0.5, 0.5));
+    // forward pass for the probed point (or a representative default)
+    const p = probe ?? { x: 0.5, y: 0.5 };
+    net.forward(feats(p.x, p.y));
     const c = new THREE.Color();
     const pr = new THREE.Color(theme.classes[1]);
     const ng = new THREE.Color(theme.classes[0]);
@@ -699,21 +737,14 @@ export function initNeural(): void {
   elToggle?.addEventListener('click', () => setRunning(!state.running));
   document.getElementById('nn-reset')?.addEventListener('click', () => rebuild(false));
 
-  addEventListener('resize', () => {
+  const onResize = () => {
     resize();
     drawSurface();
-  });
-  document.addEventListener(
-    'astro:before-swap',
-    () => {
-      cancelAnimationFrame(raf);
-      renderer.dispose();
-    },
-    { once: true },
-  );
+  };
+  addEventListener('resize', onResize);
 
   // theme changes: re-read colors
-  new MutationObserver(() => {
+  const themeObserver = new MutationObserver(() => {
     theme = readTheme();
     edgePos.set(theme.edgePos);
     edgeNeg.set(theme.edgeNeg);
@@ -722,7 +753,19 @@ export function initNeural(): void {
     buildSchematic();
     drawSurface();
     paintActivations();
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  document.addEventListener(
+    'astro:before-swap',
+    () => {
+      cancelAnimationFrame(raf);
+      renderer.dispose();
+      removeEventListener('resize', onResize);
+      themeObserver.disconnect();
+    },
+    { once: true },
+  );
 
   // go
   resize();
