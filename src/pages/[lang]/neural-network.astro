@@ -116,6 +116,25 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.surface')}</figcaption>
       </figure>
       <figure id="nn-schem-wrap" class="border-line relative rounded-xl border p-3">
+        <div class="mb-1 flex items-center justify-end gap-1.5">
+          <span class="text-ink-faint mr-1 font-mono text-xs tracking-wide uppercase">{t('nn.edges')}</span>
+          <button
+            type="button"
+            data-nn-edges
+            data-value="weights"
+            aria-pressed="true"
+            class="nn-chip nn-chip-sm"
+            title={t('nn.edges.weightsTip')}>{t('nn.edges.weights')}</button
+          >
+          <button
+            type="button"
+            data-nn-edges
+            data-value="flow"
+            aria-pressed="false"
+            class="nn-chip nn-chip-sm"
+            title={t('nn.edges.flowTip')}>{t('nn.edges.flow')}</button
+          >
+        </div>
         <div id="nn-schematic" class="aspect-[56/43] w-full"></div>
         <div id="nn-tip" class="nn-tip" hidden></div>
         <input id="nn-weight-edit" class="nn-weight-edit" type="number" step="0.01" hidden />
@@ -167,6 +186,10 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
   .nn-chip:disabled {
     opacity: 0.35;
     cursor: default;
+  }
+  .nn-chip-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.72rem;
   }
   .nn-layer {
     display: flex;

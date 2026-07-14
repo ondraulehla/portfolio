@@ -98,6 +98,12 @@ const en = {
   'nn.surface':
     'Decision surface – every point gets the colour of the class the network predicts there; hover to probe the network, click to pin the point (rings mark the neurons it fires)',
   'nn.class': 'Class',
+  'nn.edges': 'Edges',
+  'nn.edges.weights': 'Weights',
+  'nn.edges.flow': 'Signal flow',
+  'nn.edges.weightsTip': 'Edge colour and thickness show the sign and size of each weight',
+  'nn.edges.flowTip':
+    'Edge colour and thickness show each connection’s real contribution for the probed point: weight × source activation',
   'nn.schematic':
     'Network – neuron colour = its activation for the probed point (blue low, orange high); click an edge to edit its weight, a neuron to edit its bias',
   'nn.model': '3D network – same activation colours, neurons on rings glow and grow, drag to orbit',
@@ -221,6 +227,12 @@ const cs = {
   'nn.surface':
     'Rozhodovací plocha – každý bod dostane barvu třídy, kterou tam síť predikuje; najetím síť sondujete, kliknutím bod připnete (prstence označí neurony, které pro něj pálí)',
   'nn.class': 'Třída',
+  'nn.edges': 'Hrany',
+  'nn.edges.weights': 'Váhy',
+  'nn.edges.flow': 'Tok signálu',
+  'nn.edges.weightsTip': 'Barva a tloušťka hran ukazují znaménko a velikost jednotlivých vah',
+  'nn.edges.flowTip':
+    'Barva a tloušťka hran ukazují skutečný příspěvek spoje pro zvolený bod: váha × aktivace zdroje',
   'nn.schematic':
     'Síť – barva neuronu = jeho aktivace pro zvolený bod (modrá nízká, oranžová vysoká); kliknutím na hranu upravíte váhu, na neuron jeho bias',
   'nn.model': '3D síť – stejné barvy aktivací, neurony na prstencích září a rostou, táhnutím otočíte',

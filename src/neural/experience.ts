@@ -72,6 +72,8 @@ export function initNeural(): void {
     epoch: 0,
     loss: 1,
     acc: 0,
+    /** what the edges encode: raw weights, or w × source activation for the probed point */
+    edgeMode: 'weights' as 'weights' | 'flow',
   };
   const arch = () => [state.inputs, ...state.hidden, state.outputs];
   const classCount = () => (state.outputs === 1 ? 2 : state.outputs);
@@ -173,6 +175,10 @@ export function initNeural(): void {
     if (!state.running) {
       drawSurface();
       paintActivations();
+      if (state.edgeMode === 'flow') {
+        updateSchematic();
+        updateEdges();
+      }
     }
   }
 
@@ -190,6 +196,10 @@ export function initNeural(): void {
     pinned = pinned && Math.hypot(pt.x - pinned.x, pt.y - pinned.y) < 0.07 ? null : pt;
     drawSurface();
     paintActivations();
+    if (state.edgeMode === 'flow') {
+      updateSchematic();
+      updateEdges();
+    }
   });
 
   // ---- 2D network schematic (editable weights) ------------------------------
@@ -370,14 +380,26 @@ export function initNeural(): void {
     updateSchematic();
   }
 
-  function updateSchematic() {
-    const maxAbs = net.weights.map((w) => {
+  /** Value an edge encodes in the current mode. */
+  function edgeValue(l: number, j: number, k: number): number {
+    const w = net.weights[l]![j]![k]!;
+    return state.edgeMode === 'flow' ? w * (net.activations[l]?.[k] ?? 0) : w;
+  }
+
+  /** Per-layer max |value| for normalising edge width/opacity. */
+  function edgeMaxAbs(): number[] {
+    return net.weights.map((w, l) => {
       let m = 1e-6;
-      for (const row of w) for (const v of row) m = Math.max(m, Math.abs(v));
+      for (let j = 0; j < w.length; j++)
+        for (let k = 0; k < w[j]!.length; k++) m = Math.max(m, Math.abs(edgeValue(l, j, k)));
       return m;
     });
+  }
+
+  function updateSchematic() {
+    const maxAbs = edgeMaxAbs();
     for (const e of schemEdges) {
-      const v = net.weights[e.l]![e.j]![e.k]!;
+      const v = edgeValue(e.l, e.j, e.k);
       const norm = Math.min(1, Math.abs(v) / maxAbs[e.l]!);
       e.path.setAttribute('stroke', v >= 0 ? theme.classes[1]! : theme.classes[0]!);
       e.path.setAttribute('stroke-width', (0.5 + norm * 2.6).toFixed(2));
@@ -387,9 +409,12 @@ export function initNeural(): void {
 
   function showTip(edge: SchemEdge) {
     if (editing) return;
-    const v = net.weights[edge.l]![edge.j]![edge.k]!;
+    const w = net.weights[edge.l]![edge.j]![edge.k]!;
     const { left, top } = toWrapPx(edge.cx, edge.cy);
-    tip.textContent = `w = ${v.toFixed(2)}`;
+    tip.textContent =
+      state.edgeMode === 'flow'
+        ? `w = ${w.toFixed(2)} · w·a = ${edgeValue(edge.l, edge.j, edge.k).toFixed(2)}`
+        : `w = ${w.toFixed(2)}`;
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
     tip.hidden = false;
@@ -726,14 +751,10 @@ export function initNeural(): void {
   const edgePos = new THREE.Color(theme.edgePos);
   const edgeNeg = new THREE.Color(theme.edgeNeg);
   function updateEdges() {
-    // normalise opacity against the largest current weight per layer
-    const maxAbs = net.weights.map((w) => {
-      let m = 1e-6;
-      for (const row of w) for (const v of row) m = Math.max(m, Math.abs(v));
-      return m;
-    });
+    // normalise opacity against the largest current value per layer
+    const maxAbs = edgeMaxAbs();
     for (const e of edges) {
-      const v = net.weights[e.l]![e.j]![e.k]!;
+      const v = edgeValue(e.l, e.j, e.k);
       e.mat.color.copy(v >= 0 ? edgePos : edgeNeg);
       e.mat.opacity = 0.1 + Math.min(1, Math.abs(v) / maxAbs[e.l]!) * 0.65;
     }
@@ -860,6 +881,11 @@ export function initNeural(): void {
   });
   bindGroup('[data-nn-lr]', (v) => {
     state.lr = parseFloat(v);
+  });
+  bindGroup('[data-nn-edges]', (v) => {
+    state.edgeMode = v as 'weights' | 'flow';
+    updateSchematic();
+    updateEdges();
   });
 
   elToggle?.addEventListener('click', () => setRunning(!state.running));
