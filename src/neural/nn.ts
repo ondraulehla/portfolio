@@ -1,8 +1,12 @@
 /**
- * A small, dependency-free MLP for binary classification – the compute core
- * revived from my master's thesis "Modeling Neural Networks in Virtual Reality"
- * (CTU FIT, 2025). Forward pass exposes per-layer activations so the 3D view
- * can light up neurons; backprop trains the 2D decision surface live.
+ * A small, dependency-free MLP – the compute core revived from my master's
+ * thesis "Modeling Neural Networks in Virtual Reality" (CTU FIT, 2025).
+ *
+ * The input layer takes 1–6 engineered features of the 2D point (x, y) and
+ * the output layer is either a single sigmoid unit (binary classification)
+ * or a softmax over 2–3 classes. Forward pass exposes per-layer activations
+ * so the visualizations can light neurons up; backprop trains the decision
+ * surface live.
  */
 
 export type Activation = 'tanh' | 'sigmoid' | 'relu';
@@ -11,8 +15,18 @@ export type DatasetKind = 'circle' | 'xor' | 'spiral' | 'gaussian';
 export interface Point {
   x: number;
   y: number;
-  /** class label, 0 or 1 */
+  /** class index, 0..classes-1 */
   label: number;
+}
+
+/** Feature basis for the input layer, in order. */
+export const FEATURE_NAMES = ['x', 'y', 'x²', 'y²', 'x·y', 'sin πx'] as const;
+export const MAX_FEATURES = FEATURE_NAMES.length;
+
+/** First `count` engineered features of a 2D point. */
+export function features(x: number, y: number, count: number): number[] {
+  const all = [x, y, x * x, y * y, x * y, Math.sin(Math.PI * x)];
+  return all.slice(0, count);
 }
 
 const act = {
@@ -44,6 +58,8 @@ export class MLP {
   /** neuron counts per layer, e.g. [2, 5, 4, 1] */
   readonly sizes: number[];
   readonly activation: Activation;
+  /** number of classes the output represents (1 output unit → 2 classes) */
+  readonly classes: number;
   /** weights[l][j][k] = weight into neuron j of layer l+1 from neuron k of layer l */
   weights: number[][][] = [];
   biases: number[][] = [];
@@ -53,6 +69,8 @@ export class MLP {
   constructor(sizes: number[], activation: Activation = 'tanh', seed = 42) {
     this.sizes = sizes;
     this.activation = activation;
+    const out = sizes[sizes.length - 1]!;
+    this.classes = out === 1 ? 2 : out;
     const rand = rng(seed);
     for (let l = 1; l < sizes.length; l++) {
       const fanIn = sizes[l - 1]!;
@@ -69,21 +87,38 @@ export class MLP {
     this.activations = sizes.map((n) => new Array(n).fill(0));
   }
 
-  /** Forward pass; the output layer always uses sigmoid (probability). */
+  /** Forward pass; output layer is sigmoid (1 unit) or softmax (2+ units). */
   forward(input: number[]): number[] {
     let current = input;
     this.activations[0] = current;
     for (let l = 0; l < this.weights.length; l++) {
       const isOutput = l === this.weights.length - 1;
-      const fn = isOutput ? act.sigmoid : act[this.activation];
       const w = this.weights[l]!;
       const b = this.biases[l]!;
-      const next = new Array(w.length);
+      const next = new Array<number>(w.length);
       for (let j = 0; j < w.length; j++) {
         let sum = b[j]!;
         const wj = w[j]!;
         for (let k = 0; k < current.length; k++) sum += wj[k]! * current[k]!;
-        next[j] = fn(sum);
+        next[j] = sum;
+      }
+      if (isOutput) {
+        if (w.length === 1) {
+          next[0] = act.sigmoid(next[0]!);
+        } else {
+          // softmax, stabilised against overflow
+          let max = -Infinity;
+          for (const v of next) max = Math.max(max, v);
+          let total = 0;
+          for (let j = 0; j < next.length; j++) {
+            next[j] = Math.exp(next[j]! - max);
+            total += next[j]!;
+          }
+          for (let j = 0; j < next.length; j++) next[j] = next[j]! / total;
+        }
+      } else {
+        const fn = act[this.activation];
+        for (let j = 0; j < next.length; j++) next[j] = fn(next[j]!);
       }
       current = next;
       this.activations[l + 1] = current;
@@ -91,8 +126,26 @@ export class MLP {
     return current;
   }
 
-  /** One SGD step over a batch; returns mean binary cross-entropy loss. */
-  trainStep(batch: Point[], lr = 0.1): number {
+  /** Class probabilities for a point, always length `classes`. */
+  probs(input: number[]): number[] {
+    const out = this.forward(input);
+    return out.length === 1 ? [1 - out[0]!, out[0]!] : out;
+  }
+
+  /** Predicted class index for a point. */
+  predict(input: number[]): number {
+    const p = this.probs(input);
+    let best = 0;
+    for (let i = 1; i < p.length; i++) if (p[i]! > p[best]!) best = i;
+    return best;
+  }
+
+  /**
+   * One SGD step over a batch; returns mean cross-entropy loss. Labels are
+   * class indices; for both sigmoid+BCE and softmax+CE the output delta is
+   * (prediction − target), so the backward pass is shared.
+   */
+  trainStep(batch: Point[], lr = 0.1, featureCount = this.sizes[0]!): number {
     const L = this.weights.length;
     // accumulate gradients
     const gW = this.weights.map((layer) => layer.map((row) => row.map(() => 0)));
@@ -100,14 +153,20 @@ export class MLP {
     let loss = 0;
 
     for (const p of batch) {
-      const out = this.forward([p.x, p.y]);
+      const out = this.forward(features(p.x, p.y, featureCount));
       const acts = this.activations.map((a) => a.slice());
-      const yhat = out[0]!;
-      const y = p.label;
-      loss += -(y * Math.log(yhat + 1e-9) + (1 - y) * Math.log(1 - yhat + 1e-9));
 
-      // output delta for sigmoid + BCE simplifies to (yhat - y)
-      let delta = [yhat - y];
+      let delta: number[];
+      if (out.length === 1) {
+        const yhat = out[0]!;
+        const y = p.label;
+        loss += -(y * Math.log(yhat + 1e-9) + (1 - y) * Math.log(1 - yhat + 1e-9));
+        delta = [yhat - y];
+      } else {
+        loss += -Math.log(out[p.label]! + 1e-9);
+        delta = out.map((prob, i) => prob - (i === p.label ? 1 : 0));
+      }
+
       for (let l = L - 1; l >= 0; l--) {
         const prev = acts[l]!;
         const w = this.weights[l]!;
@@ -143,31 +202,38 @@ export class MLP {
   }
 }
 
-/** Deterministic dataset generator in [-1, 1]². */
-export function makeDataset(kind: DatasetKind, n = 200, seed = 7): Point[] {
+/** Deterministic dataset generator in [-1, 1]² with `classes` classes. */
+export function makeDataset(kind: DatasetKind, n = 200, seed = 7, classes = 2): Point[] {
   const rand = rng(seed);
+  const k = Math.max(2, Math.min(3, classes));
   const pts: Point[] = [];
   const noise = () => (rand() * 2 - 1) * 0.08;
   for (let i = 0; i < n; i++) {
+    const c = i % k;
     if (kind === 'circle') {
-      const r = rand() < 0.5 ? rand() * 0.4 : 0.65 + rand() * 0.3;
+      // k concentric bands
+      const r0 = c / k;
+      const r = r0 * 0.85 + rand() * (0.85 / k - 0.06) + 0.08;
       const a = rand() * Math.PI * 2;
-      pts.push({ x: r * Math.cos(a) + noise(), y: r * Math.sin(a) + noise(), label: r < 0.5 ? 1 : 0 });
+      pts.push({ x: r * Math.cos(a) + noise(), y: r * Math.sin(a) + noise(), label: c });
     } else if (kind === 'xor') {
+      // quadrants coloured by index mod k
       const x = rand() * 1.8 - 0.9;
       const y = rand() * 1.8 - 0.9;
-      pts.push({ x: x + noise(), y: y + noise(), label: x * y > 0 ? 1 : 0 });
+      const quadrant = (x > 0 ? 0 : 1) + (y > 0 ? 0 : 2); // 0..3
+      const order = [0, 1, 3, 2]; // walk quadrants counter-clockwise
+      pts.push({ x: x + noise(), y: y + noise(), label: order[quadrant]! % k });
     } else if (kind === 'gaussian') {
-      const c = rand() < 0.5 ? 1 : 0;
-      const cx = c ? 0.5 : -0.5;
-      const cy = c ? 0.5 : -0.5;
-      pts.push({ x: cx + (rand() * 2 - 1) * 0.35, y: cy + (rand() * 2 - 1) * 0.35, label: c });
+      // k clusters around the origin
+      const angle = (c / k) * Math.PI * 2 + Math.PI / 4;
+      const cx = 0.55 * Math.cos(angle);
+      const cy = 0.55 * Math.sin(angle);
+      pts.push({ x: cx + (rand() * 2 - 1) * 0.3, y: cy + (rand() * 2 - 1) * 0.3, label: c });
     } else {
-      // spiral
-      const c = i % 2;
+      // spiral with k arms
       const t = (i / n) * 3.5 + rand() * 0.2;
       const r = t / 5.2;
-      const a = t * 2 + c * Math.PI;
+      const a = t * 2 + (c * 2 * Math.PI) / k;
       pts.push({ x: r * Math.cos(a) + noise(), y: r * Math.sin(a) + noise(), label: c });
     }
   }

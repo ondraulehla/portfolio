@@ -26,6 +26,13 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       <p class="text-accent font-mono text-xs font-semibold tracking-[0.2em] uppercase">{t('nn.kicker')}</p>
       <h1 class="font-display text-ink mt-3 text-3xl font-bold tracking-[-0.02em] sm:text-4xl">{t('nn.title')}</h1>
       <p class="text-ink-muted mt-4 max-w-3xl leading-relaxed">{t('nn.intro')}</p>
+      <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2">
+        <a href="/thesis.pdf" download="ulehla-modelovani-neuronovych-siti-ve-vr.pdf" class="nn-link">↓ {t('nn.links.thesis')}</a>
+        <a href={`/${locale}/projects/neural-vr`} class="nn-link">{t('nn.links.case')} →</a>
+        <a href="https://github.com/ondraulehla/neural-network-visualizer" target="_blank" rel="noopener" class="nn-link"
+          >{t('nn.links.code')} ↗</a
+        >
+      </div>
     </div>
 
     <!-- controls -->
@@ -79,6 +86,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         <div class="text-ink-faint font-mono text-xs">
           <div>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></div>
           <div>{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
+          <div>{t('nn.acc')} <span id="nn-acc" class="text-ink">–</span></div>
         </div>
         <button type="button" id="nn-toggle" data-pause={t('nn.pause')} data-resume={t('nn.resume')} class="nn-chip nn-chip-solid"
           >{t('nn.pause')}</button
@@ -118,6 +126,16 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       </figure>
     </div>
     <p id="nn-webgl" class="text-ink-faint mt-4 text-sm" hidden>{t('nn.webgl')}</p>
+
+    <!-- about -->
+    <div class="border-line mt-14 border-t pt-8">
+      <h2 class="font-display text-ink text-xl font-bold tracking-[-0.01em] sm:text-2xl">{t('nn.about.title')}</h2>
+      <div class="text-ink-muted mt-4 max-w-3xl space-y-4 leading-relaxed">
+        <p>{t('nn.about.p1')}</p>
+        <p>{t('nn.about.p2')}</p>
+        <p>{t('nn.about.p3')}</p>
+      </div>
+    </div>
   </section>
 </Base>
 
@@ -197,6 +215,28 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
   .nn-arrow {
     color: var(--ink-faint);
     font: 600 0.8rem/1 var(--font-mono);
+  }
+  .nn-named {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .nn-tag {
+    color: var(--ink-faint);
+    font: 600 0.65rem/1 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .nn-link {
+    color: var(--accent);
+    font: 600 0.85rem/1.4 var(--font-sans);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .nn-link:hover {
+    border-color: var(--accent);
   }
   .nn-tip {
     position: absolute;

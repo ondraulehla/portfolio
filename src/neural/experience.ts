@@ -1,18 +1,29 @@
 /**
  * Interactive neural-network visualizer – the revived core of my master's
- * thesis. The network is fully editable, matching the original project:
- * per-layer neuron counts, adding/removing hidden layers, and clicking any
- * edge in the 2D schematic to edit that individual weight. The decision
- * surface learns the dataset live via backprop, and a 3D model (Three.js)
- * lights neurons up with their activations.
+ * thesis. The network is fully editable, like the original configurator:
+ * neuron counts of every layer including input (engineered features of x, y)
+ * and output (binary sigmoid or 2–3-class softmax), adding/removing hidden
+ * layers, and clicking any edge in the 2D schematic to edit that individual
+ * weight. The decision surface learns the dataset live via backprop, and a
+ * 3D model arranges each layer's neurons in a ring – a volumetric "3D brain"
+ * that lights up with activations.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { MLP, makeDataset, type Activation, type DatasetKind, type Point } from './nn';
+import {
+  MLP,
+  makeDataset,
+  features,
+  FEATURE_NAMES,
+  MAX_FEATURES,
+  type Activation,
+  type DatasetKind,
+  type Point,
+} from './nn';
 
 interface Theme {
-  pos: string; // class 1 / positive weight
-  neg: string; // class 0 / negative weight
+  /** class colours by index: 0 = cool, 1 = accent, 2 = teal */
+  classes: string[];
   ink: string;
   edgePos: number;
   edgeNeg: number;
@@ -23,8 +34,7 @@ function readTheme(): Theme {
   const dark = document.documentElement.dataset.theme === 'dark';
   const accent = css.getPropertyValue('--accent').trim() || '#c0392b';
   return {
-    pos: accent,
-    neg: dark ? '#5b6b8c' : '#8aa0c8',
+    classes: [dark ? '#5b6b8c' : '#8aa0c8', accent, dark ? '#4db3a4' : '#2f8f83'],
     ink: css.getPropertyValue('--ink').trim() || '#111',
     edgePos: 0xd8613a,
     edgeNeg: 0x7f8aa6,
@@ -33,6 +43,7 @@ function readTheme(): Theme {
 
 const MAX_HIDDEN_LAYERS = 3;
 const MAX_NEURONS = 10;
+const MAX_OUTPUTS = 3;
 
 export function initNeural(): void {
   const surface = document.getElementById('nn-surface') as HTMLCanvasElement;
@@ -45,18 +56,24 @@ export function initNeural(): void {
   const state = {
     dataset: 'circle' as DatasetKind,
     activation: 'tanh' as Activation,
-    /** neuron counts of the hidden layers; full arch is [2, ...hidden, 1] */
+    /** neuron counts: input features, hidden layers, output units */
+    inputs: 2,
     hidden: [8, 8],
+    outputs: 1,
     lr: 0.15,
     running: true,
     epoch: 0,
     loss: 1,
+    acc: 0,
   };
-  const arch = () => [2, ...state.hidden, 1];
+  const arch = () => [state.inputs, ...state.hidden, state.outputs];
+  const classCount = () => (state.outputs === 1 ? 2 : state.outputs);
 
-  let data: Point[] = makeDataset(state.dataset, 220);
+  let data: Point[] = makeDataset(state.dataset, 220, 7, classCount());
   let net = new MLP(arch(), state.activation, 42);
   let theme = readTheme();
+
+  const feats = (x: number, y: number) => features(x, y, state.inputs);
 
   // ---- 2D decision surface --------------------------------------------------
   const sctx = surface.getContext('2d')!;
@@ -64,17 +81,24 @@ export function initNeural(): void {
   const grid = sctx.createImageData(GRID, GRID);
 
   function drawSurface() {
-    const pr = hexToRgb(theme.pos);
-    const ng = hexToRgb(theme.neg);
+    const rgb = theme.classes.map(hexToRgb);
     let i = 0;
     for (let gy = 0; gy < GRID; gy++) {
       for (let gx = 0; gx < GRID; gx++) {
         const x = (gx / (GRID - 1)) * 2 - 1;
         const y = 1 - (gy / (GRID - 1)) * 2;
-        const p = net.forward([x, y])[0]!; // 0..1
-        grid.data[i++] = Math.round(ng.r + (pr.r - ng.r) * p);
-        grid.data[i++] = Math.round(ng.g + (pr.g - ng.g) * p);
-        grid.data[i++] = Math.round(ng.b + (pr.b - ng.b) * p);
+        const p = net.probs(feats(x, y));
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        for (let c = 0; c < p.length; c++) {
+          r += rgb[c]!.r * p[c]!;
+          g += rgb[c]!.g * p[c]!;
+          b += rgb[c]!.b * p[c]!;
+        }
+        grid.data[i++] = Math.round(r);
+        grid.data[i++] = Math.round(g);
+        grid.data[i++] = Math.round(b);
         grid.data[i++] = 235;
       }
     }
@@ -91,7 +115,7 @@ export function initNeural(): void {
       const py = ((1 - pt.y) / 2) * S;
       sctx.beginPath();
       sctx.arc(px, py, 3.4, 0, Math.PI * 2);
-      sctx.fillStyle = pt.label === 1 ? theme.pos : theme.neg;
+      sctx.fillStyle = theme.classes[pt.label]!;
       sctx.fill();
       sctx.lineWidth = 1;
       sctx.strokeStyle = 'rgba(255,255,255,0.7)';
@@ -120,7 +144,7 @@ export function initNeural(): void {
 
   function schemPositions(): { x: number; y: number }[][] {
     const layers = net.sizes;
-    const padX = 55;
+    const padX = 62;
     const xGap = (VB_W - 2 * padX) / Math.max(1, layers.length - 1);
     return layers.map((count, l) => {
       const yGap = Math.min(38, (VB_H - 90) / Math.max(1, count - 1 || 1));
@@ -195,15 +219,36 @@ export function initNeural(): void {
     // neurons
     layers.forEach((count, l) => {
       const circles: SVGCircleElement[] = [];
+      const isInput = l === 0;
+      const isOutput = l === layers.length - 1;
       for (let j = 0; j < count; j++) {
         const c = document.createElementNS(SVG_NS, 'circle');
         c.setAttribute('cx', String(pos[l]![j]!.x));
         c.setAttribute('cy', String(pos[l]![j]!.y));
         c.setAttribute('r', '9');
-        c.setAttribute('stroke', 'var(--line)');
-        c.setAttribute('stroke-width', '1');
+        // output neurons carry their class colour as a ring when multi-class
+        if (isOutput && count > 1) {
+          c.setAttribute('stroke', theme.classes[j] ?? 'var(--line)');
+          c.setAttribute('stroke-width', '2.5');
+        } else {
+          c.setAttribute('stroke', 'var(--line)');
+          c.setAttribute('stroke-width', '1');
+        }
         svg.appendChild(c);
         circles.push(c);
+
+        // input neurons are labelled with their engineered feature
+        if (isInput) {
+          const fl = document.createElementNS(SVG_NS, 'text');
+          fl.setAttribute('x', String(pos[l]![j]!.x - 16));
+          fl.setAttribute('y', String(pos[l]![j]!.y));
+          fl.setAttribute('text-anchor', 'end');
+          fl.setAttribute('dominant-baseline', 'middle');
+          fl.setAttribute('fill', 'var(--ink-muted)');
+          fl.setAttribute('style', 'font: 600 12px var(--font-mono)');
+          fl.textContent = FEATURE_NAMES[j] ?? '';
+          svg.appendChild(fl);
+        }
       }
       schemNeurons.push(circles);
 
@@ -214,11 +259,7 @@ export function initNeural(): void {
       label.setAttribute('fill', 'var(--ink-faint)');
       label.setAttribute('style', 'font: 600 11px var(--font-mono)');
       label.textContent =
-        l === 0
-          ? layersEl.dataset.lInput!
-          : l === layers.length - 1
-            ? layersEl.dataset.lOutput!
-            : `L${l}`;
+        l === 0 ? layersEl.dataset.lInput! : isOutput ? layersEl.dataset.lOutput! : `L${l}`;
       svg.appendChild(label);
     });
 
@@ -235,7 +276,7 @@ export function initNeural(): void {
     for (const e of schemEdges) {
       const v = net.weights[e.l]![e.j]![e.k]!;
       const norm = Math.min(1, Math.abs(v) / maxAbs[e.l]!);
-      e.path.setAttribute('stroke', v >= 0 ? theme.pos : theme.neg);
+      e.path.setAttribute('stroke', v >= 0 ? theme.classes[1]! : theme.classes[0]!);
       e.path.setAttribute('stroke-width', (0.5 + norm * 2.6).toFixed(2));
       e.path.setAttribute('stroke-opacity', (0.25 + norm * 0.6).toFixed(2));
     }
@@ -292,71 +333,106 @@ export function initNeural(): void {
   editInput.addEventListener('blur', () => closeWeightEditor(true));
 
   // ---- layer builder ---------------------------------------------------------
+  /** A stepper controlling a neuron count; `remove` adds a × button. */
+  function stepper(opts: {
+    value: number;
+    min: number;
+    max: number;
+    onChange: (v: number) => void;
+    onRemove?: () => void;
+    removeLabel?: string;
+  }): HTMLSpanElement {
+    const box = document.createElement('span');
+    box.className = 'nn-layer';
+
+    const minus = document.createElement('button');
+    minus.type = 'button';
+    minus.className = 'nn-step';
+    minus.textContent = '−';
+    minus.disabled = opts.value <= opts.min;
+    minus.addEventListener('click', () => opts.onChange(opts.value - 1));
+
+    const num = document.createElement('span');
+    num.className = 'nn-count';
+    num.textContent = String(opts.value);
+
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.className = 'nn-step';
+    plus.textContent = '+';
+    plus.disabled = opts.value >= opts.max;
+    plus.addEventListener('click', () => opts.onChange(opts.value + 1));
+
+    box.append(minus, num, plus);
+
+    if (opts.onRemove) {
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'nn-remove';
+      rm.textContent = '×';
+      rm.title = opts.removeLabel!;
+      rm.setAttribute('aria-label', opts.removeLabel!);
+      rm.addEventListener('click', opts.onRemove);
+      box.appendChild(rm);
+    }
+    return box;
+  }
+
   function renderLayers() {
     const d = layersEl.dataset;
     layersEl.innerHTML = '';
 
-    const fixed = (label: string, n: number) => {
-      const el = document.createElement('span');
-      el.className = 'nn-layer nn-layer-fixed';
-      el.textContent = `${label} · ${n}`;
-      layersEl.appendChild(el);
-    };
     const arrow = () => {
       const el = document.createElement('span');
       el.className = 'nn-arrow';
       el.textContent = '→';
       layersEl.appendChild(el);
     };
+    const named = (label: string, node: HTMLElement) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'nn-named';
+      const tag = document.createElement('span');
+      tag.className = 'nn-tag';
+      tag.textContent = label;
+      wrap.append(tag, node);
+      layersEl.appendChild(wrap);
+    };
 
-    fixed(d.lInput!, 2);
+    // input features: changing the count changes what the network sees
+    named(
+      d.lInput!,
+      stepper({
+        value: state.inputs,
+        min: 1,
+        max: MAX_FEATURES,
+        onChange: (v) => {
+          state.inputs = v;
+          rebuild(false);
+        },
+      }),
+    );
     arrow();
 
     state.hidden.forEach((count, i) => {
-      const box = document.createElement('span');
-      box.className = 'nn-layer';
-
-      const minus = document.createElement('button');
-      minus.type = 'button';
-      minus.className = 'nn-step';
-      minus.textContent = '−';
-      minus.disabled = count <= 1;
-      minus.addEventListener('click', () => {
-        state.hidden[i] = Math.max(1, count - 1);
-        rebuild(false);
-      });
-
-      const num = document.createElement('span');
-      num.className = 'nn-count';
-      num.textContent = String(count);
-
-      const plus = document.createElement('button');
-      plus.type = 'button';
-      plus.className = 'nn-step';
-      plus.textContent = '+';
-      plus.disabled = count >= MAX_NEURONS;
-      plus.addEventListener('click', () => {
-        state.hidden[i] = Math.min(MAX_NEURONS, count + 1);
-        rebuild(false);
-      });
-
-      box.append(minus, num, plus);
-
-      if (state.hidden.length > 1) {
-        const rm = document.createElement('button');
-        rm.type = 'button';
-        rm.className = 'nn-remove';
-        rm.textContent = '×';
-        rm.title = d.lRemove!;
-        rm.setAttribute('aria-label', d.lRemove!);
-        rm.addEventListener('click', () => {
-          state.hidden.splice(i, 1);
-          rebuild(false);
-        });
-        box.appendChild(rm);
-      }
-
-      layersEl.appendChild(box);
+      layersEl.appendChild(
+        stepper({
+          value: count,
+          min: 1,
+          max: MAX_NEURONS,
+          onChange: (v) => {
+            state.hidden[i] = v;
+            rebuild(false);
+          },
+          onRemove:
+            state.hidden.length > 1
+              ? () => {
+                  state.hidden.splice(i, 1);
+                  rebuild(false);
+                }
+              : undefined,
+          removeLabel: d.lRemove,
+        }),
+      );
       arrow();
     });
 
@@ -370,12 +446,21 @@ export function initNeural(): void {
       rebuild(false);
     });
     layersEl.appendChild(add);
+    arrow();
 
-    const tail = document.createElement('span');
-    tail.className = 'nn-arrow';
-    tail.textContent = '→';
-    layersEl.appendChild(tail);
-    fixed(d.lOutput!, 1);
+    // output units: 1 = binary, 2–3 = softmax classes → new dataset labels
+    named(
+      d.lOutput!,
+      stepper({
+        value: state.outputs,
+        min: 1,
+        max: MAX_OUTPUTS,
+        onChange: (v) => {
+          state.outputs = v;
+          rebuild(true);
+        },
+      }),
+    );
   }
 
   // ---- 3D network -----------------------------------------------------------
@@ -386,6 +471,10 @@ export function initNeural(): void {
   const controls = new OrbitControls(camera, canvas3d);
   controls.enableDamping = true;
   controls.enablePan = false;
+  // idle auto-rotation sells the volumetric layout; stops at first user grab
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.1;
+  controls.addEventListener('start', () => (controls.autoRotate = false));
   scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.1));
   const dir = new THREE.DirectionalLight(0xffffff, 0.7);
   dir.position.set(3, 5, 4);
@@ -417,6 +506,16 @@ export function initNeural(): void {
     });
   }
 
+  /** Neurons of a layer sit on a ring in the YZ plane → the model is truly 3D. */
+  function ringPosition(l: number, j: number, count: number, xGap: number, totalW: number): THREE.Vector3 {
+    const x = l * xGap - totalW / 2;
+    if (count === 1) return new THREE.Vector3(x, 0, 0);
+    const r = 0.34 * Math.sqrt(count) + 0.12;
+    // stagger rings between layers so edges don't align into a flat sheet
+    const angle = (j / count) * Math.PI * 2 + l * 0.7;
+    return new THREE.Vector3(x, r * Math.cos(angle), r * Math.sin(angle));
+  }
+
   function buildNetwork() {
     disposeGroup();
     scene.remove(netGroup);
@@ -431,10 +530,8 @@ export function initNeural(): void {
     layers.forEach((count, l) => {
       const meshes: THREE.Mesh[] = [];
       const layerPos: THREE.Vector3[] = [];
-      const yGap = 0.7;
-      const h = (count - 1) * yGap;
       for (let j = 0; j < count; j++) {
-        const pos = new THREE.Vector3(l * xGap - totalW / 2, h / 2 - j * yGap, 0);
+        const pos = ringPosition(l, j, count, xGap, totalW);
         const mat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
         const mesh = new THREE.Mesh(neuronGeo, mat);
         mesh.position.copy(pos);
@@ -463,9 +560,9 @@ export function initNeural(): void {
 
     // frame the camera once per (re)build; the loop never touches it, so the
     // user's orbit is preserved during training
-    const spanY = Math.max(...layers) * 0.7;
-    const r = Math.max(totalW, spanY) * 0.9 + 1.5;
-    camera.position.set(0.2, 0.4, r);
+    const maxRing = 0.34 * Math.sqrt(Math.max(...layers)) + 0.12;
+    const r = Math.max(totalW, maxRing * 2) * 0.85 + 1.6;
+    camera.position.set(r * 0.35, r * 0.3, r);
     controls.target.set(0, 0, 0);
   }
 
@@ -487,13 +584,13 @@ export function initNeural(): void {
 
   function paintActivations() {
     // one representative forward pass (dataset centroid-ish sample)
-    net.forward([0.5, 0.5]);
+    net.forward(feats(0.5, 0.5));
     const c = new THREE.Color();
-    const pr = new THREE.Color(theme.pos);
-    const ng = new THREE.Color(theme.neg);
+    const pr = new THREE.Color(theme.classes[1]);
+    const ng = new THREE.Color(theme.classes[0]);
     net.activations.forEach((layer, l) => {
       layer.forEach((aRaw, j) => {
-        // map activation to 0..1 (tanh is -1..1, sigmoid 0..1, relu 0..)
+        // map activation to 0..1 (tanh is -1..1, sigmoid/softmax 0..1, relu 0..)
         const a = l === 0 ? (aRaw + 1) / 2 : Math.max(0, Math.min(1, (aRaw + 1) / 2));
         c.copy(ng).lerp(pr, a);
         const mesh = neuronMeshes[l]?.[j];
@@ -501,6 +598,8 @@ export function initNeural(): void {
           const mat = mesh.material as THREE.MeshStandardMaterial;
           mat.color.copy(c);
           mat.emissive.copy(pr).multiplyScalar(a * 0.35);
+          // activation also breathes into the neuron's size
+          mesh.scale.setScalar(0.75 + a * 0.5);
         }
         const circle = schemNeurons[l]?.[j];
         if (circle) circle.setAttribute('fill', `#${c.getHexString()}`);
@@ -521,8 +620,8 @@ export function initNeural(): void {
     camera.updateProjectionMatrix();
   }
 
-  function rebuild(resetData = true) {
-    if (resetData) data = makeDataset(state.dataset, 220);
+  function rebuild(resetData: boolean) {
+    if (resetData) data = makeDataset(state.dataset, 220, 7, classCount());
     net = new MLP(arch(), state.activation, 42);
     state.epoch = 0;
     renderLayers();
@@ -538,7 +637,7 @@ export function initNeural(): void {
   let frame = 0;
   function tick() {
     if (state.running) {
-      for (let s = 0; s < 3; s++) state.loss = net.trainStep(data, state.lr);
+      for (let s = 0; s < 3; s++) state.loss = net.trainStep(data, state.lr, state.inputs);
       state.epoch += 3;
       if (frame % 2 === 0) drawSurface();
       if (frame % 4 === 0) {
@@ -557,10 +656,17 @@ export function initNeural(): void {
   // ---- HUD + controls -------------------------------------------------------
   const elEpoch = document.getElementById('nn-epoch');
   const elLoss = document.getElementById('nn-loss');
+  const elAcc = document.getElementById('nn-acc');
   const elToggle = document.getElementById('nn-toggle');
   function updateHud() {
     if (elEpoch) elEpoch.textContent = String(state.epoch);
     if (elLoss) elLoss.textContent = state.loss.toFixed(3);
+    if (elAcc) {
+      let correct = 0;
+      for (const p of data) if (net.predict(feats(p.x, p.y)) === p.label) correct++;
+      state.acc = correct / data.length;
+      elAcc.textContent = `${Math.round(state.acc * 100)} %`;
+    }
   }
 
   function setRunning(run: boolean) {
@@ -613,7 +719,7 @@ export function initNeural(): void {
     edgeNeg.set(theme.edgeNeg);
     scene.background = null;
     updateEdges();
-    updateSchematic();
+    buildSchematic();
     drawSurface();
     paintActivations();
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
