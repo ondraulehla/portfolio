@@ -25,6 +25,8 @@ interface Theme {
   /** class colours by index: 0 = cool, 1 = accent, 2 = teal */
   classes: string[];
   ink: string;
+  /** page background the decision surface fades towards at low confidence */
+  surface: string;
   edgePos: number;
   edgeNeg: number;
 }
@@ -36,6 +38,7 @@ function readTheme(): Theme {
   return {
     classes: [dark ? '#5b6b8c' : '#8aa0c8', accent, dark ? '#4db3a4' : '#2f8f83'],
     ink: css.getPropertyValue('--ink').trim() || '#111',
+    surface: css.getPropertyValue('--surface').trim() || (dark ? '#17110f' : '#fbf7f0'),
     edgePos: 0xd8613a,
     edgeNeg: 0x7f8aa6,
   };
@@ -89,24 +92,24 @@ export function initNeural(): void {
 
   function drawSurface() {
     const rgb = theme.classes.map(hexToRgb);
+    const bg = hexToRgb(theme.surface);
     let i = 0;
     for (let gy = 0; gy < GRID; gy++) {
       for (let gx = 0; gx < GRID; gx++) {
         const x = (gx / (GRID - 1)) * 2 - 1;
         const y = 1 - (gy / (GRID - 1)) * 2;
         const p = net.probs(feats(x, y));
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        for (let c = 0; c < p.length; c++) {
-          r += rgb[c]!.r * p[c]!;
-          g += rgb[c]!.g * p[c]!;
-          b += rgb[c]!.b * p[c]!;
-        }
-        grid.data[i++] = Math.round(r);
-        grid.data[i++] = Math.round(g);
-        grid.data[i++] = Math.round(b);
-        grid.data[i++] = 235;
+        // winning class sets the hue, its confidence the saturation – regions
+        // read crisply and the decision boundary shows up as a pale seam
+        let best = 0;
+        for (let c = 1; c < p.length; c++) if (p[c]! > p[best]!) best = c;
+        const conf = (p[best]! - 1 / p.length) / (1 - 1 / p.length);
+        const mix = 0.12 + 0.6 * conf;
+        const cc = rgb[best]!;
+        grid.data[i++] = Math.round(bg.r + (cc.r - bg.r) * mix);
+        grid.data[i++] = Math.round(bg.g + (cc.g - bg.g) * mix);
+        grid.data[i++] = Math.round(bg.b + (cc.b - bg.b) * mix);
+        grid.data[i++] = 255;
       }
     }
     // scale the low-res grid up into the visible canvas
@@ -408,6 +411,24 @@ export function initNeural(): void {
   });
   editInput.addEventListener('blur', () => closeWeightEditor(true));
 
+  // ---- class legend ----------------------------------------------------------
+  const legendEl = document.getElementById('nn-legend');
+  function renderLegend() {
+    if (!legendEl) return;
+    legendEl.innerHTML = '';
+    for (let i = 0; i < classCount(); i++) {
+      const item = document.createElement('span');
+      item.className = 'nn-legend-item';
+      const dot = document.createElement('span');
+      dot.className = 'nn-legend-dot';
+      dot.style.background = theme.classes[i]!;
+      const label = document.createElement('span');
+      label.textContent = `${legendEl.dataset.lClass} ${i + 1}`;
+      item.append(dot, label);
+      legendEl.appendChild(item);
+    }
+  }
+
   // ---- layer builder ---------------------------------------------------------
   /** A stepper controlling a neuron count; `remove` adds a × button. */
   function stepper(opts: {
@@ -490,7 +511,10 @@ export function initNeural(): void {
     arrow();
 
     state.hidden.forEach((count, i) => {
-      layersEl.appendChild(
+      // tag mirrors the layer label in the schematic (L1, L2, …) and keeps
+      // every group on the same baseline as the input/output steppers
+      named(
+        `L${i + 1}`,
         stepper({
           value: count,
           min: 1,
@@ -518,7 +542,7 @@ export function initNeural(): void {
       state.hidden.push(4);
       rebuild(false);
     });
-    layersEl.appendChild(add);
+    named(' ', add);
     arrow();
 
     // output units: 1 = binary, 2–3 = softmax classes → new dataset labels
@@ -699,6 +723,7 @@ export function initNeural(): void {
     net = new MLP(arch(), state.activation, 42);
     state.epoch = 0;
     renderLayers();
+    renderLegend();
     buildNetwork();
     buildSchematic();
     drawSurface();
@@ -787,6 +812,7 @@ export function initNeural(): void {
     scene.background = null;
     updateEdges();
     buildSchematic();
+    renderLegend();
     drawSurface();
     paintActivations();
   });
@@ -806,6 +832,7 @@ export function initNeural(): void {
   // go
   resize();
   renderLayers();
+  renderLegend();
   buildNetwork();
   buildSchematic();
   drawSurface();

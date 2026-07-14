@@ -95,7 +95,9 @@ const en = {
   'nn.pause': '⏸ Pause',
   'nn.resume': '▶ Resume',
   'nn.reset': 'Reset',
-  'nn.surface': 'Decision surface – hover it to send that point through the network',
+  'nn.surface':
+    'Decision surface – every point of the plane gets the colour of the class the network predicts there; hover a point to inspect it in the network views',
+  'nn.class': 'Class',
   'nn.schematic':
     'Network – neuron colour = its activation for the probed point (blue low, orange high); click an edge to edit its weight, a neuron to edit its bias',
   'nn.model': '3D network – same activation colours, neurons on rings glow and grow, drag to orbit',
@@ -216,7 +218,9 @@ const cs = {
   'nn.pause': '⏸ Pauza',
   'nn.resume': '▶ Pokračovat',
   'nn.reset': 'Reset',
-  'nn.surface': 'Rozhodovací plocha – najetím myší pošlete daný bod sítí',
+  'nn.surface':
+    'Rozhodovací plocha – každý bod roviny dostane barvu třídy, kterou tam síť právě predikuje; najetím myší si bod prohlédnete v pohledech na síť',
+  'nn.class': 'Třída',
   'nn.schematic':
     'Síť – barva neuronu = jeho aktivace pro zvolený bod (modrá nízká, oranžová vysoká); kliknutím na hranu upravíte váhu, na neuron jeho bias',
   'nn.model': '3D síť – stejné barvy aktivací, neurony na prstencích září a rostou, táhnutím otočíte',
