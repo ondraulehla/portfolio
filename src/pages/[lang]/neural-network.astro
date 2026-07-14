@@ -17,11 +17,7 @@ const datasets = [
   ['gaussian', 'Gaussian'],
 ] as const;
 const activations = ['tanh', 'sigmoid', 'relu'] as const;
-const archs = [
-  ['2-6-1', 'Small'],
-  ['2-8-8-1', 'Medium'],
-  ['2-8-8-8-1', 'Deep'],
-] as const;
+const learningRates = ['0.03', '0.15', '0.5'] as const;
 ---
 
 <Base {locale} title={`${t('nn.title')} – Ondřej Úlehla`} description={t('nn.intro')}>
@@ -67,12 +63,12 @@ const archs = [
       </div>
 
       <div>
-        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.architecture')}</p>
+        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.lr')}</p>
         <div class="flex gap-1.5" role="group">
           {
-            archs.map(([value, label], i) => (
-              <button type="button" data-nn-arch data-value={value} aria-pressed={i === 1 ? 'true' : 'false'} class="nn-chip">
-                {label}
+            learningRates.map((value, i) => (
+              <button type="button" data-nn-lr data-value={value} aria-pressed={i === 1 ? 'true' : 'false'} class="nn-chip">
+                {value}
               </button>
             ))
           }
@@ -84,19 +80,40 @@ const archs = [
           <div>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></div>
           <div>{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
         </div>
-        <button type="button" id="nn-toggle" class="nn-chip nn-chip-solid">{t('nn.pause')}</button>
+        <button type="button" id="nn-toggle" data-pause={t('nn.pause')} data-resume={t('nn.resume')} class="nn-chip nn-chip-solid"
+          >{t('nn.pause')}</button
+        >
         <button type="button" id="nn-reset" class="nn-chip">{t('nn.reset')}</button>
+      </div>
+
+      <div class="basis-full">
+        <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.layers')}</p>
+        <div
+          id="nn-layers"
+          class="flex flex-wrap items-center gap-2"
+          data-l-input={t('nn.input')}
+          data-l-output={t('nn.output')}
+          data-l-add={t('nn.addLayer')}
+          data-l-remove={t('nn.removeLayer')}
+        >
+        </div>
       </div>
     </div>
 
-    <!-- canvases -->
+    <!-- panels -->
     <div class="grid gap-6 lg:grid-cols-2">
       <figure class="border-line rounded-xl border p-3">
         <canvas id="nn-surface" class="mx-auto block aspect-square w-full max-w-[520px] rounded-lg"></canvas>
         <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.surface')}</figcaption>
       </figure>
-      <figure class="border-line rounded-xl border p-3">
-        <canvas id="nn-3d" class="block aspect-square w-full rounded-lg"></canvas>
+      <figure id="nn-schem-wrap" class="border-line relative rounded-xl border p-3">
+        <div id="nn-schematic" class="aspect-[56/43] w-full"></div>
+        <div id="nn-tip" class="nn-tip" hidden></div>
+        <input id="nn-weight-edit" class="nn-weight-edit" type="number" step="0.1" hidden />
+        <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.schematic')}</figcaption>
+      </figure>
+      <figure class="border-line rounded-xl border p-3 lg:col-span-2">
+        <canvas id="nn-3d" class="block aspect-square w-full rounded-lg sm:aspect-[2/1]"></canvas>
         <figcaption class="text-ink-faint mt-2 text-center font-mono text-xs">{t('nn.model')}</figcaption>
       </figure>
     </div>
@@ -104,14 +121,13 @@ const archs = [
   </section>
 </Base>
 
-<style>
+<style is:global>
   .nn-chip {
     border: 1px solid var(--line);
     color: var(--ink-muted);
     border-radius: 0.5rem;
     padding: 0.4rem 0.8rem;
-    font:
-      600 0.8rem/1 var(--font-sans);
+    font: 600 0.8rem/1 var(--font-sans);
     cursor: pointer;
     transition: all 0.15s;
   }
@@ -128,6 +144,97 @@ const archs = [
     background: var(--ink);
     color: var(--surface);
     border-color: var(--ink);
+  }
+  .nn-chip:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .nn-layer {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.4rem;
+  }
+  .nn-layer-fixed {
+    color: var(--ink-faint);
+    font: 600 0.75rem/1 var(--font-mono);
+    padding: 0.55rem 0.6rem;
+  }
+  .nn-step {
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    color: var(--ink-muted);
+    font: 700 0.85rem/1 var(--font-mono);
+    cursor: pointer;
+  }
+  .nn-step:hover:not(:disabled) {
+    color: var(--ink);
+    border-color: var(--ink-faint);
+  }
+  .nn-step:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .nn-count {
+    min-width: 1.4rem;
+    text-align: center;
+    color: var(--ink);
+    font: 700 0.85rem/1 var(--font-mono);
+  }
+  .nn-remove {
+    color: var(--ink-faint);
+    font: 700 0.8rem/1 var(--font-mono);
+    padding: 0 0.2rem;
+    cursor: pointer;
+  }
+  .nn-remove:hover {
+    color: var(--accent);
+  }
+  .nn-arrow {
+    color: var(--ink-faint);
+    font: 600 0.8rem/1 var(--font-mono);
+  }
+  .nn-tip {
+    position: absolute;
+    z-index: 30;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    padding: 0.2rem 0.45rem;
+    color: var(--ink);
+    font: 600 0.75rem/1.4 var(--font-mono);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+    transform: translate(-50%, -130%);
+    white-space: nowrap;
+  }
+  .nn-weight-edit {
+    position: absolute;
+    z-index: 40;
+    width: 5.2rem;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    border-radius: 0.4rem;
+    padding: 0.25rem 0.4rem;
+    color: var(--ink);
+    font: 600 0.8rem/1.2 var(--font-mono);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  }
+  .nn-weight-edit:focus {
+    outline: none;
+  }
+  #nn-schematic svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .nn-edge-hit {
+    cursor: pointer;
   }
 </style>
 
