@@ -1,0 +1,227 @@
+---
+/**
+ * Interactive field of fine vertical lines: they drift on value noise and
+ * bend away from the cursor with spring physics (impulse along the pointer's
+ * direction of travel, scaled by its velocity). Pure 2D canvas, theme-aware,
+ * static under prefers-reduced-motion.
+ */
+---
+
+<canvas data-linefield class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+
+<script>
+  interface Point {
+    x: number;
+    y: number;
+    wx: number;
+    wy: number;
+    cx: number;
+    cy: number;
+    vx: number;
+    vy: number;
+  }
+
+  const hash2 = (ix: number, iz: number) => {
+    const n = Math.sin(ix * 127.1 + iz * 311.7) * 43758.5453;
+    return n - Math.floor(n);
+  };
+  const valueNoise = (x: number, y: number) => {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const ux = fx * fx * (3 - 2 * fx);
+    const uy = fy * fy * (3 - 2 * fy);
+    const a = hash2(ix, iy);
+    const b = hash2(ix + 1, iy);
+    const c = hash2(ix, iy + 1);
+    const d = hash2(ix + 1, iy + 1);
+    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+  };
+
+  function initLineField(canvas: HTMLCanvasElement) {
+    if (canvas.dataset.bound) return;
+    canvas.dataset.bound = '1';
+
+    const ctx = canvas.getContext('2d')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const X_GAP = 11;
+    const Y_GAP = 26;
+
+    let lines: Point[][] = [];
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+    let stroke = 'rgba(0,0,0,0.14)';
+    let raf = 0;
+
+    const mouse = { x: -1e4, y: -1e4, sx: -1e4, sy: -1e4, lx: 0, ly: 0, v: 0, vs: 0, a: 0, set: false };
+
+    function readColor() {
+      const css = getComputedStyle(document.documentElement);
+      const dark = document.documentElement.dataset.theme === 'dark';
+      const ink = css.getPropertyValue('--ink-faint').trim() || '#777';
+      stroke = `color-mix(in oklab, ${ink} ${dark ? 44 : 38}%, transparent)`;
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildLines();
+    }
+
+    function buildLines() {
+      lines = [];
+      const oWidth = w + 120;
+      const oHeight = h + 60;
+      const totalLines = Math.ceil(oWidth / X_GAP);
+      const totalPoints = Math.ceil(oHeight / Y_GAP) + 1;
+      const x0 = (w - X_GAP * totalLines) / 2;
+      const y0 = (h - Y_GAP * (totalPoints - 1)) / 2;
+      for (let i = 0; i <= totalLines; i++) {
+        const pts: Point[] = [];
+        for (let j = 0; j < totalPoints; j++) {
+          pts.push({ x: x0 + i * X_GAP, y: y0 + j * Y_GAP, wx: 0, wy: 0, cx: 0, cy: 0, vx: 0, vy: 0 });
+        }
+        lines.push(pts);
+      }
+    }
+
+    function movePoints(t: number) {
+      const radius = Math.max(160, mouse.vs);
+      for (const pts of lines) {
+        for (const p of pts) {
+          // slow ambient drift
+          const n = valueNoise((p.x + t * 0.012) * 0.0021, (p.y + t * 0.006) * 0.0017) * 12;
+          p.wx = Math.cos(n) * 16;
+          p.wy = Math.sin(n) * 10;
+
+          // cursor impulse along the pointer's travel direction
+          const dx = p.x - mouse.sx;
+          const dy = p.y - mouse.sy;
+          const d = Math.hypot(dx, dy);
+          if (d < radius) {
+            const s = 1 - d / radius;
+            const f = Math.cos(d * 0.001) * s;
+            p.vx += Math.cos(mouse.a) * f * radius * mouse.vs * 0.00062;
+            p.vy += Math.sin(mouse.a) * f * radius * mouse.vs * 0.00062;
+          }
+
+          // spring back + friction
+          p.vx += -p.cx * 0.005;
+          p.vy += -p.cy * 0.005;
+          p.vx *= 0.925;
+          p.vy *= 0.925;
+          p.cx += p.vx;
+          p.cy += p.vy;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      for (const pts of lines) {
+        ctx.beginPath();
+        for (let j = 0; j < pts.length; j++) {
+          const p = pts[j]!;
+          const x = p.x + p.wx + p.cx;
+          const y = p.y + p.wy * 0.6 + p.cy;
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    function tick(t: number) {
+      mouse.sx += (mouse.x - mouse.sx) * 0.1;
+      mouse.sy += (mouse.y - mouse.sy) * 0.1;
+      const dx = mouse.x - mouse.lx;
+      const dy = mouse.y - mouse.ly;
+      const d = Math.hypot(dx, dy);
+      mouse.v = d;
+      mouse.vs += (d - mouse.vs) * 0.1;
+      mouse.vs = Math.min(100, mouse.vs);
+      mouse.lx = mouse.x;
+      mouse.ly = mouse.y;
+      if (d > 0.05) mouse.a = Math.atan2(dy, dx);
+
+      movePoints(t);
+      draw();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function onPointer(x: number, y: number) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = x - rect.left;
+      mouse.y = y - rect.top;
+      if (!mouse.set) {
+        mouse.sx = mouse.x;
+        mouse.sy = mouse.y;
+        mouse.lx = mouse.x;
+        mouse.ly = mouse.y;
+        mouse.set = true;
+      }
+    }
+    const onMouseMove = (e: MouseEvent) => onPointer(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) onPointer(t.clientX, t.clientY);
+    };
+
+    readColor();
+    resize();
+
+    if (reduced) {
+      movePoints(1200);
+      draw();
+    } else {
+      window.addEventListener('mousemove', onMouseMove, { passive: true });
+      window.addEventListener('touchmove', onTouchMove, { passive: true });
+      raf = requestAnimationFrame(tick);
+    }
+
+    const ro = new ResizeObserver(() => {
+      resize();
+      if (reduced) {
+        movePoints(1200);
+        draw();
+      }
+    });
+    ro.observe(canvas);
+
+    const themeObserver = new MutationObserver(() => {
+      readColor();
+      if (reduced) draw();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-palette'],
+    });
+
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('touchmove', onTouchMove);
+        ro.disconnect();
+        themeObserver.disconnect();
+      },
+      { once: true },
+    );
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLCanvasElement>('[data-linefield]').forEach(initLineField);
+  }
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>

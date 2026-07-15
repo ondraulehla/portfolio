@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter/index.css';
 @import '@fontsource-variable/space-grotesk/index.css';
+@import '@fontsource/anton/index.css';
+@import '@fontsource/anton/latin-ext.css';
 
 /* ---------------------------------------------------------------------------
    Semantic design tokens. Raw values live on :root / [data-theme='dark'];
@@ -123,9 +125,20 @@
 @theme {
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Space Grotesk Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+  --font-poster: 'Anton', 'Space Grotesk Variable', ui-sans-serif, sans-serif;
   --text-fluid-xl: clamp(2.6rem, 1.4rem + 5.2vw, 5.2rem);
+  --text-fluid-poster: clamp(3.4rem, 1.6rem + 8.6vw, 9rem);
   --text-fluid-lg: clamp(1.9rem, 1.2rem + 2.6vw, 3.1rem);
   --text-fluid-md: clamp(1.35rem, 1.05rem + 1.2vw, 1.9rem);
+}
+
+/* Poster display type: condensed, uppercase, tight – used for section-scale
+   statements, never for body copy. */
+.font-poster {
+  font-family: var(--font-poster);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-weight: 400;
 }
 
 html {
