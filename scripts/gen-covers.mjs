@@ -85,15 +85,15 @@ function plate(index, name, caption, diagram) {
 
 /* ---------- diagram helpers ---------- */
 
-const thin = `stroke="${INK}" stroke-width="1.6" fill="none"`;
-const mid = `stroke="${INK}" stroke-width="2.2" fill="none"`;
-const acc = `stroke="${ACCENT}" stroke-width="2.2" fill="none"`;
+const thin = `stroke="${INK}" stroke-width="2" fill="none"`;
+const mid = `stroke="${INK}" stroke-width="3" fill="none"`;
+const acc = `stroke="${ACCENT}" stroke-width="3" fill="none"`;
 
-function box(x, y, w, h, { dash = 0, stroke = INK, sw = 2.2 } = {}) {
+function box(x, y, w, h, { dash = 0, stroke = INK, sw = 2.8 } = {}) {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PAPER}" stroke="${stroke}" stroke-width="${sw}" ${dash ? `stroke-dasharray="${dash}"` : ''}/>`;
 }
 
-function arrow(x1, y1, x2, y2, { stroke = INK, sw = 2, dash = 0 } = {}) {
+function arrow(x1, y1, x2, y2, { stroke = INK, sw = 2.6, dash = 0 } = {}) {
   const a = Math.atan2(y2 - y1, x2 - x1);
   const l = 11;
   const p1x = x2 - l * Math.cos(a - 0.42);

@@ -441,7 +441,8 @@ export async function startExperience(): Promise<void> {
       const b = bird.userData as { angle: number; radius: number; h: number; speed: number; flap: number };
       b.angle += b.speed * dt;
       bird.position.set(Math.cos(b.angle) * b.radius, b.h + Math.sin(elapsed * 0.7 + b.flap) * 1.2, Math.sin(b.angle) * b.radius);
-      bird.rotation.y = -b.angle - Math.PI / 2;
+      bird.rotation.y = -b.angle; // head (+z) points along the orbit's velocity
+      bird.rotation.z = 0.18; // slight inward lean into the turn
       const flap = Math.sin(elapsed * b.flap) * 0.55;
       (bird.getObjectByName('wingL') as THREE.Mesh).rotation.z = flap;
       (bird.getObjectByName('wingR') as THREE.Mesh).rotation.z = -flap;
@@ -588,12 +589,17 @@ function buildTerrain(): THREE.Mesh {
       }
     }
 
-    // dirt roads are painted over grass, fields and sand – not over rock faces
+    // dirt roads are painted over grass, fields and sand – not over rock faces.
+    // Two tones: a wide sandy shoulder fading out, and a packed-earth core.
     const rd = roadDist(x, z);
-    if (rd < WORLD.roads.width && h > WATER_LEVEL + 0.05 && h < 9) {
-      const edge = smoothstep(WORLD.roads.width, WORLD.roads.width * 0.55, rd);
-      dirt.setHex(0xb08d5f).offsetHSL(0, 0, (fbm(x * 0.4, z * 0.4) - 0.5) * 0.08);
-      color.lerp(dirt, edge * 0.92);
+    const RW = WORLD.roads.width;
+    if (rd < RW * 2 && h > WATER_LEVEL + 0.05 && h < 9) {
+      const shoulder = smoothstep(RW * 2, RW * 0.85, rd);
+      dirt.setHex(0xc9b183);
+      color.lerp(dirt, shoulder * 0.45);
+      const core = smoothstep(RW * 0.9, RW * 0.4, rd);
+      dirt.setHex(0xa98a58).offsetHSL(0, 0, (fbm(x * 0.35, z * 0.35) - 0.5) * 0.07);
+      color.lerp(dirt, core * 0.95);
     }
 
     // subtle per-face brightness jitter – the "hand-cut facets" texture
@@ -698,11 +704,12 @@ function buildBoats(): THREE.Group {
 /** Striped lighthouse on a rocky islet off the coast, with a pulsing beacon. */
 function buildLighthouse(): THREE.Group {
   const group = new THREE.Group();
+  // truncated rocky islet – the tower stands on its flat top, not on a spike
   const rock = new THREE.Mesh(
-    new THREE.ConeGeometry(5.6, 9.5, 7),
+    new THREE.CylinderGeometry(2.5, 6.2, 8.6, 7),
     new THREE.MeshStandardMaterial({ color: COLORS.rock, roughness: 1, flatShading: true }),
   );
-  rock.position.y = WATER_LEVEL + 0.6;
+  rock.position.y = WATER_LEVEL + 0.75;
   group.add(rock);
 
   const bands = [0xffffff, 0xc0504a, 0xffffff, 0xc0504a];
@@ -879,42 +886,72 @@ function buildFoam(): THREE.Mesh {
   );
 }
 
-/** Wooden bridge where the western road crosses the river. */
+/**
+ * Wooden bridge where the western road crosses the river: a gently arched
+ * deck of segments that share their end points, with the two ends anchored
+ * INTO the banks so the walkway touches land on both sides.
+ */
 function buildBridge(): THREE.Group {
   const group = new THREE.Group();
   const z = WORLD.bridge.z;
   const cx = riverX(z);
-  const span = WORLD.river.width + 5;
-  const deckY = 0.85;
   const wood = new THREE.MeshStandardMaterial({ color: 0x8a6844, roughness: 0.9 });
   const woodDark = new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.95 });
 
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(span, 0.35, 3.4), wood);
-  deck.position.set(cx, deckY, z);
-  deck.castShadow = true;
-  group.add(deck);
-  // side ramps meeting the banks
-  for (const side of [-1, 1]) {
-    const ramp = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 3.4), wood);
-    ramp.position.set(cx + side * (span / 2 + 1.2), deckY - 0.35, z);
-    ramp.rotation.z = side * 0.22;
-    group.add(ramp);
+  // walk outward from the river centre until each side is dry land
+  let xL = cx;
+  while (getHeight(xL, z) < WATER_LEVEL + 1.1 && cx - xL < 30) xL -= 0.5;
+  let xR = cx;
+  while (getHeight(xR, z) < WATER_LEVEL + 1.1 && xR - cx < 30) xR += 0.5;
+  xL -= 1.6; // bite into the banks so the ends rest on solid ground
+  xR += 1.6;
+  const yL = getHeight(xL, z) + 0.1;
+  const yR = getHeight(xR, z) + 0.1;
+
+  // arched centre line sampled into joints
+  const SEG = 8;
+  const joints: { x: number; y: number }[] = [];
+  for (let i = 0; i <= SEG; i++) {
+    const t = i / SEG;
+    joints.push({ x: xL + (xR - xL) * t, y: yL + (yR - yL) * t + Math.sin(t * Math.PI) * 1.15 });
   }
-  // piles into the water + hand rails
-  for (const sx of [-span / 2 + 1, 0, span / 2 - 1]) {
-    for (const sz of [-1.45, 1.45]) {
-      const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 3.4, 6), woodDark);
-      pile.position.set(cx + sx, deckY - 1.5, z + sz);
-      group.add(pile);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1, 0.18), woodDark);
-      post.position.set(cx + sx, deckY + 0.65, z + sz);
-      group.add(post);
+
+  // deck + hand rails as connected segments – no gaps between pieces
+  for (let i = 0; i < SEG; i++) {
+    const a = joints[i]!;
+    const b = joints[i + 1]!;
+    const len = Math.hypot(b.x - a.x, b.y - a.y) + 0.1;
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(len, 0.22, 3.2), wood);
+    deck.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, z);
+    deck.rotation.z = angle;
+    deck.castShadow = true;
+    group.add(deck);
+    for (const side of [-1.45, 1.45]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.1, 0.1), wood);
+      rail.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + 1.0, z + side);
+      rail.rotation.z = angle;
+      group.add(rail);
     }
   }
-  for (const sz of [-1.45, 1.45]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(span, 0.12, 0.12), wood);
-    rail.position.set(cx, deckY + 1.1, z + sz);
-    group.add(rail);
+
+  // posts carry the rails at every other joint; piles drop to the riverbed
+  for (let i = 0; i <= SEG; i += 2) {
+    const j = joints[i]!;
+    for (const side of [-1.45, 1.45]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.05, 0.16), woodDark);
+      post.position.set(j.x, j.y + 0.5, z + side);
+      group.add(post);
+    }
+    const ground = Math.max(getHeight(j.x, z), WATER_LEVEL - 2.2);
+    if (j.y - ground > 0.6) {
+      const pile = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.17, 0.21, j.y - ground + 0.4, 6),
+        woodDark,
+      );
+      pile.position.set(j.x, (j.y + ground) / 2 - 0.1, z);
+      group.add(pile);
+    }
   }
   return group;
 }
@@ -1037,8 +1074,27 @@ function buildWindmill(): THREE.Group {
 function buildBirds(): THREE.Group {
   const group = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color: 0x3a3f4c, roughness: 0.8, side: THREE.DoubleSide });
+  const beakMat = new THREE.MeshStandardMaterial({ color: 0xd9903f, roughness: 0.8 });
   for (let i = 0; i < WORLD.fauna.birds; i++) {
     const bird = new THREE.Group();
+    // proper little body: fuselage + tail + beak, so the bird reads in 3D
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.13, 0.78, 6), mat);
+    body.rotation.x = Math.PI / 2; // tapered end backwards along -z
+    bird.add(body);
+    const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.13, 1), mat);
+    head.position.set(0, 0.05, 0.42);
+    bird.add(head);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 5), beakMat);
+    beak.rotation.x = Math.PI / 2;
+    beak.position.set(0, 0.05, 0.58);
+    bird.add(beak);
+    const tailGeo = new THREE.BufferGeometry();
+    tailGeo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, -0.36, -0.14, 0.02, -0.62, 0.14, 0.02, -0.62], 3),
+    );
+    tailGeo.computeVertexNormals();
+    bird.add(new THREE.Mesh(tailGeo, mat));
     for (const side of [-1, 1]) {
       const wingGeo = new THREE.BufferGeometry();
       wingGeo.setAttribute(
