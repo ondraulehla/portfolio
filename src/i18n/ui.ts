@@ -20,28 +20,23 @@ const en = {
 
   'hero.available': 'Open to new opportunities',
   'hero.title.line1': 'Fullstack developer',
-  'hero.title.line2': '& AI engineer.',
+  'hero.title.line2': '& AI engineer',
   'hero.subtitle':
     'I design, build and ship complete products – from client analysis and architecture to polished frontend, robust backend and AI integrations.',
   'hero.cta.projects': 'View projects',
   'hero.cta.cv': 'Download CV',
   'hero.cta.playground': 'Explore in 3D',
 
-  'about.heading': 'About me',
-  'about.kicker': 'Who I am',
+  'about.heading': 'About',
 
   'experience.heading': 'Experience',
-  'experience.kicker': 'Where I worked',
   'experience.present': 'Present',
 
   'education.heading': 'Education',
-  'education.kicker': 'Where I studied',
 
   'skills.heading': 'Skills',
-  'skills.kicker': 'What I work with',
 
   'projects.heading': 'Selected projects',
-  'projects.kicker': 'Case studies',
   'projects.viewCase': 'Read case study',
   'projects.all': 'All projects',
   'project.problem': 'Problem',
@@ -152,7 +147,7 @@ const cs = {
 
   'hero.available': 'Otevřený novým příležitostem',
   'hero.title.line1': 'Fullstack vývojář',
-  'hero.title.line2': '& AI inženýr.',
+  'hero.title.line2': '& AI inženýr',
   'hero.subtitle':
     'Navrhuji, stavím a dodávám kompletní produkty – od analýzy s klientem přes architekturu po vyladěný frontend, robustní backend a AI integrace.',
   'hero.cta.projects': 'Prohlédnout projekty',
@@ -160,20 +155,15 @@ const cs = {
   'hero.cta.playground': 'Prozkoumat ve 3D',
 
   'about.heading': 'O mně',
-  'about.kicker': 'Kdo jsem',
 
   'experience.heading': 'Zkušenosti',
-  'experience.kicker': 'Kde jsem pracoval',
   'experience.present': 'Současnost',
 
   'education.heading': 'Vzdělání',
-  'education.kicker': 'Kde jsem studoval',
 
   'skills.heading': 'Dovednosti',
-  'skills.kicker': 'S čím pracuji',
 
   'projects.heading': 'Vybrané projekty',
-  'projects.kicker': 'Případové studie',
   'projects.viewCase': 'Přečíst případovou studii',
   'projects.all': 'Všechny projekty',
   'project.problem': 'Problém',

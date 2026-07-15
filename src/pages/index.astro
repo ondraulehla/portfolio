@@ -7,6 +7,7 @@ import Education from '@/components/sections/Education.astro';
 import Skills from '@/components/sections/Skills.astro';
 import ProjectsGrid from '@/components/sections/ProjectsGrid.astro';
 import Contact from '@/components/sections/Contact.astro';
+import SectionBackdrop from '@/components/ui/SectionBackdrop.astro';
 import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 
@@ -16,10 +17,15 @@ const t = useTranslations(locale);
 
 <Base {locale} title={t('site.title')} description={t('site.description')}>
   <Hero {locale} />
-  <ProjectsGrid {locale} />
-  <About {locale} />
-  <Experience {locale} />
-  <Education {locale} />
-  <Skills {locale} />
-  <Contact {locale} />
+  <div class="relative">
+    <SectionBackdrop />
+    <div class="relative">
+      <ProjectsGrid {locale} />
+      <About {locale} />
+      <Experience {locale} />
+      <Education {locale} />
+      <Skills {locale} />
+      <Contact {locale} />
+    </div>
+  </div>
 </Base>

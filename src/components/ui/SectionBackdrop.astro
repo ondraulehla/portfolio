@@ -1,0 +1,439 @@
+---
+/**
+ * DEMO – backdrop variants for the sections below the hero.
+ * Variant is switched with the temporary floating panel (bottom-left) and
+ * persisted in localStorage('backdrop-variant'). Once one wins, the losers
+ * and the switcher get deleted.
+ *
+ *  a … warped "graph paper" grid that bulges around the cursor + flows with scroll
+ *  b … giant outlined ghost words per section with slow parallax
+ *  c … dot field that scatters away from the cursor (wodniack "Dots dashes field")
+ *  d … combo: warped grid + ghost words on About/Contact only
+ */
+---
+
+<div class="backdrop-layer pointer-events-none absolute inset-0" data-backdrop-layer aria-hidden="true">
+  <!-- variants a, c, d share one sticky canvas that always fills the viewport -->
+  <canvas class="bd-canvas sticky top-0 block h-svh w-full" data-bd-canvas></canvas>
+
+  <!-- variants b & d: ghost words are injected here by script -->
+  <div class="bd-words absolute inset-0 overflow-hidden" data-bd-words></div>
+
+  <!-- variant c: faint quilt-star stamps on top of the dot field -->
+  <div class="bd-dots absolute inset-0 overflow-hidden" data-bd-dots></div>
+</div>
+
+<!-- temporary dev switcher – dev-only, never ships to production -->
+{import.meta.env.DEV && (
+<div
+  class="border-line bg-surface/95 text-ink-muted fixed bottom-20 left-4 z-50 flex items-center gap-1 rounded-md border px-2 py-1.5 font-mono text-xs shadow-lg backdrop-blur"
+  data-bd-switcher
+>
+  <span class="text-ink-faint mr-1">bg:</span>
+  <button type="button" data-bd-set="a" class="rounded px-1.5 py-0.5 hover:text-ink">A grid</button>
+  <button type="button" data-bd-set="b" class="rounded px-1.5 py-0.5 hover:text-ink">B words</button>
+  <button type="button" data-bd-set="c" class="rounded px-1.5 py-0.5 hover:text-ink">C dots</button>
+  <button type="button" data-bd-set="d" class="rounded px-1.5 py-0.5 hover:text-ink">D combo</button>
+  <button type="button" data-bd-set="off" class="rounded px-1.5 py-0.5 hover:text-ink">off</button>
+</div>
+)}
+
+<style>
+  /* layers are toggled by data-backdrop on <html> */
+  .bd-canvas,
+  .bd-words,
+  .bd-dots {
+    display: none;
+  }
+  :global([data-backdrop='a']) .bd-canvas,
+  :global([data-backdrop='c']) .bd-canvas,
+  :global([data-backdrop='d']) .bd-canvas,
+  :global([data-backdrop='b']) .bd-words,
+  :global([data-backdrop='d']) .bd-words,
+  :global([data-backdrop='c']) .bd-dots {
+    display: block;
+  }
+
+  /* ghost word: outlined poster type, ~4% contrast */
+  .bd-words :global(.bd-word) {
+    position: absolute;
+    font-family: var(--font-poster);
+    font-size: clamp(6rem, 17vw, 15rem);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px
+      color-mix(in oklch, var(--ink) 11%, transparent);
+    white-space: nowrap;
+    user-select: none;
+    will-change: transform;
+  }
+
+  .bd-dots :global(svg) {
+    position: absolute;
+    opacity: 0.35;
+    color: color-mix(in oklch, var(--ink) 30%, transparent);
+    will-change: transform;
+  }
+
+  [data-bd-switcher] button.is-active {
+    background: var(--accent);
+    color: var(--surface);
+  }
+</style>
+
+<script>
+  const WORDS: Record<string, string> = {
+    projects: 'PROJECTS',
+    about: 'ABOUT',
+    experience: 'EXPERIENCE',
+    education: 'EDUCATION',
+    skills: 'SKILLS',
+    contact: 'CONTACT',
+  };
+  const COMBO_WORDS = new Set(['about', 'contact']);
+
+  const QUILT_STAR = `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4" width="120" height="120">
+    <rect x="16" y="16" width="16" height="16"/>
+    <rect x="16" y="16" width="16" height="16" transform="rotate(45 24 24)"/>
+    <rect x="6" y="6" width="12" height="12" transform="rotate(15 12 12)"/>
+    <rect x="30" y="6" width="12" height="12" transform="rotate(-15 36 12)"/>
+    <rect x="6" y="30" width="12" height="12" transform="rotate(-15 12 36)"/>
+    <rect x="30" y="30" width="12" height="12" transform="rotate(15 36 36)"/>
+  </svg>`;
+
+  function initBackdrop() {
+    const layer = document.querySelector<HTMLElement>('[data-backdrop-layer]');
+    if (!layer || layer.dataset.bound) return;
+    layer.dataset.bound = '1';
+
+    const wrapper = layer.parentElement as HTMLElement;
+    const canvas = layer.querySelector<HTMLCanvasElement>('[data-bd-canvas]')!;
+    const wordsHost = layer.querySelector<HTMLElement>('[data-bd-words]')!;
+    const dotsHost = layer.querySelector<HTMLElement>('[data-bd-dots]')!;
+    const ctx = canvas.getContext('2d')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- variant switching ---------- */
+    let variant = 'off';
+
+    function applyVariant(v: string) {
+      variant = v;
+      document.documentElement.dataset.backdrop = v;
+      try {
+        localStorage.setItem('backdrop-variant', v);
+      } catch {}
+      document.querySelectorAll<HTMLButtonElement>('[data-bd-set]').forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.bdSet === v);
+      });
+      buildWords();
+      if (canvasActive()) {
+        resizeCanvas();
+        kick();
+      }
+    }
+    document.querySelectorAll<HTMLButtonElement>('[data-bd-set]').forEach((b) => {
+      b.addEventListener('click', () => applyVariant(b.dataset.bdSet!));
+    });
+
+    const canvasActive = () => variant === 'a' || variant === 'c' || variant === 'd';
+    const wordsActive = () => variant === 'b' || variant === 'd';
+
+    function inkColor() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+    }
+
+    /* ---------- ghost words (b, d) ---------- */
+    type Word = { el: HTMLElement; section: HTMLElement; depth: number };
+    let words: Word[] = [];
+
+    function buildWords() {
+      wordsHost.innerHTML = '';
+      words = [];
+      if (!wordsActive()) return;
+      let i = 0;
+      for (const [id, text] of Object.entries(WORDS)) {
+        if (variant === 'd' && !COMBO_WORDS.has(id)) continue;
+        const section = document.getElementById(id);
+        if (!section) continue;
+        const el = document.createElement('span');
+        el.className = 'bd-word';
+        el.textContent = text;
+        // alternate horizontal anchor so words peek in from both edges
+        if (i % 2 === 0) el.style.left = '-0.15em';
+        else el.style.right = '-0.15em';
+        el.style.top = `${section.offsetTop + section.offsetHeight * 0.08}px`;
+        wordsHost.appendChild(el);
+        words.push({ el, section, depth: 0.12 + (i % 3) * 0.04 });
+        i++;
+      }
+      updateWords();
+    }
+
+    function updateWords() {
+      if (!words.length) return;
+      const vh = innerHeight;
+      for (const wrd of words) {
+        const r = wrd.section.getBoundingClientRect();
+        const progress = (vh - r.top) / (vh + r.height); // 0 entering → 1 leaving
+        wrd.el.style.transform = `translateY(${(progress - 0.5) * -2 * wrd.depth * vh}px)`;
+      }
+    }
+
+    /* ---------- quilt stamps (c) ---------- */
+    function buildStamps() {
+      dotsHost.innerHTML = '';
+      const h = wrapper.offsetHeight;
+      const spots = [
+        { x: '8%', y: 0.18, s: 1.4, r: 8 },
+        { x: '78%', y: 0.42, s: 2.1, r: -12 },
+        { x: '14%', y: 0.68, s: 1.1, r: 20 },
+        { x: '70%', y: 0.9, s: 1.6, r: -5 },
+      ];
+      for (const p of spots) {
+        const holder = document.createElement('div');
+        holder.innerHTML = QUILT_STAR;
+        const svg = holder.firstElementChild as SVGElement;
+        svg.style.left = p.x;
+        svg.style.top = `${h * p.y}px`;
+        svg.style.transform = `scale(${p.s}) rotate(${p.r}deg)`;
+        dotsHost.appendChild(svg);
+      }
+    }
+
+    /* ---------- shared canvas state ---------- */
+    const mouse = { x: -1e4, y: -1e4, speed: 0, pending: 0, px: 0, py: 0 };
+    let flow = 0; // eased scroll velocity (grid)
+    let lastScroll = scrollY;
+    let dpr = 1;
+    let running = false;
+    let idleFrames = 0;
+
+    function resizeCanvas() {
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      buildDots();
+      draw();
+    }
+
+    // vertical offset that pins the pattern to the document instead of the viewport
+    function docOffset(spacing: number) {
+      const rect = canvas.getBoundingClientRect();
+      const docTop = scrollY + rect.top;
+      return ((docTop % spacing) + spacing) % spacing;
+    }
+
+    /* ---------- warped grid (a, d) ---------- */
+    const GRID = 52;
+    const STEP = 14; // sampling step along each line
+
+    function displace(x: number, y: number): [number, number] {
+      const mx = x - mouse.x;
+      const my = y - mouse.y;
+      const d2 = mx * mx + my * my;
+      const R = 190;
+      if (d2 < R * R && d2 > 0.01) {
+        const d = Math.sqrt(d2);
+        const f = (1 - d / R) ** 2 * 26;
+        return [(mx / d) * f, (my / d) * f];
+      }
+      return [0, 0];
+    }
+
+    function drawGrid(w: number, h: number) {
+      const offY = docOffset(GRID);
+      for (let x = GRID / 2; x < w; x += GRID) {
+        ctx.beginPath();
+        for (let y = 0; y <= h; y += STEP) {
+          const wave = Math.sin((y / h) * Math.PI) * flow * 0.9;
+          const [dx, dy] = displace(x, y);
+          const px = x + dx + wave;
+          const py = y + dy * 0.4;
+          y === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      for (let y = -offY; y <= h + GRID; y += GRID) {
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += STEP) {
+          const [dx, dy] = displace(x, y);
+          const px = x + dx * 0.4;
+          const py = y + dy + Math.sin((x / w) * Math.PI * 2 + y * 0.02) * flow * 0.25;
+          x === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+    }
+
+    /* ---------- scattering dot field (c) – after wodniack's "Dots dashes field" ---------- */
+    const DOT = 30; // grid spacing
+    let dotVel: Float32Array = new Float32Array(0);
+    let dotPos: Float32Array = new Float32Array(0);
+    let dotCols = 0;
+    let dotRows = 0;
+
+    function buildDots() {
+      dotCols = Math.ceil(canvas.offsetWidth / DOT) + 1;
+      dotRows = Math.ceil(canvas.offsetHeight / DOT) + 2;
+      dotVel = new Float32Array(dotCols * dotRows * 2);
+      dotPos = new Float32Array(dotCols * dotRows * 2);
+    }
+
+    function drawDots(w: number, h: number) {
+      const offY = docOffset(DOT);
+      let anyMoving = false;
+      for (let row = 0; row < dotRows; row++) {
+        for (let col = 0; col < dotCols; col++) {
+          const i = (row * dotCols + col) * 2;
+          const ax = col * DOT + DOT / 2;
+          const ay = row * DOT - offY;
+
+          // repel from the cursor, scaled by pointer speed (wodniack physics)
+          const dx = mouse.x - (ax + dotPos[i]!);
+          const dy = mouse.y - (ay + dotPos[i + 1]!);
+          const dist = Math.max(Math.hypot(dx, dy), 1);
+          if (dist < 110) {
+            const push = Math.min((500 / dist) * (mouse.speed * 0.1), 42);
+            const angle = Math.atan2(dy, dx);
+            dotVel[i]! -= Math.cos(angle) * push;
+            dotVel[i + 1]! -= Math.sin(angle) * push;
+          }
+          dotVel[i]! *= 0.88;
+          dotVel[i + 1]! *= 0.88;
+          // ease the drawn position toward anchor+velocity
+          dotPos[i]! += (dotVel[i]! - dotPos[i]!) * 0.12;
+          dotPos[i + 1]! += (dotVel[i + 1]! - dotPos[i + 1]!) * 0.12;
+
+          const ox = dotPos[i]!;
+          const oy = dotPos[i + 1]!;
+          const disp = Math.hypot(ox, oy);
+          if (disp > 0.2) anyMoving = true;
+
+          // dash: a hairline from the anchor to the displaced dot
+          if (disp > 1.5) {
+            ctx.globalAlpha = Math.min(disp / 40, 0.3);
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax + ox, ay + oy);
+            ctx.stroke();
+          }
+
+          ctx.globalAlpha = 0.32;
+          ctx.beginPath();
+          ctx.arc(ax + ox, ay + oy, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+      return anyMoving;
+    }
+
+    /* ---------- render loop ---------- */
+    let dotsMoving = false;
+
+    function draw() {
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const ink = inkColor();
+      ctx.strokeStyle = ink;
+      ctx.fillStyle = ink;
+      ctx.lineWidth = 1;
+
+      if (variant === 'c') {
+        dotsMoving = drawDots(w, h);
+      } else {
+        ctx.globalAlpha = 0.12;
+        drawGrid(w, h);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function frame() {
+      if (!canvasActive()) {
+        running = false;
+        return;
+      }
+      flow *= 0.9;
+      mouse.speed += (mouse.pending - mouse.speed) * 0.5;
+      mouse.pending = 0;
+      if (mouse.speed < 0.01) mouse.speed = 0;
+
+      draw();
+      if (wordsActive()) updateWords();
+
+      const busy = Math.abs(flow) > 0.05 || mouse.speed > 0.01 || dotsMoving || mouse.x > -1e3;
+      idleFrames = busy ? 0 : idleFrames + 1;
+      if (idleFrames > 40) {
+        running = false;
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function kick() {
+      if (reduced) {
+        draw();
+        return;
+      }
+      if (!running) {
+        running = true;
+        idleFrames = 0;
+        requestAnimationFrame(frame);
+      }
+    }
+
+    /* ---------- events ---------- */
+    addEventListener(
+      'scroll',
+      () => {
+        const v = scrollY - lastScroll;
+        lastScroll = scrollY;
+        flow = Math.max(-30, Math.min(30, flow + v * 0.4));
+        if (canvasActive()) kick();
+        else if (wordsActive() && !reduced) requestAnimationFrame(updateWords);
+      },
+      { passive: true },
+    );
+
+    addEventListener('pointermove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      if (e.clientY >= rect.top && e.clientY <= rect.bottom && rect.top < innerHeight) {
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        if (mouse.x > -1e3) mouse.pending += Math.hypot(x - mouse.px, y - mouse.py);
+        mouse.x = x;
+        mouse.y = y;
+        mouse.px = x;
+        mouse.py = y;
+        if (canvasActive()) kick();
+      } else {
+        mouse.x = -1e4;
+        mouse.y = -1e4;
+      }
+    });
+
+    addEventListener('resize', () => {
+      resizeCanvas();
+      buildWords();
+      buildStamps();
+    });
+
+    document.addEventListener('astro:before-swap', () => {
+      delete document.documentElement.dataset.backdrop;
+    });
+
+    let initial = 'off';
+    try {
+      initial = localStorage.getItem('backdrop-variant') || 'off';
+    } catch {}
+    resizeCanvas();
+    buildStamps();
+    applyVariant(initial);
+  }
+
+  initBackdrop();
+  document.addEventListener('astro:page-load', initBackdrop);
+</script>

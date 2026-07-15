@@ -17,7 +17,7 @@ const projects = (await getCollection('projects', (entry) => entry.id.startsWith
 ---
 
 <section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="projects">
-  <SectionHeading kicker={t('projects.kicker')} heading={t('projects.heading')} />
+  <SectionHeading heading={t('projects.heading')} />
 
   <div class="grid gap-6 md:grid-cols-2">
     {projects.map((project) => <ProjectCard {project} {locale} />)}
