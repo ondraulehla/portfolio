@@ -261,7 +261,7 @@ export async function startExperience(): Promise<void> {
   data.projects.forEach((project, i) => {
     const spot = SIGN_SPOTS[i % SIGN_SPOTS.length]!;
     const y = Math.max(getHeight(spot.x, spot.z), 0) + (spot.h ?? 13);
-    const group = buildFloatingSign(project, data.labels.pressEnter);
+    const group = buildFloatingSign(project, data.labels.pressEnter, i);
     group.position.set(spot.x, y, spot.z);
     group.lookAt(0, y, 0);
     scene.add(group);
@@ -1483,14 +1483,14 @@ class PuffTrail {
   }
 }
 
-function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
+function buildFloatingSign(project: ProjectSign, hint: string, index: number): THREE.Group {
   const outer = new THREE.Group();
   // everything lives on an inner rig so the bob/sway animation can rotate it
   // without disturbing the outer group's lookAt orientation
   const group = new THREE.Group();
   group.name = 'rig';
   outer.add(group);
-  const texture = makePanelTexture(project, hint);
+  const texture = makePanelTexture(project, hint, index);
 
   // hanging card – a single box so nothing z-fights at distance; box UVs are
   // authored per-face from the outside, so both faces read correctly
@@ -1554,52 +1554,118 @@ function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
   return outer;
 }
 
-function makePanelTexture(project: ProjectSign, hint: string): THREE.CanvasTexture {
+/**
+ * The billboard card in the same language as the project cover plates:
+ * bone paper, hairline grid, crop marks, PLATE numbering, hatch strip,
+ * poster title and a square accent call-to-action.
+ */
+function makePanelTexture(project: ProjectSign, hint: string, index: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
   canvas.height = 444;
   const ctx = canvas.getContext('2d')!;
   const W = canvas.width;
   const H = canvas.height;
+  const PAPER = '#f7f3ea';
+  const INK = '#29221b';
+  const LINE = '#e2dac8';
+  const ACCENT = '#c2360c';
 
-  // warm paper card in the site's editorial language: soft gradient, hairline
-  // frame, accent rule, mono year, display title, call-to-action pill
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#fffdf8');
-  bg.addColorStop(1, '#f3ebdc');
-  ctx.fillStyle = bg;
+  ctx.fillStyle = PAPER;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.strokeStyle = 'rgba(35, 40, 56, 0.22)';
+  // hairline grid
+  ctx.strokeStyle = LINE;
+  ctx.lineWidth = 2;
+  for (let x = 64; x < W; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 30; y < H; y += 64) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // crop marks
+  ctx.strokeStyle = 'rgba(41, 34, 27, 0.65)';
   ctx.lineWidth = 3;
-  ctx.strokeRect(18, 18, W - 36, H - 36);
+  const m = 22;
+  const l = 18;
+  for (const [cx, cy, dx, dy] of [
+    [m, m, 1, 1],
+    [W - m, m, -1, 1],
+    [W - m, H - m, -1, -1],
+    [m, H - m, 1, -1],
+  ] as const) {
+    ctx.beginPath();
+    ctx.moveTo(cx + dx * l, cy);
+    ctx.lineTo(cx, cy);
+    ctx.lineTo(cx, cy + dy * l);
+    ctx.stroke();
+  }
 
-  ctx.fillStyle = COLORS.panelAccent;
-  ctx.fillRect(64, 62, 112, 9);
-
-  ctx.fillStyle = COLORS.panelAccent;
-  ctx.font = '600 40px ui-monospace, monospace';
-  ctx.fillText(String(project.year), 64, 138);
-
-  ctx.fillStyle = COLORS.panelText;
-  ctx.font = 'bold 76px "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif';
-  wrapText(ctx, project.title, 64, 232, W - 128, 88);
-
-  // hint pill, bottom-right ("Press Enter" / "Stiskněte Enter")
-  ctx.font = '600 33px ui-monospace, monospace';
-  const label = `⏎ ${hint}`;
-  const tw = ctx.measureText(label).width;
-  const padX = 30;
-  const pillW = tw + padX * 2;
-  const pillH = 60;
-  const px = W - 64 - pillW;
-  const py = H - 62 - pillH;
-  ctx.fillStyle = COLORS.panelAccent;
+  // header: plate number + year, rule, hatch strip
+  ctx.fillStyle = ACCENT;
+  ctx.font = '600 34px ui-monospace, Menlo, monospace';
+  ctx.fillText(`PLATE ${String(index + 1).padStart(2, '0')}`, 64, 92);
+  ctx.fillStyle = 'rgba(41, 34, 27, 0.55)';
+  ctx.font = '500 30px ui-monospace, Menlo, monospace';
+  const yearW = ctx.measureText(String(project.year)).width;
+  ctx.fillText(String(project.year), W - 64 - yearW, 92);
+  ctx.strokeStyle = 'rgba(41, 34, 27, 0.6)';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.roundRect(px, py, pillW, pillH, 30);
-  ctx.fill();
-  ctx.fillStyle = '#fffdf8';
-  ctx.fillText(label, px + padX, py + 41);
+  ctx.moveTo(64, 112);
+  ctx.lineTo(W - 64, 112);
+  ctx.stroke();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(64, 122, 130, 12);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(41, 34, 27, 0.5)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 150; i += 9) {
+    ctx.beginPath();
+    ctx.moveTo(64 + i, 134);
+    ctx.lineTo(64 + i + 12, 122);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // poster title in the site's display face; long titles step down a size
+  ctx.fillStyle = INK;
+  const title = project.title.toUpperCase();
+  ctx.font = '400 88px Anton, "Arial Narrow", sans-serif';
+  const size = ctx.measureText(title).width > (W - 128) * 1.85 ? 62 : 88;
+  ctx.font = `400 ${size}px Anton, "Arial Narrow", sans-serif`;
+  wrapText(ctx, title, 64, 208 + size * 0.45, W - 128, size * 1.12);
+
+  // square accent call-to-action, bottom-right
+  ctx.font = '600 33px ui-monospace, Menlo, monospace';
+  const label = `⏎ ${hint.toUpperCase()}`;
+  const tw = ctx.measureText(label).width;
+  const padX = 28;
+  const pillW = tw + padX * 2;
+  const pillH = 62;
+  const px = W - 56 - pillW;
+  const py = H - 56 - pillH;
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(px, py, pillW, pillH);
+  ctx.fillStyle = PAPER;
+  ctx.fillText(label, px + padX, py + 42);
+
+  // small accent diamond, bottom-left – the site's marker
+  ctx.save();
+  ctx.translate(76, H - 84);
+  ctx.rotate(Math.PI / 4);
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(-11, -11, 22, 22);
+  ctx.restore();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;

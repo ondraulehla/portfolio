@@ -220,7 +220,7 @@ covers['agent-audit'] = plate(
       d += mono(724, y + 18, f.label, { size: 13, opacity: 0.6 });
       d += hatch(1006, y - 34, 24, 68, ACCENT, 0.45);
     });
-    d += mono(360, 585, '3 FINDINGS · 0 FALSE POSITIVES', { size: 13, anchor: 'middle', opacity: 0.6 });
+    d += mono(360, 585, 'SCAN COMPLETE · 3 FINDINGS · EXIT 1', { size: 13, anchor: 'middle', opacity: 0.6 });
     return d;
   })(),
 );
@@ -247,7 +247,7 @@ covers['agent-lens'] = plate(
       { label: 'MODEL', bars: [[0, 10], [22, 30], [39, 48]] },
       { label: 'BASH', bars: [[10, 20]] },
       { label: 'READ', bars: [[20, 22], [30, 33]] },
-      { label: 'EDIT', bars: [[33, 39], [48, 46.5]], fail: 1 },
+      { label: 'EDIT', bars: [[33, 39], [45, 47.5]], fail: 1 },
     ];
     tracks.forEach((t, ti) => {
       const y = 240 + ti * 82;
@@ -350,7 +350,7 @@ covers['ai-framework'] = plate(
       d += `<path d="M${fromX} ${y} H ${(fromX + toX) / 2} V ${toY} H ${toX}" ${mid}/>`;
       d += diamond(toX, toY, 10);
     });
-    d += mono(600, 560, 'ONE DESIGN SYSTEM · SHARED SCHEMAS · PNPM WORKSPACES', { size: 13, anchor: 'middle', opacity: 0.6 });
+    d += mono(600, 560, 'ONE DESIGN SYSTEM · SHARED SCHEMAS · TURBOREPO', { size: 13, anchor: 'middle', opacity: 0.6 });
     return d;
   })(),
 );
@@ -424,7 +424,7 @@ covers['tradeup-calculator'] = plate(
     d += `<polyline points="${pts}" stroke="${ACCENT}" stroke-width="3" fill="none"/>`;
     // marked best contract
     d += diamond(x0 + 47 + 9 * 60, y0 - 60 - 210 * 0.8, 14);
-    d += mono(x0 + 47 + 9 * 60, y0 - 60 - 210 * 0.8 - 22, '+38 %', { size: 15, anchor: 'middle', fill: ACCENT, weight: 600 });
+    d += mono(x0 + 47 + 9 * 60, y0 - 60 - 210 * 0.8 - 22, '+38%', { size: 15, anchor: 'middle', fill: ACCENT, weight: 600, ls: 1 });
     return d;
   })(),
 );
