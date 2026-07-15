@@ -22,6 +22,3 @@ export function switchLocalePath(url: URL, target: Locale): string {
   return localePath(target, url.pathname || '/');
 }
 
-export function otherLocale(locale: Locale): Locale {
-  return locale === 'en' ? 'cs' : 'en';
-}

@@ -102,7 +102,7 @@ const t = useTranslations(locale);
           ))
         }
         <div class="flex gap-3">
-          <dt class="w-36 shrink-0 font-semibold">{locale === 'cs' ? 'Jazyky' : 'Languages'}:</dt>
+          <dt class="w-36 shrink-0 font-semibold">Languages:</dt>
           <dd class="text-neutral-700">
             {cv.languages.map((l) => `${l.name[locale]} (${l.level[locale]})`).join(', ')}
           </dd>

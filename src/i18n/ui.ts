@@ -263,5 +263,6 @@ const cs = {
   'cv.print.title': 'Životopis',
 } as const satisfies Record<keyof typeof en, string>;
 
-export const ui = { en, cs } satisfies Record<Locale, Record<keyof typeof en, string>>;
+// cs strings are kept for a possible future re-enable but are not built.
+export const ui = { en, cs } satisfies Record<Locale | 'cs', Record<keyof typeof en, string>>;
 export type UIKey = keyof typeof en;

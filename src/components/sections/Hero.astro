@@ -9,14 +9,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 
-/**
- * Czech uppercase carries carons/acutes (VÝVOJÁŘ…) that need breathing room –
- * the poster setting gets looser leading and a slightly smaller size there.
- */
-const posterSize =
-  locale === 'cs'
-    ? 'text-[length:clamp(2.9rem,1.3rem+7.2vw,7.6rem)] leading-[1.08]'
-    : 'text-[length:var(--text-fluid-poster)] leading-[0.92]';
+const posterSize = 'text-[length:var(--text-fluid-poster)] leading-[0.92]';
 ---
 
 <section class="border-line/70 relative overflow-hidden border-b">

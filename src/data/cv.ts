@@ -1,7 +1,7 @@
 import type { Locale } from '@/i18n/config';
 
-/** Every human-readable string exists in both languages. */
-export type L10n = Record<Locale, string>;
+/** Strings keep their Czech variant for a possible future re-enable; only en is built. */
+export type L10n = Record<Locale, string> & { cs?: string };
 
 export interface ExperienceItem {
   company: string;
@@ -213,11 +213,11 @@ export const cv: CV = {
   ],
 };
 
-/** '2023-06' → 'Jun 2023' / 'čer 2023' */
-export function formatMonth(iso: string, locale: Locale): string {
+/** '2023-06' → 'Jun 2023' */
+export function formatMonth(iso: string, _locale: Locale): string {
   const [y, m] = iso.split('-').map(Number);
   const date = new Date(Date.UTC(y!, (m ?? 1) - 1, 1));
-  return new Intl.DateTimeFormat(locale === 'cs' ? 'cs-CZ' : 'en-US', {
+  return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',

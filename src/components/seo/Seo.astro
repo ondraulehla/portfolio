@@ -33,7 +33,7 @@ const image = new URL(ogImage ?? `/og/default-${locale}.png`, Astro.site);
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={image} />
-<meta property="og:locale" content={locale === 'cs' ? 'cs_CZ' : 'en_US'} />
+<meta property="og:locale" content="en_US" />
 <meta property="og:site_name" content={site.name} />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
