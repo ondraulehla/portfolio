@@ -123,6 +123,38 @@ function riverX(z: number): number {
   return r.a1 * Math.sin(z * r.f1) + r.offset + r.a2 * Math.sin(z * r.f2);
 }
 
+function distToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const t = THREE.MathUtils.clamp(((px - ax) * dx + (pz - az) * dz) / (dx * dx + dz * dz), 0, 1);
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
+
+/** Distance to the nearest dirt-road centre line. */
+function roadDist(x: number, z: number): number {
+  let best = Infinity;
+  for (const path of WORLD.roads.paths) {
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i]!;
+      const b = path[i + 1]!;
+      best = Math.min(best, distToSegment(x, z, a.x, a.z, b.x, b.z));
+    }
+  }
+  return best;
+}
+
+/** Which tilled field (if any) covers this point – returns its tint or -1. */
+function fieldTint(x: number, z: number): number {
+  for (const f of WORLD.fields) {
+    const cos = Math.cos(-f.rot);
+    const sin = Math.sin(-f.rot);
+    const lx = (x - f.x) * cos - (z - f.z) * sin;
+    const lz = (x - f.x) * sin + (z - f.z) * cos;
+    if (Math.abs(lx) < f.w / 2 && Math.abs(lz) < f.l / 2) return f.tint;
+  }
+  return -1;
+}
+
 /** Terrain height – the single source of truth used by every builder. */
 function getHeight(x: number, z: number): number {
   // rolling hills on a solid landmass base
@@ -204,9 +236,20 @@ export async function startExperience(): Promise<void> {
   scene.add(buildTerrain());
   const sea = buildSea(sky.water);
   scene.add(sea);
+  scene.add(buildFoam());
   scene.add(buildForests());
   scene.add(buildRocks());
   scene.add(buildTown());
+  scene.add(buildBridge());
+  const pier = buildPier();
+  scene.add(pier);
+  const moored = pier.getObjectByName('moored') as THREE.Group;
+  const windmill = buildWindmill();
+  scene.add(windmill);
+  const windmillBlades = windmill.getObjectByName('blades') as THREE.Group;
+  const birds = buildBirds();
+  scene.add(birds);
+  scene.add(buildSheep());
   const boats = buildBoats();
   scene.add(boats);
   const lighthouse = buildLighthouse();
@@ -392,6 +435,22 @@ export async function startExperience(): Promise<void> {
         1.6 + Math.sin(elapsed * 2.6) * 1.3;
     }
 
+    // windmill blades, circling birds, moored boats bobbing at the pier
+    windmillBlades.rotation.z += 0.55 * dt;
+    birds.children.forEach((bird) => {
+      const b = bird.userData as { angle: number; radius: number; h: number; speed: number; flap: number };
+      b.angle += b.speed * dt;
+      bird.position.set(Math.cos(b.angle) * b.radius, b.h + Math.sin(elapsed * 0.7 + b.flap) * 1.2, Math.sin(b.angle) * b.radius);
+      bird.rotation.y = -b.angle - Math.PI / 2;
+      const flap = Math.sin(elapsed * b.flap) * 0.55;
+      (bird.getObjectByName('wingL') as THREE.Mesh).rotation.z = flap;
+      (bird.getObjectByName('wingR') as THREE.Mesh).rotation.z = -flap;
+    });
+    moored.children.forEach((boat, i) => {
+      boat.position.y = WATER_LEVEL + 0.1 + Math.sin(elapsed * 1.2 + i * 2.4) * 0.07;
+      boat.rotation.z = Math.sin(elapsed * 1.05 + i * 1.9) * 0.04;
+    });
+
     // blimps bob and sway gently on their moorings
     signs.forEach((sign, i) => {
       sign.group.position.y = sign.base + Math.sin(elapsed * 1.1 + i * 2.1) * 0.55;
@@ -447,7 +506,7 @@ export async function startExperience(): Promise<void> {
 
 function buildTerrain(): THREE.Mesh {
   const size = 320;
-  const segments = 128;
+  const segments = 148;
   const indexed = new THREE.PlaneGeometry(size, size, segments, segments);
   indexed.rotateX(-Math.PI / 2);
 
@@ -477,6 +536,8 @@ function buildTerrain(): THREE.Mesh {
     new THREE.Color(COLORS.rockHigh),
   ];
   const snow = new THREE.Color(COLORS.snow);
+  const field = new THREE.Color();
+  const dirt = new THREE.Color();
 
   for (let i = 0; i < pos.count; i += 3) {
     // face centroid + true face slope from the triangle's normal
@@ -519,6 +580,20 @@ function buildTerrain(): THREE.Mesh {
       color
         .copy(grass[Math.floor(tint * grass.length) % grass.length]!)
         .lerp(meadow, meadowMix * 0.85);
+      // tilled fields: flat patches take their crop tint with faint row striping
+      const ft = fieldTint(x, z);
+      if (ft >= 0 && h > 0.4 && h < 6) {
+        const rows = Math.sin((x * 0.94 + z * 0.34) * 2.6) * 0.045;
+        color.copy(field.setHex(ft)).offsetHSL(0, 0, rows + (tint - 0.5) * 0.04);
+      }
+    }
+
+    // dirt roads are painted over grass, fields and sand – not over rock faces
+    const rd = roadDist(x, z);
+    if (rd < WORLD.roads.width && h > WATER_LEVEL + 0.05 && h < 9) {
+      const edge = smoothstep(WORLD.roads.width, WORLD.roads.width * 0.55, rd);
+      dirt.setHex(0xb08d5f).offsetHSL(0, 0, (fbm(x * 0.4, z * 0.4) - 0.5) * 0.08);
+      color.lerp(dirt, edge * 0.92);
     }
 
     // subtle per-face brightness jitter – the "hand-cut facets" texture
@@ -685,6 +760,10 @@ function buildForests(): THREE.Group {
     if (h < WORLD.forest.minHeight || h > WORLD.forest.maxHeight) continue;
     if (Math.abs(x - riverX(z)) < 7) continue;
     if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.radius + 5) continue;
+    if (roadDist(x, z) < 4) continue;
+    if (fieldTint(x, z) >= 0) continue;
+    if (Math.hypot(x - WORLD.windmill.x, z - WORLD.windmill.z) < 6) continue;
+    if (Math.hypot(x - WORLD.pier.x, z - WORLD.pier.z) < 8) continue;
     // forests grow where the forest-noise says so – organic patches with soft edges
     const density = fbm(x * 0.03 + 700, z * 0.03 + 700);
     if (density < WORLD.forest.densityThreshold) continue;
@@ -765,6 +844,267 @@ function buildForests(): THREE.Group {
     group.add(mesh);
   }
 
+  return group;
+}
+
+/** Ring of breaking foam hugging the shoreline. */
+function buildFoam(): THREE.Mesh {
+  const STEPS = 240;
+  const verts: number[] = [];
+  const index: number[] = [];
+  for (let i = 0; i <= STEPS; i++) {
+    const a = (i / STEPS) * Math.PI * 2;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    // walk outward to the first point where land dips under the water line
+    let r = ISLAND_RADIUS - 24;
+    while (r < ISLAND_RADIUS + COAST_WIDTH && getHeight(cos * r, sin * r) > WATER_LEVEL) r += 0.8;
+    const wobble = (fbm(cos * 3 + 40, sin * 3 + 40) - 0.5) * 2.2;
+    const inner = r - 1.3 + wobble;
+    const outer = r + 1.1 + wobble;
+    verts.push(cos * inner, WATER_LEVEL + 0.06, sin * inner);
+    verts.push(cos * outer, WATER_LEVEL + 0.06, sin * outer);
+    if (i < STEPS) {
+      const k = i * 2;
+      index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geometry.setIndex(index);
+  geometry.computeVertexNormals();
+  return new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false }),
+  );
+}
+
+/** Wooden bridge where the western road crosses the river. */
+function buildBridge(): THREE.Group {
+  const group = new THREE.Group();
+  const z = WORLD.bridge.z;
+  const cx = riverX(z);
+  const span = WORLD.river.width + 5;
+  const deckY = 0.85;
+  const wood = new THREE.MeshStandardMaterial({ color: 0x8a6844, roughness: 0.9 });
+  const woodDark = new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.95 });
+
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(span, 0.35, 3.4), wood);
+  deck.position.set(cx, deckY, z);
+  deck.castShadow = true;
+  group.add(deck);
+  // side ramps meeting the banks
+  for (const side of [-1, 1]) {
+    const ramp = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 3.4), wood);
+    ramp.position.set(cx + side * (span / 2 + 1.2), deckY - 0.35, z);
+    ramp.rotation.z = side * 0.22;
+    group.add(ramp);
+  }
+  // piles into the water + hand rails
+  for (const sx of [-span / 2 + 1, 0, span / 2 - 1]) {
+    for (const sz of [-1.45, 1.45]) {
+      const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 3.4, 6), woodDark);
+      pile.position.set(cx + sx, deckY - 1.5, z + sz);
+      group.add(pile);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1, 0.18), woodDark);
+      post.position.set(cx + sx, deckY + 0.65, z + sz);
+      group.add(post);
+    }
+  }
+  for (const sz of [-1.45, 1.45]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(span, 0.12, 0.12), wood);
+    rail.position.set(cx, deckY + 1.1, z + sz);
+    group.add(rail);
+  }
+  return group;
+}
+
+/** Plank pier reaching from the beach into the sea, two rowboats moored. */
+function buildPier(): THREE.Group {
+  const group = new THREE.Group();
+  const P = WORLD.pier;
+  const dir = new THREE.Vector3(Math.sin(P.angle), 0, Math.cos(P.angle));
+  const deckY = WATER_LEVEL + 1.0;
+  const wood = new THREE.MeshStandardMaterial({ color: 0x8a6844, roughness: 0.9 });
+  const woodDark = new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.95 });
+
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.28, P.length), wood);
+  deck.position.set(P.x + dir.x * (P.length / 2), deckY, P.z + dir.z * (P.length / 2));
+  deck.rotation.y = P.angle;
+  deck.castShadow = true;
+  group.add(deck);
+
+  for (let i = 1; i <= 4; i++) {
+    const t = (i / 4) * P.length;
+    for (const side of [-1.05, 1.05]) {
+      const px = P.x + dir.x * t - dir.z * side;
+      const pz = P.z + dir.z * t + dir.x * side;
+      const pile = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 3.2, 6), woodDark);
+      pile.position.set(px, deckY - 1.4, pz);
+      group.add(pile);
+    }
+  }
+
+  // two moored rowboats bobbing beside the pier head
+  const boats = new THREE.Group();
+  boats.name = 'moored';
+  [
+    { side: -2.3, t: P.length * 0.7, hull: 0xc0504a },
+    { side: 2.4, t: P.length * 0.85, hull: 0x4f6a8f },
+  ].forEach((cfg, i) => {
+    const boat = new THREE.Group();
+    const hull = new THREE.Mesh(
+      new THREE.BoxGeometry(2.1, 0.5, 0.9),
+      new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
+    );
+    hull.position.y = 0.25;
+    boat.add(hull);
+    const bow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.42, 0.9, 4),
+      new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
+    );
+    bow.rotation.z = -Math.PI / 2;
+    bow.rotation.y = Math.PI / 4;
+    bow.position.set(1.4, 0.25, 0);
+    boat.add(bow);
+    boat.position.set(
+      P.x + dir.x * cfg.t - dir.z * cfg.side,
+      WATER_LEVEL + 0.1,
+      P.z + dir.z * cfg.t + dir.x * cfg.side,
+    );
+    boat.rotation.y = P.angle + (i === 0 ? 0.35 : -0.2);
+    boats.add(boat);
+  });
+  group.add(boats);
+  return group;
+}
+
+/** Stone windmill overlooking the fields; the blades spin in tick(). */
+function buildWindmill(): THREE.Group {
+  const group = new THREE.Group();
+  const M = WORLD.windmill;
+  const baseY = getHeight(M.x, M.z);
+
+  const tower = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.7, 2.3, 7, 9),
+    new THREE.MeshStandardMaterial({ color: 0xe8dfcc, roughness: 0.95, flatShading: true }),
+  );
+  tower.position.set(M.x, baseY + 3.4, M.z);
+  tower.castShadow = true;
+  group.add(tower);
+
+  const cap = new THREE.Mesh(
+    new THREE.ConeGeometry(2.1, 2, 9),
+    new THREE.MeshStandardMaterial({ color: 0x8a5a3c, roughness: 0.9, flatShading: true }),
+  );
+  cap.position.set(M.x, baseY + 7.9, M.z);
+  group.add(cap);
+
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9, 1.5, 0.2),
+    new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.9 }),
+  );
+  door.position.set(M.x, baseY + 0.75, M.z + 2.2);
+  group.add(door);
+
+  // blade assembly on a hub facing the fields (roughly +z)
+  const blades = new THREE.Group();
+  blades.name = 'blades';
+  const bladeMat = new THREE.MeshStandardMaterial({
+    color: 0xf3ead8,
+    roughness: 0.85,
+    side: THREE.DoubleSide,
+  });
+  for (let i = 0; i < 4; i++) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.4, 0.08), bladeMat);
+    blade.position.y = 2.2;
+    const arm = new THREE.Group();
+    arm.add(blade);
+    arm.rotation.z = (i * Math.PI) / 2;
+    blades.add(arm);
+  }
+  const hub = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.8 }),
+  );
+  blades.add(hub);
+  blades.position.set(M.x, baseY + 6.6, M.z + 2.1);
+  group.add(blades);
+  return group;
+}
+
+/** A loose flock of birds circling above the island; wings flap in tick(). */
+function buildBirds(): THREE.Group {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x3a3f4c, roughness: 0.8, side: THREE.DoubleSide });
+  for (let i = 0; i < WORLD.fauna.birds; i++) {
+    const bird = new THREE.Group();
+    for (const side of [-1, 1]) {
+      const wingGeo = new THREE.BufferGeometry();
+      wingGeo.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0, 0.28, 0, 0, -0.28, side * 1.05, 0.18, 0], 3),
+      );
+      wingGeo.computeVertexNormals();
+      const wing = new THREE.Mesh(wingGeo, mat);
+      wing.name = side < 0 ? 'wingL' : 'wingR';
+      bird.add(wing);
+    }
+    bird.userData = {
+      angle: (i / WORLD.fauna.birds) * Math.PI * 2 + hash2(i, 12) * 0.8,
+      radius: 34 + hash2(i, 44) * 30,
+      h: 26 + hash2(i, 68) * 8,
+      speed: 0.14 + hash2(i, 90) * 0.05,
+      flap: 5 + hash2(i, 31) * 3,
+    };
+    group.add(bird);
+  }
+  return group;
+}
+
+/** Sheep dotted over the open meadows. */
+function buildSheep(): THREE.Group {
+  const group = new THREE.Group();
+  const woolMat = new THREE.MeshStandardMaterial({ color: 0xf2efe6, roughness: 1, flatShading: true });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x3f362e, roughness: 0.9 });
+  const woolGeo = new THREE.IcosahedronGeometry(0.55, 1);
+  const headGeo = new THREE.BoxGeometry(0.34, 0.3, 0.42);
+  const legGeo = new THREE.BoxGeometry(0.09, 0.35, 0.09);
+
+  let placed = 0;
+  for (let i = 0; placed < WORLD.fauna.sheep && i < 900; i++) {
+    const x = (hash2(i, 401) - 0.5) * 2 * ISLAND_RADIUS;
+    const z = (hash2(i, 733) - 0.5) * 2 * ISLAND_RADIUS;
+    const h = getHeight(x, z);
+    if (h < 1 || h > 6.5) continue;
+    if (Math.abs(x - riverX(z)) < 9) continue;
+    if (Math.hypot(x - CITY.x, z - CITY.z) < CITY.radius + 4) continue;
+    if (roadDist(x, z) < 4 || fieldTint(x, z) >= 0) continue;
+    if (fbm(x * 0.03 + 700, z * 0.03 + 700) > WORLD.forest.densityThreshold - 0.04) continue;
+    // reject slopes – compare heights a step apart
+    if (Math.abs(getHeight(x + 1.5, z) - h) + Math.abs(getHeight(x, z + 1.5) - h) > 0.9) continue;
+
+    const sheep = new THREE.Group();
+    const body = new THREE.Mesh(woolGeo, woolMat);
+    body.scale.set(1.15, 0.9, 0.85);
+    body.position.y = 0.62;
+    body.castShadow = true;
+    sheep.add(body);
+    const head = new THREE.Mesh(headGeo, darkMat);
+    head.position.set(0.62, 0.66, 0);
+    sheep.add(head);
+    for (const [lx, lz] of [[-0.28, -0.18], [-0.28, 0.18], [0.3, -0.18], [0.3, 0.18]] as const) {
+      const leg = new THREE.Mesh(legGeo, darkMat);
+      leg.position.set(lx, 0.18, lz);
+      sheep.add(leg);
+    }
+    sheep.position.set(x, h - 0.05, z);
+    sheep.rotation.y = hash2(i, 55) * Math.PI * 2;
+    const s = 0.85 + hash2(i, 77) * 0.4;
+    sheep.scale.setScalar(s);
+    group.add(sheep);
+    placed++;
+  }
   return group;
 }
 

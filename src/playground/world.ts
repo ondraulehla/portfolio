@@ -58,4 +58,46 @@ export const WORLD = {
   rocks: { clustersPerMountain: 3 },
 
   clouds: { count: 11 },
+
+  /**
+   * Dirt roads as polylines of waypoints; they are painted into the terrain
+   * colours (width in world units) and keep trees/sheep off the tarmac.
+   * Road 1 runs town → river bridge → western meadows, road 2 town → pier.
+   */
+  roads: {
+    width: 2.4,
+    paths: [
+      [
+        { x: 40, z: 24 },
+        { x: 24, z: 18 },
+        { x: 10, z: 14 },
+        { x: -4, z: 12 },
+        { x: -20, z: 4 },
+        { x: -36, z: -8 },
+      ],
+      [
+        { x: 46, z: 46 },
+        { x: 52, z: 64 },
+        { x: 58, z: 80 },
+        { x: 62, z: 91 },
+      ],
+    ],
+  },
+
+  /** Wooden bridge where road 1 crosses the river. */
+  bridge: { z: 13 },
+
+  /** Wooden pier running from the south-east beach into the sea. */
+  pier: { x: 62, z: 92.5, angle: 0.58, length: 15 },
+
+  /** Patchwork of tilled fields between the town and the river + a windmill. */
+  fields: [
+    { x: 34, z: 52, w: 11, l: 8, rot: 0.35, tint: 0xd9b95c },
+    { x: 42, z: 59, w: 9, l: 10, rot: 0.35, tint: 0xc9a84c },
+    { x: 33, z: 63, w: 8, l: 7, rot: 0.35, tint: 0x9ec25e },
+    { x: 41, z: 47, w: 8, l: 6, rot: 0.35, tint: 0xb5d068 },
+  ],
+  windmill: { x: 46, z: 68 },
+
+  fauna: { birds: 7, sheep: 14 },
 } as const;
