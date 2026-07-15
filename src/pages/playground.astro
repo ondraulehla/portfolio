@@ -1,14 +1,10 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '@/layouts/Base.astro';
-import { locales, type Locale } from '@/i18n/config';
+import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
 
-export function getStaticPaths() {
-  return locales.map((lang) => ({ params: { lang } }));
-}
-
-const locale = Astro.params.lang as Locale;
+const locale: Locale = 'en';
 const t = useTranslations(locale);
 
 const projects = (await getCollection('projects', (e) => e.id.startsWith(`${locale}/`))).sort(

@@ -1,13 +1,9 @@
 ---
 import Base from '@/layouts/Base.astro';
-import { locales, type Locale } from '@/i18n/config';
+import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 
-export function getStaticPaths() {
-  return locales.map((lang) => ({ params: { lang } }));
-}
-
-const locale = Astro.params.lang as Locale;
+const locale: Locale = 'en';
 const t = useTranslations(locale);
 
 const datasets = [
@@ -145,7 +141,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       <a href="/thesis.pdf" download="ulehla-modelovani-neuronovych-siti-ve-vr.pdf" class="nn-link"
         >↓ {t('nn.links.thesis')}</a
       >
-      <a href={`/${locale}/projects/neural-vr`} class="nn-link">{t('nn.links.case')} →</a>
+      <a href="/projects/neural-vr" class="nn-link">{t('nn.links.case')} →</a>
       <a href="https://github.com/ondraulehla/neural-network-visualizer" target="_blank" rel="noopener" class="nn-link"
         >{t('nn.links.code')} ↗</a
       >

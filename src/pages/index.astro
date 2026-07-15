@@ -1,4 +1,25 @@
 ---
-// Required by Astro i18n: with redirectToDefaultLocale enabled this route
-// is turned into a redirect to /en/ at build time.
+import Base from '@/layouts/Base.astro';
+import Hero from '@/components/sections/Hero.astro';
+import About from '@/components/sections/About.astro';
+import Experience from '@/components/sections/Experience.astro';
+import Education from '@/components/sections/Education.astro';
+import Skills from '@/components/sections/Skills.astro';
+import ProjectsGrid from '@/components/sections/ProjectsGrid.astro';
+import Contact from '@/components/sections/Contact.astro';
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+
+const locale: Locale = 'en';
+const t = useTranslations(locale);
 ---
+
+<Base {locale} title={t('site.title')} description={t('site.description')}>
+  <Hero {locale} />
+  <ProjectsGrid {locale} />
+  <About {locale} />
+  <Experience {locale} />
+  <Education {locale} />
+  <Skills {locale} />
+  <Contact {locale} />
+</Base>

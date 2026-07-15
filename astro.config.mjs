@@ -5,6 +5,12 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  redirects: {
+    '/en': '/',
+    '/en/neural-network': '/neural-network',
+    '/en/playground': '/playground',
+    '/en/projects/[slug]': '/projects/[slug]',
+  },
   // TODO: replace with the final custom domain before launch
   site: 'https://ondrejulehla.dev',
   output: 'static',
@@ -13,21 +19,9 @@ export default defineConfig({
     prefetchAll: true,
     defaultStrategy: 'hover',
   },
-  i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
-    routing: {
-      prefixDefaultLocale: true,
-      redirectToDefaultLocale: true,
-    },
-  },
   integrations: [
     mdx(),
     sitemap({
-      i18n: {
-        defaultLocale: 'en',
-        locales: { en: 'en' },
-      },
       filter: (page) => !page.includes('/cv/print'),
     }),
   ],

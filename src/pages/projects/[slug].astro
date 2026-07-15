@@ -3,19 +3,19 @@ import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
 import Base from '@/layouts/Base.astro';
 import Badge from '@/components/ui/Badge.astro';
-import { locales, type Locale } from '@/i18n/config';
+import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('projects');
-  return entries.map((entry) => {
-    const [lang, ...rest] = entry.id.split('/');
-    return { params: { lang, slug: rest.join('/') }, props: { entry } };
-  });
+  const entries = await getCollection('projects', (e) => e.id.startsWith('en/'));
+  return entries.map((entry) => ({
+    params: { slug: entry.id.split('/').slice(1).join('/') },
+    props: { entry },
+  }));
 }
 
 const { entry } = Astro.props;
-const locale = Astro.params.lang as Locale;
+const locale: Locale = 'en';
 const slug = Astro.params.slug!;
 const t = useTranslations(locale);
 const { Content } = await render(entry);

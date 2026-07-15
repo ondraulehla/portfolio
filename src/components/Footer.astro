@@ -12,23 +12,6 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="border-line/60 border-t">
-  <!-- the name drops in letter by letter and piles up, poster-size -->
-  <div class="border-line/60 overflow-hidden border-b px-4 pt-12 pb-2" data-fall aria-hidden="true">
-    {
-      ['ONDREJ', 'ULEHLA'].map((word, row) => (
-        <p class="font-poster text-ink -mb-[0.06em] text-center text-[clamp(3.2rem,12vw,10rem)] leading-[0.95]">
-          {word.split('').map((ch, i) => (
-            <span
-              class="fall-letter inline-block will-change-transform"
-              style={`--d: ${(((i * 7 + row * 11) % 10) * 0.06 + row * 0.18).toFixed(2)}s; --r: ${((((i * 13 + row * 5) % 9) - 4) * 1.4).toFixed(1)}deg`}
-            >
-              {ch}
-            </span>
-          ))}
-        </p>
-      ))
-    }
-  </div>
   <div
     class="text-ink-faint mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-sm sm:flex-row sm:px-8"
   >
@@ -46,62 +29,3 @@ const year = new Date().getFullYear();
   <p class="text-ink-faint/70 pb-6 text-center text-xs">{t('footer.built')}</p>
 </footer>
 
-<style>
-  /* letters wait above the fold and drop with a bounce once the footer shows */
-  :global(html.motion-ok) [data-fall] .fall-letter {
-    transform: translateY(-120vh);
-  }
-  :global(html.motion-ok) [data-fall].is-falling .fall-letter {
-    animation: letter-fall 1.15s cubic-bezier(0.3, 0, 0.4, 1) both;
-    animation-delay: var(--d);
-  }
-  @keyframes letter-fall {
-    0% {
-      transform: translateY(-120vh) rotate(0deg);
-    }
-    52% {
-      transform: translateY(0) rotate(var(--r));
-    }
-    68% {
-      transform: translateY(-0.16em) rotate(var(--r));
-    }
-    82% {
-      transform: translateY(0) rotate(var(--r));
-    }
-    91% {
-      transform: translateY(-0.05em) rotate(var(--r));
-    }
-    100% {
-      transform: translateY(0) rotate(var(--r));
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    :global(html.motion-ok) [data-fall] .fall-letter,
-    :global(html.motion-ok) [data-fall].is-falling .fall-letter {
-      transform: none;
-      animation: none;
-    }
-  }
-</style>
-
-<script>
-  // Trigger the letter drop once the footer scrolls into view.
-  function initFall() {
-    document.querySelectorAll<HTMLElement>('[data-fall]').forEach((el) => {
-      if (el.dataset.bound) return;
-      el.dataset.bound = '1';
-      const io = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) {
-            el.classList.add('is-falling');
-            io.disconnect();
-          }
-        },
-        { threshold: 0.25 },
-      );
-      io.observe(el);
-    });
-  }
-  initFall();
-  document.addEventListener('astro:page-load', initFall);
-</script>

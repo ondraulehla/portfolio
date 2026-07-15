@@ -12,18 +12,14 @@ export function useTranslations(locale: Locale) {
   };
 }
 
-/** Prefix a root-relative path with the locale: localePath('cs', '/projects/x') → '/cs/projects/x' */
-export function localePath(locale: Locale, path: string): string {
-  const clean = path.startsWith('/') ? path : `/${path}`;
-  return `/${locale}${clean === '/' ? '/' : clean}`;
+/** Single-locale site: paths are served unprefixed. */
+export function localePath(_locale: Locale, path: string): string {
+  return path.startsWith('/') ? path : `/${path}`;
 }
 
-/** Map the current pathname to its sibling in the other locale. */
+/** Single-locale site: the canonical path is the path itself. */
 export function switchLocalePath(url: URL, target: Locale): string {
-  const parts = url.pathname.split('/').filter(Boolean);
-  if (parts.length > 0 && isLocale(parts[0]!)) parts.shift();
-  const rest = parts.length ? `/${parts.join('/')}` : '/';
-  return localePath(target, rest);
+  return localePath(target, url.pathname || '/');
 }
 
 export function otherLocale(locale: Locale): Locale {
