@@ -4,6 +4,7 @@ import { localePath, useTranslations } from '@/i18n/utils';
 import { site } from '@/data/site';
 import Button from '@/components/ui/Button.astro';
 import LineField from '@/components/ui/LineField.astro';
+import PlaneDiv from '@/components/ui/PlaneDiv.astro';
 
 interface Props {
   locale: Locale;
@@ -46,6 +47,11 @@ const posterSize =
       <p class="hero-rise-late text-ink-muted mt-9 max-w-2xl text-lg leading-relaxed text-balance sm:text-xl">
         {t('hero.subtitle')}
       </p>
+
+      <!-- single-div toy plane cruising over the line field -->
+      <div class="hero-rise-late pointer-events-none absolute right-10 bottom-28 hidden xl:block">
+        <PlaneDiv />
+      </div>
 
       <div class="hero-rise-late mt-10 flex flex-wrap items-center gap-3">
         <Button href={`${localePath(locale, '/')}#projects`} variant="primary">

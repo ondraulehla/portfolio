@@ -1,13 +1,22 @@
 ---
 /**
- * Interactive field of fine vertical lines: they drift on value noise and
- * bend away from the cursor with spring physics (impulse along the pointer's
- * direction of travel, scaled by its velocity). Pure 2D canvas, theme-aware,
- * static under prefers-reduced-motion.
+ * Interactive field of fine vertical lines. A slow Perlin flow braids the
+ * lines into coherent wave shapes even before any interaction; the cursor
+ * then pushes into that fabric with spring physics (impulse along the
+ * pointer's direction of travel, scaled by its velocity). A small ink dot
+ * trails the smoothed cursor. Pure 2D canvas, theme-aware, static under
+ * prefers-reduced-motion.
  */
 ---
 
-<canvas data-linefield class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+<div class="pointer-events-none absolute inset-0" data-linefield-wrap aria-hidden="true">
+  <canvas data-linefield class="h-full w-full"></canvas>
+  <div
+    data-lf-dot
+    class="bg-ink absolute top-0 left-0 hidden size-2 rounded-full will-change-transform"
+  >
+  </div>
+</div>
 
 <script>
   interface Point {
@@ -21,32 +30,70 @@
     vy: number;
   }
 
-  const hash2 = (ix: number, iz: number) => {
-    const n = Math.sin(ix * 127.1 + iz * 311.7) * 43758.5453;
-    return n - Math.floor(n);
+  // --- classic 2D Perlin gradient noise, deterministic seed ------------------
+  const PERM = (() => {
+    const base = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) base[i] = i;
+    let seed = 1996;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 255; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [base[i], base[j]] = [base[j]!, base[i]!];
+    }
+    const p = new Uint8Array(512);
+    for (let i = 0; i < 512; i++) p[i] = base[i & 255]!;
+    return p;
+  })();
+  const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const grad2 = (h: number, x: number, y: number) => {
+    switch (h & 7) {
+      case 0:
+        return x + y;
+      case 1:
+        return -x + y;
+      case 2:
+        return x - y;
+      case 3:
+        return -x - y;
+      case 4:
+        return x;
+      case 5:
+        return -x;
+      case 6:
+        return y;
+      default:
+        return -y;
+    }
   };
-  const valueNoise = (x: number, y: number) => {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const fx = x - ix;
-    const fy = y - iy;
-    const ux = fx * fx * (3 - 2 * fx);
-    const uy = fy * fy * (3 - 2 * fy);
-    const a = hash2(ix, iy);
-    const b = hash2(ix + 1, iy);
-    const c = hash2(ix, iy + 1);
-    const d = hash2(ix + 1, iy + 1);
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
-  };
+  function perlin2(x: number, y: number): number {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const xf = x - Math.floor(x);
+    const yf = y - Math.floor(y);
+    const u = fade(xf);
+    const v = fade(yf);
+    const aa = PERM[PERM[X]! + Y]!;
+    const ab = PERM[PERM[X]! + Y + 1]!;
+    const ba = PERM[PERM[X + 1]! + Y]!;
+    const bb = PERM[PERM[X + 1]! + Y + 1]!;
+    return lerp(
+      lerp(grad2(aa, xf, yf), grad2(ba, xf - 1, yf), u),
+      lerp(grad2(ab, xf, yf - 1), grad2(bb, xf - 1, yf - 1), u),
+      v,
+    );
+  }
 
-  function initLineField(canvas: HTMLCanvasElement) {
-    if (canvas.dataset.bound) return;
-    canvas.dataset.bound = '1';
+  function initLineField(wrap: HTMLElement) {
+    if (wrap.dataset.bound) return;
+    wrap.dataset.bound = '1';
 
+    const canvas = wrap.querySelector<HTMLCanvasElement>('[data-linefield]')!;
+    const dot = wrap.querySelector<HTMLElement>('[data-lf-dot]')!;
     const ctx = canvas.getContext('2d')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const X_GAP = 11;
-    const Y_GAP = 26;
+    const X_GAP = 10;
+    const Y_GAP = 32;
 
     let lines: Point[][] = [];
     let w = 0;
@@ -61,7 +108,7 @@
       const css = getComputedStyle(document.documentElement);
       const dark = document.documentElement.dataset.theme === 'dark';
       const ink = css.getPropertyValue('--ink-faint').trim() || '#777';
-      stroke = `color-mix(in oklab, ${ink} ${dark ? 44 : 38}%, transparent)`;
+      stroke = `color-mix(in oklab, ${ink} ${dark ? 46 : 40}%, transparent)`;
     }
 
     function resize() {
@@ -77,7 +124,7 @@
 
     function buildLines() {
       lines = [];
-      const oWidth = w + 120;
+      const oWidth = w + 200;
       const oHeight = h + 60;
       const totalLines = Math.ceil(oWidth / X_GAP);
       const totalPoints = Math.ceil(oHeight / Y_GAP) + 1;
@@ -93,13 +140,13 @@
     }
 
     function movePoints(t: number) {
-      const radius = Math.max(160, mouse.vs);
+      const radius = Math.max(175, mouse.vs);
       for (const pts of lines) {
         for (const p of pts) {
-          // slow ambient drift
-          const n = valueNoise((p.x + t * 0.012) * 0.0021, (p.y + t * 0.006) * 0.0017) * 12;
-          p.wx = Math.cos(n) * 16;
-          p.wy = Math.sin(n) * 10;
+          // Perlin flow braids the lines into travelling wave shapes
+          const move = perlin2((p.x + t * 0.0125) * 0.002, (p.y + t * 0.005) * 0.0015) * 12;
+          p.wx = Math.cos(move) * 32;
+          p.wy = Math.sin(move) * 16;
 
           // cursor impulse along the pointer's travel direction
           const dx = p.x - mouse.sx;
@@ -108,8 +155,8 @@
           if (d < radius) {
             const s = 1 - d / radius;
             const f = Math.cos(d * 0.001) * s;
-            p.vx += Math.cos(mouse.a) * f * radius * mouse.vs * 0.00062;
-            p.vy += Math.sin(mouse.a) * f * radius * mouse.vs * 0.00062;
+            p.vx += Math.cos(mouse.a) * f * radius * mouse.vs * 0.00065;
+            p.vy += Math.sin(mouse.a) * f * radius * mouse.vs * 0.00065;
           }
 
           // spring back + friction
@@ -117,8 +164,8 @@
           p.vy += -p.cy * 0.005;
           p.vx *= 0.925;
           p.vy *= 0.925;
-          p.cx += p.vx;
-          p.cy += p.vy;
+          p.cx = Math.min(100, Math.max(-100, p.cx + p.vx * 2));
+          p.cy = Math.min(100, Math.max(-100, p.cy + p.vy * 2));
         }
       }
     }
@@ -131,8 +178,9 @@
         ctx.beginPath();
         for (let j = 0; j < pts.length; j++) {
           const p = pts[j]!;
-          const x = p.x + p.wx + p.cx;
-          const y = p.y + p.wy * 0.6 + p.cy;
+          const isLast = j === pts.length - 1;
+          const x = p.x + p.wx + (isLast ? 0 : p.cx);
+          const y = p.y + p.wy + (isLast ? 0 : p.cy);
           if (j === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
@@ -152,6 +200,11 @@
       mouse.lx = mouse.x;
       mouse.ly = mouse.y;
       if (d > 0.05) mouse.a = Math.atan2(dy, dx);
+
+      if (mouse.set) {
+        dot.classList.remove('hidden');
+        dot.style.transform = `translate3d(${mouse.sx - 4}px, ${mouse.sy - 4}px, 0)`;
+      }
 
       movePoints(t);
       draw();
@@ -220,7 +273,7 @@
   }
 
   function initAll() {
-    document.querySelectorAll<HTMLCanvasElement>('[data-linefield]').forEach(initLineField);
+    document.querySelectorAll<HTMLElement>('[data-linefield-wrap]').forEach(initLineField);
   }
   initAll();
   document.addEventListener('astro:page-load', initAll);

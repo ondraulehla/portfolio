@@ -1,0 +1,77 @@
+---
+/**
+ * A Single Div exercise (à la a.singlediv.com): the site's toy plane drawn
+ * with one element – every part is a background gradient. Colours ride on
+ * the theme tokens, the idle float respects prefers-reduced-motion.
+ */
+---
+
+<div class="sd-plane" aria-hidden="true"></div>
+
+<style>
+  .sd-plane {
+    --ink-c: var(--ink);
+    --body-c: var(--accent);
+    --glass-c: var(--surface);
+
+    position: relative;
+    width: 180px;
+    height: 70px;
+
+    background-image:
+      /* propeller blade + hub */
+      linear-gradient(var(--ink-c), var(--ink-c)),
+      radial-gradient(circle, var(--ink-c) 48%, transparent 52%),
+      /* cockpit glass */
+      radial-gradient(circle, var(--glass-c) 46%, transparent 52%),
+      /* tail fin (right triangle above the tail) */
+      linear-gradient(to right top, transparent 49.5%, var(--body-c) 50.5%),
+      /* tailplane (parallelogram) */
+      linear-gradient(105deg, transparent 15%, var(--ink-c) 16% 84%, transparent 85%),
+      /* main wing – high wing like the playground toy */
+      linear-gradient(105deg, transparent 10%, var(--ink-c) 11% 89%, transparent 90%),
+      /* fuselage: tail cap, nose cap, body */
+      radial-gradient(circle, var(--body-c) 49%, transparent 53%),
+      radial-gradient(circle, var(--body-c) 49%, transparent 53%),
+      linear-gradient(var(--body-c), var(--body-c));
+    background-repeat: no-repeat;
+    background-size:
+      3px 34px,
+      9px 9px,
+      13px 13px,
+      22px 26px,
+      26px 9px,
+      78px 13px,
+      30px 30px,
+      30px 30px,
+      96px 30px;
+    background-position:
+      152px 22px,
+      149px 34px,
+      103px 30px,
+      18px 0px,
+      16px 22px,
+      46px 17px,
+      22px 24px,
+      118px 24px,
+      36px 24px;
+
+    animation: sd-plane-float 6s ease-in-out infinite;
+  }
+
+  @keyframes sd-plane-float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-1.5deg);
+    }
+    50% {
+      transform: translateY(-9px) rotate(1.8deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sd-plane {
+      animation: none;
+    }
+  }
+</style>
