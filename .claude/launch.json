@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "portfolio-dev",
-      "runtimeExecutable": "env",
-      "runtimeArgs": ["PATH=/opt/homebrew/bin:/usr/bin:/bin", "npm", "run", "dev"],
-      "port": 4321
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "PATH=/opt/homebrew/bin:/usr/bin:/bin npx astro dev --port ${PORT:-4321}"],
+      "port": 4321,
+      "autoPort": true
     }
   ]
 }

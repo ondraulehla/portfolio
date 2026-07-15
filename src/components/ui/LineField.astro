@@ -202,6 +202,12 @@
 
     function onPointer(x: number, y: number) {
       const rect = canvas.getBoundingClientRect();
+      // pointer outside the field (e.g. over the sticky header) must not stir it
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+        mouse.x = -1e4;
+        mouse.y = -1e4;
+        return;
+      }
       mouse.x = x - rect.left;
       mouse.y = y - rect.top;
       if (!mouse.set) {

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const base = join(root, 'src/content/projects');
-const locales = ['en', 'cs'];
+const locales = ['en'];
 
 const bySlug = new Map();
 for (const locale of locales) {

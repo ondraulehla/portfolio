@@ -51,7 +51,7 @@ const port = server.address().port;
 const browser = await chromium.launch({ channel: 'chrome' });
 const page = await browser.newPage();
 
-for (const lang of ['en', 'cs']) {
+for (const lang of ['en']) {
   await page.goto(`http://localhost:${port}/${lang}/cv/print/`, { waitUntil: 'networkidle' });
   await page.pdf({
     path: join(root, `public/cv/ondrej-ulehla-${lang}.pdf`),

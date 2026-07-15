@@ -15,7 +15,7 @@ export default defineConfig({
   },
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'cs'],
+    locales: ['en'],
     routing: {
       prefixDefaultLocale: true,
       redirectToDefaultLocale: true,
@@ -26,7 +26,7 @@ export default defineConfig({
     sitemap({
       i18n: {
         defaultLocale: 'en',
-        locales: { en: 'en', cs: 'cs' },
+        locales: { en: 'en' },
       },
       filter: (page) => !page.includes('/cv/print'),
     }),
