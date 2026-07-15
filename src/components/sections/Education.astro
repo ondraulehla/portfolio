@@ -17,7 +17,7 @@ const t = useTranslations(locale);
   <div class="grid gap-5 sm:grid-cols-2">
     {
       cv.education.map((item) => (
-        <article class="border-line rounded-2xl border p-6" data-reveal>
+        <article class="border-line border p-6" data-reveal>
           <p class="text-ink-faint font-mono text-xs tracking-wide">
             {formatMonth(item.start, locale)} – {item.end ? formatMonth(item.end, locale) : t('experience.present')}
           </p>

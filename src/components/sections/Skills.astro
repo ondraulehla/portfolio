@@ -18,7 +18,7 @@ const t = useTranslations(locale);
   <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
     {
       cv.skills.map((group) => (
-        <div class="border-line rounded-2xl border p-6" data-reveal>
+        <div class="border-line border p-6" data-reveal>
           <h3 class="font-display text-ink mb-4 text-base font-semibold">{group.category[locale]}</h3>
           <div class="flex flex-wrap gap-2">
             {group.items.map((item) => (

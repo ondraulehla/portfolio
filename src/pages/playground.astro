@@ -37,7 +37,7 @@ const worldData = {
     <div class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4 sm:p-6">
       <a
         href={localePath(locale, '/')}
-        class="bg-surface/80 border-line text-ink pointer-events-auto inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold backdrop-blur-md"
+        class="bg-surface/80 border-line text-ink pointer-events-auto inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold backdrop-blur-md"
       >
         <svg
           class="size-4"
@@ -53,7 +53,7 @@ const worldData = {
         {t('playground.back')}
       </a>
       <p
-        class="bg-surface/80 border-line text-ink-muted hidden rounded-full border px-4 py-2 font-mono text-xs backdrop-blur-md sm:block"
+        class="bg-surface/80 border-line text-ink-muted hidden border px-4 py-2 font-mono text-xs backdrop-blur-md sm:block"
         id="hud-controls"
         hidden
       >
@@ -67,8 +67,8 @@ const worldData = {
       id="hud-prompt"
       hidden
     >
-      <p class="bg-surface/90 border-accent text-ink rounded-full border px-5 py-2.5 text-sm font-semibold shadow-lg backdrop-blur-md">
-        <kbd class="bg-accent text-surface mr-2 rounded px-2 py-0.5 font-mono text-xs">Enter</kbd>
+      <p class="bg-surface/90 border-accent text-ink border px-5 py-2.5 text-sm font-semibold shadow-lg backdrop-blur-md">
+        <kbd class="bg-accent text-surface mr-2 px-2 py-0.5 font-mono text-xs">Enter</kbd>
         <span id="hud-prompt-text"></span>
       </p>
     </div>
@@ -90,7 +90,7 @@ const worldData = {
             <button
               type="button"
               data-touch-key={key}
-              class={`bg-surface/80 border-line text-ink size-12 rounded-xl border text-lg backdrop-blur-md active:scale-95 ${pos} ${key === 'up' ? 'row-start-1' : 'row-start-2'}`}
+              class={`bg-surface/80 border-line text-ink size-12 border text-lg backdrop-blur-md active:scale-95 ${pos} ${key === 'up' ? 'row-start-1' : 'row-start-2'}`}
               aria-label={key}
             >
               {glyph}
@@ -109,7 +109,7 @@ const worldData = {
         <button
           type="button"
           id="gate-enter"
-          class="bg-accent text-surface hover:bg-accent-strong mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-base font-semibold shadow-[0_4px_24px_var(--glow)] transition-all active:scale-[0.97]"
+          class="bg-accent text-surface hover:bg-accent-strong mt-8 inline-flex items-center gap-2 px-7 py-3 text-base font-semibold shadow-[0_4px_24px_var(--glow)] transition-all active:scale-[0.97]"
         >
           {t('playground.enter')}
         </button>

@@ -102,7 +102,7 @@ const meta = [
       alt=""
       widths={[768, 1200, 1600]}
       sizes="(min-width: 1024px) 896px, 100vw"
-      class="border-line mt-10 aspect-video w-full rounded-2xl border object-cover"
+      class="border-line mt-10 aspect-video w-full border object-cover"
       transition:name={`cover-${slug}`}
       loading="eager"
       fetchpriority="high"
@@ -117,7 +117,7 @@ const meta = [
             [t('project.outcome'), entry.data.outcome],
           ] as const
         ).map(([label, text]) => (
-          <div class="border-line bg-panel/50 rounded-2xl border p-5">
+          <div class="border-line bg-panel/50 border p-5">
             <h2 class="text-accent font-mono text-xs font-semibold tracking-[0.15em] uppercase">{label}</h2>
             <p class="text-ink-muted mt-2 text-sm leading-relaxed">{text}</p>
           </div>

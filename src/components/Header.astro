@@ -72,9 +72,12 @@ const nav = [
       <a
         href={localePath(locale, '/playground')}
         data-astro-prefetch="hover"
-        class="nav-roll text-accent inline-flex items-center gap-1.5 py-2 font-semibold"
+        class="nav-roll group/pg text-accent inline-flex items-center gap-2 py-2 font-semibold"
       >
-        <span class="bg-accent inline-block size-1.5" aria-hidden="true"></span>
+        <!-- rotated-square marker: a shard of the quilt-star emblem -->
+        <span
+          class="border-accent inline-block size-2 rotate-45 border transition-transform duration-500 ease-out group-hover/pg:rotate-[225deg]"
+          aria-hidden="true"></span>
         <span class="nav-roll__stack">
           <span>{t('nav.playground')}</span>
           <span class="text-ink" aria-hidden="true">{t('nav.playground')}</span>
@@ -105,7 +108,7 @@ const nav = [
           </summary>
           <nav
             aria-label="Mobile"
-            class="border-line bg-panel absolute top-full right-0 z-50 flex w-52 flex-col gap-1 rounded-xl border p-2 shadow-xl"
+            class="border-line bg-panel absolute top-full right-0 z-50 flex w-52 flex-col gap-1 border p-2 shadow-xl"
           >
             {
               [
@@ -115,7 +118,7 @@ const nav = [
               ].map((item) => (
                 <a
                   href={item.href}
-                  class="text-ink-muted hover:bg-surface hover:text-ink rounded-lg px-3 py-2 text-sm font-medium"
+                  class="text-ink-muted hover:bg-surface hover:text-ink px-3 py-2 text-sm font-medium"
                 >
                   {item.label}
                 </a>

@@ -52,8 +52,7 @@ const en = {
 
   'contact.heading': "Let's talk",
   'contact.kicker': 'Contact',
-  'contact.text':
-    "Interested in working together, or just want to say hi? I'll get back to you within a day.",
+  'contact.text': 'Interested in working together, or just want to say hi?',
   'contact.copy': 'Copy email',
   'contact.copy.short': 'Copy',
   'contact.copied': 'Copied!',
@@ -181,7 +180,7 @@ const cs = {
 
   'contact.heading': 'Pojďme si napsat',
   'contact.kicker': 'Kontakt',
-  'contact.text': 'Zajímá vás spolupráce, nebo se chcete jen pozdravit? Ozvu se do jednoho dne.',
+  'contact.text': 'Zajímá vás spolupráce, nebo se chcete jen pozdravit?',
   'contact.copy': 'Kopírovat e-mail',
   'contact.copy.short': 'Kopírovat',
   'contact.copied': 'Zkopírováno!',

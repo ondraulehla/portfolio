@@ -9,7 +9,7 @@ interface Props {
 const { href, variant = 'primary', download = false, prefetch = false, class: cls = '' } = Astro.props;
 
 const base =
-  'group inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98]';
+  'group inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold transition-all duration-200 active:scale-[0.98]';
 const variants = {
   primary: 'bg-ink text-surface hover:bg-accent',
   secondary: 'border border-ink/25 text-ink hover:border-ink hover:bg-panel',
