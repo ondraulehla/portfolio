@@ -2,6 +2,20 @@
 
 Osobní web: profil, CV a případové studie projektů. Postaveno na **Astro 5+ / Tailwind CSS 4 / GSAP / Three.js**, dvojjazyčné (EN + CS), light/dark theme, statický výstup s Lighthouse ~100.
 
+## Rychlý start
+
+```bash
+npm install
+npm run build   # i18n parity check + produkční build do dist/
+```
+
+<!-- readme-ci skip -->
+```bash
+npm run dev     # dev server na localhost:4321
+```
+
+Bloky výše spouští při každém pushi [readme-ci](https://github.com/ondraulehla/readme-ci), takže quickstart nemůže potichu zastarat.
+
 ## Příkazy
 
 | Příkaz | Popis |

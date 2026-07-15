@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1410"/>
+      <stop offset="1" stop-color="#4a2417"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+
+  <!-- markdown document card -->
+  <g>
+    <rect x="150" y="90" width="620" height="495" rx="18" fill="#fffdf8" fill-opacity="0.96"/>
+    <!-- title + prose lines -->
+    <rect x="200" y="140" width="230" height="22" rx="6" fill="#232838"/>
+    <rect x="200" y="188" width="420" height="12" rx="6" fill="#232838" fill-opacity="0.35"/>
+    <rect x="200" y="212" width="360" height="12" rx="6" fill="#232838" fill-opacity="0.35"/>
+    <!-- code block 1 -->
+    <rect x="200" y="252" width="520" height="64" rx="10" fill="#232838" fill-opacity="0.08"/>
+    <rect x="220" y="272" width="300" height="12" rx="6" fill="#c94b3d"/>
+    <rect x="220" y="292" width="180" height="12" rx="6" fill="#232838" fill-opacity="0.45"/>
+    <!-- prose -->
+    <rect x="200" y="340" width="390" height="12" rx="6" fill="#232838" fill-opacity="0.35"/>
+    <!-- code block 2 -->
+    <rect x="200" y="376" width="520" height="64" rx="10" fill="#232838" fill-opacity="0.08"/>
+    <rect x="220" y="396" width="260" height="12" rx="6" fill="#c94b3d"/>
+    <rect x="220" y="416" width="330" height="12" rx="6" fill="#232838" fill-opacity="0.45"/>
+    <!-- code block 3 -->
+    <rect x="200" y="464" width="520" height="64" rx="10" fill="#232838" fill-opacity="0.08"/>
+    <rect x="220" y="484" width="310" height="12" rx="6" fill="#c94b3d"/>
+    <rect x="220" y="504" width="150" height="12" rx="6" fill="#232838" fill-opacity="0.45"/>
+  </g>
+
+  <!-- check results rail -->
+  <g stroke="#ffffff" stroke-opacity="0.25" stroke-width="2">
+    <line x1="800" y1="284" x2="880" y2="284"/>
+    <line x1="800" y1="408" x2="880" y2="408"/>
+    <line x1="800" y1="496" x2="880" y2="496"/>
+  </g>
+  <g>
+    <circle cx="930" cy="284" r="34" fill="#2f8f83"/>
+    <path d="M913 284 l12 12 l22 -24" fill="none" stroke="#fffdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="930" cy="408" r="34" fill="#2f8f83"/>
+    <path d="M913 408 l12 12 l22 -24" fill="none" stroke="#fffdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="930" cy="496" r="34" fill="#c94b3d"/>
+    <path d="M916 482 l28 28 M944 482 l-28 28" fill="none" stroke="#fffdf8" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- annotated line pointer back to the doc -->
+  <path d="M964 496 C 1050 496, 1050 596, 720 596 L 470 596" fill="none" stroke="#c94b3d" stroke-width="3" stroke-dasharray="8 7" stroke-opacity="0.85"/>
+  <path d="M486 588 L 468 596 L 486 604 Z" fill="#c94b3d"/>
+</svg>

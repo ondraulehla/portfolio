@@ -1,0 +1,17 @@
+name: readme-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ondraulehla/readme-ci@main
+        with:
+          files: README.md
+          mount: .
+          timeout: '600'

@@ -1,0 +1,54 @@
+---
+title: 'readme-ci'
+summary: 'Run the code blocks in your README and fail CI when the quickstart breaks. Zero-dependency CLI + GitHub Action with Docker and E2B sandbox runners, published on npm.'
+role: 'Author & Maintainer'
+year: 2026
+order: 1
+featured: true
+tech: ['TypeScript', 'Node.js', 'GitHub Actions', 'Docker', 'E2B', 'Vitest']
+problem: 'Every README promises `npm install && npm start` works – until a dependency bumps or a flag is renamed. Docs are the only untested code path in most repos, and the first thing a new user hits.'
+solution: 'A CLI + GitHub Action that extracts the fenced code blocks from markdown and executes them top-to-bottom in an isolated sandbox – state persists between blocks like a reader following along – failing CI at the first broken step.'
+outcome: 'Published as readme-ci on npm; the repo’s own CI runs the tool on its docs in every supported runner, and this site’s quickstart is checked by it too.'
+cover: '@/assets/projects/readme-ci/cover.svg'
+links:
+  repo: 'https://github.com/ondraulehla/readme-ci'
+  live: 'https://www.npmjs.com/package/readme-ci'
+---
+
+## Context
+
+Documentation rots silently. Nobody executes their own quickstart after writing
+it, so the first broken experience always lands on a new user – the person with
+the least context and the least patience. Unit tests won’t catch it: they test
+the code, not the commands you tell people to type.
+
+`readme-ci` makes the README itself a tested artifact.
+
+## How it works
+
+- **Extraction** – fenced blocks are parsed out of the markdown with their line
+  numbers; `bash`/`sh` run as shell scripts, `console` blocks execute only the
+  `$`-prefixed lines, `js` and `python` run through their interpreters, and
+  non-executable fences (`json`, `yaml`, …) are ignored automatically.
+- **Session model** – all blocks of a file run in one sandbox session. The
+  working directory and exported environment persist from block to block, so a
+  quickstart that does `cd my-app` in one block and `npm test` in the next
+  behaves exactly as a reader would experience it.
+- **Isolation** – blocks run in a throwaway Docker container by default, or in
+  an [E2B](https://e2b.dev) cloud sandbox when no Docker is around; a local
+  runner exists for trusted docs. The first failing block fails the file,
+  prints the captured output, and annotates the exact markdown line in GitHub
+  Actions.
+- **Control** – per-block comments handle the exceptions:
+  `<!-- readme-ci skip -->`, `timeout=N`, `cwd=path`, `KEY=value`.
+
+## Engineering notes
+
+The tool is a zero-dependency TypeScript package – a small parser, a planner
+and three runner backends behind one interface – with a vitest suite and a CI
+pipeline that dogfoods `readme-ci` on its own documentation in all three
+runners. The dogfooding paid off immediately: it caught a real bug where npm
+exports an environment variable with a hyphen in its name, which broke the
+session-state restore between blocks.
+
+This site checks its own README with `readme-ci` as well.
