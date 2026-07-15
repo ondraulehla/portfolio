@@ -141,6 +141,15 @@
   font-weight: 400;
 }
 
+/* Technical hatching – the site's tape/filler texture (see header + dividers). */
+.hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in oklab, var(--ink-faint) 55%, transparent) 5px 6px
+  );
+}
+
 html {
   scroll-behavior: smooth;
   @media (prefers-reduced-motion: reduce) {

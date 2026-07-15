@@ -19,23 +19,26 @@ const nav = [
 ];
 ---
 
-<header class="border-line/60 bg-surface/80 sticky top-0 z-40 border-b backdrop-blur-md">
-  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+<!-- technical band: full-width cells separated by hairlines, like a printed spec sheet -->
+<header class="border-line bg-surface/95 sticky top-0 z-40 border-b backdrop-blur-md">
+  <div class="flex items-stretch">
     <a
       href={home}
-      class="font-display text-ink text-lg font-bold tracking-tight"
+      class="font-poster text-ink hover:text-accent flex items-center px-5 text-[1.35rem] transition-colors sm:px-7"
       aria-label="Ondřej Úlehla – home"
     >
       ULEHLA
     </a>
 
-    <nav aria-label="Main" class="hidden items-center gap-7 md:flex">
+    <div class="border-line hatch my-3 hidden flex-1 border-x md:block" role="presentation"></div>
+
+    <nav
+      aria-label="Main"
+      class="hidden items-center gap-7 px-7 font-mono text-xs tracking-[0.14em] uppercase lg:flex"
+    >
       {
         nav.map((item) => (
-          <a
-            href={item.href}
-            class="text-ink-muted hover:text-ink text-sm font-medium transition-colors"
-          >
+          <a href={item.href} class="text-ink-muted hover:text-ink py-2 transition-colors">
             {item.label}
           </a>
         ))
@@ -43,24 +46,24 @@ const nav = [
       <a
         href={localePath(locale, '/neural-network')}
         data-astro-prefetch="hover"
-        class="text-ink-muted hover:text-ink text-sm font-medium transition-colors"
+        class="text-ink-muted hover:text-ink py-2 transition-colors"
       >
         {t('nav.lab')}
       </a>
       <a
         href={localePath(locale, '/playground')}
         data-astro-prefetch="hover"
-        class="text-accent hover:text-accent-strong inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
+        class="text-accent hover:text-accent-strong inline-flex items-center gap-1.5 py-2 font-semibold transition-colors"
       >
         <span class="bg-accent inline-block size-1.5" aria-hidden="true"></span>
         {t('nav.playground')}
       </a>
     </nav>
 
-    <div class="flex items-center gap-2">
+    <div class="border-line flex items-center gap-2 border-l px-4">
       <LangSwitcher {locale} />
       <ThemeToggle {locale} />
-      <details class="relative md:hidden" data-mobile-menu>
+      <details class="relative lg:hidden" data-mobile-menu>
         <summary
           class="border-line text-ink-muted hover:text-ink flex size-9 cursor-pointer list-none items-center justify-center rounded-full border [&::-webkit-details-marker]:hidden"
           aria-label={t('nav.menu')}
@@ -87,20 +90,28 @@ const nav = [
               ...nav,
               { href: localePath(locale, '/neural-network'), label: t('nav.lab') },
               { href: localePath(locale, '/playground'), label: t('nav.playground') },
-            ].map(
-              (item) => (
-                <a
-                  href={item.href}
-                  class="text-ink-muted hover:bg-surface hover:text-ink rounded-lg px-3 py-2 text-sm font-medium"
-                >
-                  {item.label}
-                </a>
-              ),
-            )
+            ].map((item) => (
+              <a
+                href={item.href}
+                class="text-ink-muted hover:bg-surface hover:text-ink rounded-lg px-3 py-2 text-sm font-medium"
+              >
+                {item.label}
+              </a>
+            ))
           }
         </nav>
       </details>
     </div>
+
+    <aside class="border-line hidden flex-col justify-center divide-y divide-[var(--line)] border-l xl:flex">
+      <p class="text-ink-faint px-5 py-1.5 text-xs">{t('header.line1')}</p>
+      <p class="text-ink-muted px-5 py-1.5 text-xs">
+        {t('header.line2')}
+        <a href={`${home}#contact`} class="text-accent hover:text-accent-strong font-semibold transition-colors">
+          → {t('header.hire')}
+        </a>
+      </p>
+    </aside>
   </div>
 </header>
 

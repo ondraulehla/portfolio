@@ -26,13 +26,6 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       <p class="text-accent font-mono text-xs font-semibold tracking-[0.2em] uppercase">{t('nn.kicker')}</p>
       <h1 class="font-display text-ink mt-3 text-3xl font-bold tracking-[-0.02em] sm:text-4xl">{t('nn.title')}</h1>
       <p class="text-ink-muted mt-4 max-w-3xl leading-relaxed">{t('nn.intro')}</p>
-      <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2">
-        <a href="/thesis.pdf" download="ulehla-modelovani-neuronovych-siti-ve-vr.pdf" class="nn-link">↓ {t('nn.links.thesis')}</a>
-        <a href={`/${locale}/projects/neural-vr`} class="nn-link">{t('nn.links.case')} →</a>
-        <a href="https://github.com/ondraulehla/neural-network-visualizer" target="_blank" rel="noopener" class="nn-link"
-          >{t('nn.links.code')} ↗</a
-        >
-      </div>
     </div>
 
     <!-- controls -->
@@ -146,6 +139,17 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
       </figure>
     </div>
     <p id="nn-webgl" class="text-ink-faint mt-4 text-sm" hidden>{t('nn.webgl')}</p>
+
+    <!-- links: thesis, case study, source -->
+    <div class="mt-8 flex flex-wrap gap-x-6 gap-y-2">
+      <a href="/thesis.pdf" download="ulehla-modelovani-neuronovych-siti-ve-vr.pdf" class="nn-link"
+        >↓ {t('nn.links.thesis')}</a
+      >
+      <a href={`/${locale}/projects/neural-vr`} class="nn-link">{t('nn.links.case')} →</a>
+      <a href="https://github.com/ondraulehla/neural-network-visualizer" target="_blank" rel="noopener" class="nn-link"
+        >{t('nn.links.code')} ↗</a
+      >
+    </div>
 
     <!-- about -->
     <div class="border-line mt-14 border-t pt-8">
