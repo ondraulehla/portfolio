@@ -261,7 +261,7 @@ export async function startExperience(): Promise<void> {
   data.projects.forEach((project, i) => {
     const spot = SIGN_SPOTS[i % SIGN_SPOTS.length]!;
     const y = Math.max(getHeight(spot.x, spot.z), 0) + (spot.h ?? 13);
-    const group = buildFloatingSign(project, data.labels.pressEnter, i);
+    const group = buildFloatingSign(project, data.labels.pressEnter);
     group.position.set(spot.x, y, spot.z);
     group.lookAt(0, y, 0);
     scene.add(group);
@@ -1483,14 +1483,14 @@ class PuffTrail {
   }
 }
 
-function buildFloatingSign(project: ProjectSign, hint: string, index: number): THREE.Group {
+function buildFloatingSign(project: ProjectSign, hint: string): THREE.Group {
   const outer = new THREE.Group();
   // everything lives on an inner rig so the bob/sway animation can rotate it
   // without disturbing the outer group's lookAt orientation
   const group = new THREE.Group();
   group.name = 'rig';
   outer.add(group);
-  const texture = makePanelTexture(project, hint, index);
+  const texture = makePanelTexture(project, hint);
 
   // hanging card – a single box so nothing z-fights at distance; box UVs are
   // authored per-face from the outside, so both faces read correctly
@@ -1559,7 +1559,7 @@ function buildFloatingSign(project: ProjectSign, hint: string, index: number): T
  * bone paper, hairline grid, crop marks, PLATE numbering, hatch strip,
  * poster title and a square accent call-to-action.
  */
-function makePanelTexture(project: ProjectSign, hint: string, index: number): THREE.CanvasTexture {
+function makePanelTexture(project: ProjectSign, hint: string): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
   canvas.height = 444;
@@ -1608,14 +1608,10 @@ function makePanelTexture(project: ProjectSign, hint: string, index: number): TH
     ctx.stroke();
   }
 
-  // header: plate number + year, rule, hatch strip
+  // header: accent year, rule, hatch strip
   ctx.fillStyle = ACCENT;
   ctx.font = '600 34px ui-monospace, Menlo, monospace';
-  ctx.fillText(`PLATE ${String(index + 1).padStart(2, '0')}`, 64, 92);
-  ctx.fillStyle = 'rgba(41, 34, 27, 0.55)';
-  ctx.font = '500 30px ui-monospace, Menlo, monospace';
-  const yearW = ctx.measureText(String(project.year)).width;
-  ctx.fillText(String(project.year), W - 64 - yearW, 92);
+  ctx.fillText(String(project.year), 64, 92);
   ctx.strokeStyle = 'rgba(41, 34, 27, 0.6)';
   ctx.lineWidth = 3;
   ctx.beginPath();

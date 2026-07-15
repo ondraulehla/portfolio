@@ -62,14 +62,12 @@ function quiltStar(cx, cy, s) {
 }
 
 function plate(index, name, caption, diagram) {
-  const num = String(index).padStart(2, '0');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" fill="${PAPER}"/>
   ${grid()}
   ${cropMarks()}
   <!-- header band -->
-  ${mono(60, 76, `PLATE ${num}`, { fill: ACCENT, size: 20, weight: 600 })}
-  ${mono(208, 76, name.toUpperCase(), { size: 20, weight: 600 })}
+  ${mono(60, 76, name.toUpperCase(), { fill: ACCENT, size: 20, weight: 600 })}
   ${mono(W - 60, 76, 'ONDREJ ULEHLA · 2026', { anchor: 'end', size: 15, opacity: 0.55 })}
   <line x1="60" y1="94" x2="${W - 60}" y2="94" stroke="${INK}" stroke-opacity="0.6" stroke-width="1.6"/>
   ${hatch(60, 100, 150, 8)}
