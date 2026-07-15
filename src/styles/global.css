@@ -141,6 +141,23 @@
   font-weight: 400;
 }
 
+/* Header cell hover: ink floods from the bottom, content flips to paper. */
+.cell-flood {
+  color: var(--ink-muted);
+  background-image: linear-gradient(var(--ink), var(--ink));
+  background-repeat: no-repeat;
+  background-size: 100% 0%;
+  background-position: bottom;
+  transition:
+    background-size 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.18s ease 0.06s;
+}
+.cell-flood:hover,
+.cell-flood:focus-visible {
+  color: var(--surface);
+  background-size: 100% 100%;
+}
+
 /* Technical hatching – the site's tape/filler texture (see header + dividers). */
 .hatch {
   background-image: repeating-linear-gradient(

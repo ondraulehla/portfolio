@@ -11,11 +11,6 @@
 
 <div class="pointer-events-none absolute inset-0" data-linefield-wrap aria-hidden="true">
   <canvas data-linefield class="h-full w-full"></canvas>
-  <div
-    data-lf-dot
-    class="bg-ink absolute top-0 left-0 hidden size-2 rounded-full will-change-transform"
-  >
-  </div>
 </div>
 
 <script>
@@ -89,7 +84,6 @@
     wrap.dataset.bound = '1';
 
     const canvas = wrap.querySelector<HTMLCanvasElement>('[data-linefield]')!;
-    const dot = wrap.querySelector<HTMLElement>('[data-lf-dot]')!;
     const ctx = canvas.getContext('2d')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const X_GAP = 10;
@@ -200,11 +194,6 @@
       mouse.lx = mouse.x;
       mouse.ly = mouse.y;
       if (d > 0.05) mouse.a = Math.atan2(dy, dx);
-
-      if (mouse.set) {
-        dot.classList.remove('hidden');
-        dot.style.transform = `translate3d(${mouse.sx - 4}px, ${mouse.sy - 4}px, 0)`;
-      }
 
       movePoints(t);
       draw();

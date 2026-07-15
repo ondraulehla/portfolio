@@ -9,14 +9,136 @@ const t = useTranslations(locale);
 ---
 
 <Base {locale} title={`404 – ${t('notfound.title')}`} description={t('notfound.text')} noindex>
-  <section class="mx-auto flex max-w-6xl flex-col items-center px-5 py-32 text-center sm:px-8">
-    <p class="text-accent font-mono text-sm font-semibold tracking-[0.2em]">404</p>
-    <h1 class="font-display text-ink mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-      {t('notfound.title')}
-    </h1>
+  <section class="mx-auto flex max-w-6xl flex-col items-center px-5 py-24 text-center sm:px-8">
+    <!-- an old TV, nothing on but the bouncing logo (the DVD screensaver bit) -->
+    <div class="tv-set" aria-hidden="true">
+      <div class="tv-antenna"></div>
+      <div class="tv-frame">
+        <div class="tv-screen">
+          <span class="tv-bouncer">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" class="size-6">
+              <rect x="7.5" y="7.5" width="11" height="11"></rect>
+              <rect x="29.5" y="7.5" width="11" height="11"></rect>
+              <rect x="7.5" y="29.5" width="11" height="11"></rect>
+              <rect x="29.5" y="29.5" width="11" height="11"></rect>
+              <rect x="18.5" y="4.5" width="11" height="11" transform="rotate(45 24 10)"></rect>
+              <rect x="32.5" y="18.5" width="11" height="11" transform="rotate(45 38 24)"></rect>
+              <rect x="18.5" y="32.5" width="11" height="11" transform="rotate(45 24 38)"></rect>
+              <rect x="4.5" y="18.5" width="11" height="11" transform="rotate(45 10 24)"></rect>
+            </svg>
+            <span class="font-poster text-2xl leading-none">404</span>
+          </span>
+        </div>
+        <div class="tv-controls">
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+      <div class="tv-legs"></div>
+    </div>
+
+    <h1 class="font-poster text-ink mt-10 text-5xl sm:text-6xl">{t('notfound.title')}</h1>
     <p class="text-ink-muted mt-4 max-w-md text-lg">{t('notfound.text')}</p>
     <div class="mt-8">
       <Button href="/en/" variant="primary">{t('notfound.home')}</Button>
     </div>
   </section>
 </Base>
+
+<style>
+  .tv-set {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tv-antenna {
+    width: 2px;
+    height: 42px;
+    background: var(--ink);
+    position: relative;
+    transform: rotate(18deg) translateX(24px);
+  }
+  .tv-antenna::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    transform-origin: bottom center;
+    transform: rotate(-38deg);
+  }
+  .tv-frame {
+    width: min(340px, 82vw);
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    background: var(--panel);
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+  }
+  .tv-screen {
+    position: relative;
+    flex: 1;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--ink) 92%, var(--surface));
+  }
+  .tv-bouncer {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--accent);
+    animation:
+      tv-bx 7.3s linear infinite alternate,
+      tv-by 4.9s linear infinite alternate;
+  }
+  @keyframes tv-bx {
+    from {
+      left: 0;
+    }
+    to {
+      left: calc(100% - 64px);
+    }
+  }
+  @keyframes tv-by {
+    from {
+      top: 0;
+    }
+    to {
+      top: calc(100% - 58px);
+    }
+  }
+  .tv-controls {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 4px;
+  }
+  .tv-controls span {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+  }
+  .tv-controls span:last-child {
+    height: 26px;
+    border-radius: 8px;
+  }
+  .tv-legs {
+    width: 180px;
+    height: 14px;
+    background:
+      linear-gradient(var(--ink), var(--ink)) 12px 0 / 3px 100% no-repeat,
+      linear-gradient(var(--ink), var(--ink)) calc(100% - 12px) 0 / 3px 100% no-repeat;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tv-bouncer {
+      animation: none;
+      left: calc(50% - 32px);
+      top: calc(50% - 29px);
+    }
+  }
+</style>

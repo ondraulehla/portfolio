@@ -152,8 +152,8 @@ export const cv: CV = {
         en: 'Ing. (Master’s), Software Engineering',
         cs: 'Ing., Softwarové inženýrství',
       },
-      start: '2018-09',
-      end: '2024-06', // CONFIRM graduation month
+      start: '2019-09',
+      end: '2025-06',
       note: {
         en: 'Included a research internship / exchange semester at TU Wien, Vienna.',
         cs: 'Součástí byla výzkumná stáž / výjezdový semestr na TU Wien ve Vídni.',

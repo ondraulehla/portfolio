@@ -26,7 +26,8 @@ const nav = [
     <a href={home} class="group flex items-center gap-3.5 px-5 sm:px-7" aria-label="Ondřej Úlehla – home">
       <!-- quilt-star emblem (outlined squares rosette) -->
       <svg
-        class="text-ink size-9 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-45"
+        data-emblem
+        class="text-ink size-9 shrink-0 will-change-transform"
         viewBox="0 0 48 48"
         fill="none"
         stroke="currentColor"
@@ -55,39 +56,46 @@ const nav = [
     >
       {
         nav.map((item) => (
-          <a href={item.href} class="text-ink-muted hover:text-ink py-2 transition-colors">
-            {item.label}
+          <a href={item.href} class="nav-roll text-ink-muted py-2">
+            <span class="nav-roll__stack">
+              <span>{item.label}</span>
+              <span class="text-accent" aria-hidden="true">
+                {item.label}
+              </span>
+            </span>
           </a>
         ))
       }
-      <a
-        href={localePath(locale, '/neural-network')}
-        data-astro-prefetch="hover"
-        class="text-ink-muted hover:text-ink py-2 transition-colors"
-      >
-        {t('nav.lab')}
+      <a href={localePath(locale, '/neural-network')} data-astro-prefetch="hover" class="nav-roll text-ink-muted py-2">
+        <span class="nav-roll__stack">
+          <span>{t('nav.lab')}</span>
+          <span class="text-accent" aria-hidden="true">{t('nav.lab')}</span>
+        </span>
       </a>
       <a
         href={localePath(locale, '/playground')}
         data-astro-prefetch="hover"
-        class="text-accent hover:text-accent-strong inline-flex items-center gap-1.5 py-2 font-semibold transition-colors"
+        class="nav-roll text-accent inline-flex items-center gap-1.5 py-2 font-semibold"
       >
         <span class="bg-accent inline-block size-1.5" aria-hidden="true"></span>
-        {t('nav.playground')}
+        <span class="nav-roll__stack">
+          <span>{t('nav.playground')}</span>
+          <span class="text-ink" aria-hidden="true">{t('nav.playground')}</span>
+        </span>
       </a>
     </nav>
 
     <div class="flex items-stretch">
-      <div class="border-line flex items-center gap-2 border-l px-4">
+      <div class="flex items-stretch">
         <LangSwitcher {locale} />
         <ThemeToggle {locale} />
-        <details class="relative xl:hidden" data-mobile-menu>
+        <details class="relative flex xl:hidden" data-mobile-menu>
           <summary
-            class="border-line text-ink-muted hover:text-ink flex size-9 cursor-pointer list-none items-center justify-center rounded-full border [&::-webkit-details-marker]:hidden"
+            class="cell-flood border-line flex w-14 cursor-pointer list-none items-center justify-center border-l [&::-webkit-details-marker]:hidden"
             aria-label={t('nav.menu')}
           >
             <svg
-              class="size-4"
+              class="size-4.5"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
@@ -101,7 +109,7 @@ const nav = [
           </summary>
           <nav
             aria-label="Mobile"
-            class="border-line bg-panel absolute top-12 right-0 z-50 flex w-52 flex-col gap-1 rounded-xl border p-2 shadow-xl"
+            class="border-line bg-panel absolute top-full right-0 z-50 flex w-52 flex-col gap-1 rounded-xl border p-2 shadow-xl"
           >
             {
               [
@@ -127,7 +135,7 @@ const nav = [
           href={site.github}
           rel="me noopener"
           target="_blank"
-          class="head-social border-line flex w-16 items-center justify-center border-l"
+          class="cell-flood border-line flex w-16 items-center justify-center border-l"
           aria-label="GitHub"
         >
           <svg class="size-4.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -140,7 +148,7 @@ const nav = [
           href={site.linkedin}
           rel="me noopener"
           target="_blank"
-          class="head-social border-line flex w-16 items-center justify-center border-l"
+          class="cell-flood border-line flex w-16 items-center justify-center border-l"
           aria-label="LinkedIn"
         >
           <svg class="size-4.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -151,7 +159,7 @@ const nav = [
         </a>
         <a
           href={`mailto:${site.email}`}
-          class="head-social border-line flex w-16 items-center justify-center border-l"
+          class="cell-flood border-line flex w-16 items-center justify-center border-l"
           aria-label="E-mail"
         >
           <svg class="size-4.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -197,35 +205,43 @@ const nav = [
       60px 0, 70px 0, 60px 10px,
       80px 0, 80px 20px,
       100px 0, 110px 0, 100px 0, 100px 10px;
-    transition: background-position 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      background-position 0.45s cubic-bezier(0.76, 0, 0.24, 1),
+      background-size 0.45s cubic-bezier(0.76, 0, 0.24, 1);
   }
-  /* fin-style: the horizontal bars slide apart on hover and settle back */
+  /* fin->ten trick, our way: on hover the bars recompose into AHOJ */
   a:hover .sd-mark,
   a:focus-visible .sd-mark {
+    background-size:
+      5px 25px, 5px 25px, 0px 0px,
+      5px 25px, 15px 5px,
+      5px 25px, 15px 5px, 15px 5px, 15px 5px,
+      5px 25px, 5px 25px, 15px 5px,
+      5px 25px, 10px 5px,
+      0px 0px, 0px 0px, 15px 5px, 0px 0px;
     background-position:
-      0 0, 10px 0, 4px 20px,
-      20px 0, 16px 20px,
-      40px 0, 44px 0, 36px 10px, 44px 20px,
-      60px 0, 70px 0, 64px 10px,
-      80px 0, 76px 20px,
-      100px 0, 110px 0, 96px 0, 104px 10px;
+      20px 0, 30px 0, 25px 12px,
+      40px 0, 20px 10px,
+      50px 0, 20px 0, 40px 10px, 60px 20px,
+      60px 0, 70px 0, 60px 0,
+      90px 0, 80px 20px,
+      95px 12px, 95px 12px, 80px 0, 90px 12px;
   }
 
-  /* ink floods the cell from the bottom, icon flips to paper */
-  .head-social {
-    color: var(--ink-muted);
-    background-image: linear-gradient(var(--ink), var(--ink));
-    background-repeat: no-repeat;
-    background-size: 100% 0%;
-    background-position: bottom;
-    transition:
-      background-size 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-      color 0.18s ease 0.06s;
+  /* nav labels roll up on hover, accent copy rolls in */
+  .nav-roll__stack {
+    display: inline-flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 1.1em;
+    line-height: 1.1;
   }
-  .head-social:hover,
-  .head-social:focus-visible {
-    color: var(--surface);
-    background-size: 100% 100%;
+  .nav-roll__stack span {
+    transition: transform 0.32s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+  .nav-roll:hover .nav-roll__stack span,
+  .nav-roll:focus-visible .nav-roll__stack span {
+    transform: translateY(-100%);
   }
 </style>
 
@@ -243,4 +259,65 @@ const nav = [
   }
   initMenu();
   document.addEventListener('astro:page-load', initMenu);
+
+  // Slap physics for the emblem: a fast pointer pass shoves it, it springs back.
+  function initEmblemSlap() {
+    const el = document.querySelector<HTMLElement>('[data-emblem]');
+    if (!el || el.dataset.slap) return;
+    el.dataset.slap = '1';
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const m = { x: 0, y: 0, lx: 0, ly: 0, ax: 0, ay: 0, vx: 0, vy: 0 };
+    const pos = { x: 0, y: 0 };
+    let raf = 0;
+
+    const onMove = (e: MouseEvent) => {
+      m.ax = e.clientX - m.lx;
+      m.ay = e.clientY - m.ly;
+      m.lx = e.clientX;
+      m.ly = e.clientY;
+      m.x = e.clientX;
+      m.y = e.clientY;
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+
+    function tick() {
+      const r = el!.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - pos.x;
+      const cy = r.top + r.height / 2 - pos.y;
+      const dist = Math.hypot(m.x - cx, m.y - cy);
+
+      m.vx += (m.ax - m.vx) * 0.25;
+      m.vy += (m.ay - m.vy) * 0.25;
+
+      if (dist < r.width * 1.6) {
+        const mult = Math.min(1, 30 / Math.max(dist, 1));
+        pos.x += m.vx * mult;
+        pos.y += m.vy * mult;
+      }
+
+      pos.x *= 0.9;
+      pos.y *= 0.9;
+      m.ax *= 0.95;
+      m.ay *= 0.95;
+
+      const px = Math.max(-28, Math.min(28, pos.x));
+      const py = Math.max(-20, Math.min(20, pos.y));
+      el!.style.transform = `translate3d(${px.toFixed(2)}px, ${py.toFixed(2)}px, 0) rotate(${(px * 0.8).toFixed(2)}deg)`;
+
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener('mousemove', onMove);
+      },
+      { once: true },
+    );
+  }
+  initEmblemSlap();
+  document.addEventListener('astro:page-load', initEmblemSlap);
 </script>

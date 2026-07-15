@@ -16,16 +16,16 @@ const palettes = [
 ];
 ---
 
-<div class="relative flex items-center gap-2" data-theme-controls>
+<div class="relative flex items-stretch" data-theme-controls>
   <button
     type="button"
     data-palette-toggle
     aria-label={t('theme.palette')}
     aria-expanded="false"
-    class="border-line hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
+    class="cell-flood border-line flex w-14 items-center justify-center border-l"
   >
     <span
-      class="block size-4 rounded-full"
+      class="block size-4.5 rounded-full"
       style={`background: conic-gradient(${palettes.map((p) => p.accent).join(', ')}, ${palettes[0]!.accent})`}
       aria-hidden="true"></span>
   </button>
@@ -33,7 +33,7 @@ const palettes = [
   <div
     data-palette-menu
     hidden
-    class="border-line bg-panel absolute top-11 right-0 z-50 min-w-40 rounded-xl border p-1.5 shadow-lg"
+    class="border-line bg-panel absolute top-full right-0 z-50 min-w-40 rounded-xl border p-1.5 shadow-lg"
   >
     {
       palettes.map((p) => (
@@ -56,10 +56,10 @@ const palettes = [
     type="button"
     data-theme-toggle
     aria-label={t('theme.toggle')}
-    class="border-line text-ink-muted hover:text-ink hover:border-ink-faint inline-flex size-9 items-center justify-center rounded-full border transition-colors"
+    class="cell-flood border-line flex w-14 items-center justify-center border-l"
   >
     <svg
-      class="size-4 dark-hidden"
+      class="size-4.5 dark-hidden"
       data-icon-sun
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
@@ -74,7 +74,7 @@ const palettes = [
       <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
     </svg>
     <svg
-      class="size-4"
+      class="size-4.5"
       data-icon-moon
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
