@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 import SectionHeading from '@/components/ui/SectionHeading.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
 
 interface Props {
   locale: Locale;
@@ -15,97 +16,10 @@ const projects = (await getCollection('projects', (entry) => entry.id.startsWith
   .sort((a, b) => a.data.order - b.data.order);
 ---
 
-<!-- editorial index: poster-size titles, a cover preview floats with the cursor -->
 <section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="projects">
   <SectionHeading kicker={t('projects.kicker')} heading={t('projects.heading')} />
 
-  <div class="border-line -mt-6 border-t" data-proj-index data-reveal>
-    {
-      projects.map((project, i) => (
-        <a
-          href={`/projects/${project.id.split('/').slice(1).join('/')}`}
-          data-astro-prefetch="hover"
-          data-cover={project.data.cover.src}
-          class="proj-row border-line group grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 border-b py-5 sm:grid-cols-[3.5rem_1fr_auto] sm:py-7"
-        >
-          <span class="text-ink-faint group-hover:text-accent font-mono text-xs transition-colors">
-            {String(i + 1).padStart(2, '0')}
-          </span>
-          <span class="proj-title font-poster text-ink group-hover:text-accent text-[clamp(1.7rem,4.2vw,3.4rem)] leading-none transition-[color,transform] duration-300">
-            {project.data.title}
-          </span>
-          <span class="text-ink-faint hidden flex-col items-end gap-1 font-mono text-xs sm:flex">
-            <span>{project.data.year}</span>
-            <span class="max-w-44 truncate">{project.data.tech.slice(0, 2).join(' · ')}</span>
-          </span>
-        </a>
-      ))
-    }
-  </div>
-
-  <div class="pointer-events-none fixed top-0 left-0 z-50 hidden will-change-transform" data-proj-preview aria-hidden="true">
-    <img alt="" width="288" height="162" class="border-line block w-72 rotate-2 rounded-lg border shadow-2xl" src="" />
+  <div class="grid gap-6 md:grid-cols-2">
+    {projects.map((project) => <ProjectCard {project} {locale} />)}
   </div>
 </section>
-
-<style>
-  .proj-row:hover .proj-title {
-    transform: translateX(0.35em);
-  }
-</style>
-
-<script>
-  // Cover preview trails the cursor over the index (pointer devices only).
-  function initProjPreview() {
-    const index = document.querySelector<HTMLElement>('[data-proj-index]');
-    const preview = document.querySelector<HTMLElement>('[data-proj-preview]');
-    if (!index || !preview || index.dataset.bound) return;
-    index.dataset.bound = '1';
-    if (matchMedia('(hover: none)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const img = preview.querySelector('img')!;
-    const pos = { x: 0, y: 0, tx: 0, ty: 0 };
-    let visible = false;
-    let raf = 0;
-
-    function tick() {
-      pos.x += (pos.tx - pos.x) * 0.18;
-      pos.y += (pos.ty - pos.y) * 0.18;
-      preview!.style.transform = `translate3d(${pos.x + 24}px, ${pos.y - 80}px, 0)`;
-      if (visible) raf = requestAnimationFrame(tick);
-    }
-
-    index.addEventListener('mousemove', (e) => {
-      pos.tx = Math.min(e.clientX, innerWidth - 340);
-      pos.ty = Math.max(90, Math.min(e.clientY, innerHeight - 100));
-    });
-
-    index.querySelectorAll<HTMLAnchorElement>('[data-cover]').forEach((row) => {
-      row.addEventListener('mouseenter', () => {
-        img.src = row.dataset.cover!;
-        if (!visible) {
-          visible = true;
-          pos.x = pos.tx;
-          pos.y = pos.ty;
-          preview!.classList.remove('hidden');
-          raf = requestAnimationFrame(tick);
-        }
-      });
-    });
-    index.addEventListener('mouseleave', () => {
-      visible = false;
-      preview!.classList.add('hidden');
-      cancelAnimationFrame(raf);
-    });
-
-    document.addEventListener(
-      'astro:before-swap',
-      () => {
-        cancelAnimationFrame(raf);
-      },
-      { once: true },
-    );
-  }
-  initProjPreview();
-  document.addEventListener('astro:page-load', initProjPreview);
-</script>

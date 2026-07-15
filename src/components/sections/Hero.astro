@@ -1,7 +1,6 @@
 ---
 import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
-import { site } from '@/data/site';
 import LineField from '@/components/ui/LineField.astro';
 
 interface Props {
@@ -27,15 +26,6 @@ const posterSize =
   </div>
 
   <div class="relative mx-auto max-w-6xl px-5 sm:px-8">
-    <!-- masthead: technical spec tape -->
-    <div
-      class="hero-rise text-ink-faint flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-dashed border-[var(--line)] py-4 font-mono text-xs tracking-wide uppercase"
-    >
-      <span>{site.name}</span>
-      <span class="hatch mx-2 hidden h-3 flex-1 md:block" aria-hidden="true"></span>
-      <span>{site.location[locale]}</span>
-    </div>
-
     <div class="pt-14 pb-16 sm:pt-20 sm:pb-24">
       <h1 class:list={['hero-rise font-poster text-ink', posterSize]} data-hero-title>
         {t('hero.title.line1')}<br />
