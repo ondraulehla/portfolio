@@ -2,6 +2,7 @@
 import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 import LineField from '@/components/ui/LineField.astro';
+import LiquidText from '@/components/ui/LiquidText.astro';
 
 interface Props {
   locale: Locale;
@@ -21,8 +22,8 @@ const posterSize = 'text-[length:var(--text-fluid-poster)] leading-[0.92]';
   <div class="relative mx-auto max-w-6xl px-5 sm:px-8">
     <div class="pt-14 pb-16 sm:pt-20 sm:pb-24">
       <h1 class:list={['hero-rise font-poster text-ink', posterSize]} data-hero-title>
-        {t('hero.title.line1')}<br />
-        <span class="text-accent">{t('hero.title.line2')}</span>
+        {t('hero.title.line1')}
+        <LiquidText text={t('hero.title.line2')} />
       </h1>
 
       <p class="hero-rise-late text-ink-muted mt-9 max-w-2xl text-lg leading-relaxed text-balance sm:text-xl">

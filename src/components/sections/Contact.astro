@@ -3,7 +3,6 @@ import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 import { site } from '@/data/site';
 import SectionHeading from '@/components/ui/SectionHeading.astro';
-import Button from '@/components/ui/Button.astro';
 
 interface Props {
   locale: Locale;
@@ -13,30 +12,52 @@ const t = useTranslations(locale);
 ---
 
 <section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-28" id="contact">
-  <div data-reveal>
-    <h2 id="contact-heading" class="font-display text-ink max-w-3xl text-[length:var(--text-fluid-lg)] leading-[1.02] font-bold tracking-[-0.02em]">
-      {t('contact.heading')}
-    </h2>
-    <p class="text-ink-muted mt-5 max-w-xl text-lg">{t('contact.text')}</p>
+  <SectionHeading id="contact-heading" heading={t('contact.heading')} />
 
-    <div class="mt-8 flex flex-wrap items-center gap-3">
-      <Button href={`mailto:${site.email}`} variant="primary">{site.email}</Button>
+  <p class="text-ink-muted -mt-4 max-w-xl text-lg" data-reveal>{t('contact.text')}</p>
+
+  <!-- technical band: hairline cells with the header's ink-flood hover -->
+  <div class="border-line mt-10 max-w-2xl border" data-reveal>
+    <div class="border-line flex items-stretch border-b">
+      <a
+        href={`mailto:${site.email}`}
+        class="cell-flood text-ink min-w-0 flex-1 truncate px-5 py-5 font-mono text-sm font-semibold tracking-wide sm:text-lg"
+      >
+        {site.email}
+      </a>
       <button
         type="button"
         data-copy-email={site.email}
-        class="border-line text-ink hover:border-ink-faint hover:bg-panel inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]"
+        class="cell-flood border-line w-28 shrink-0 cursor-pointer border-l font-mono text-xs tracking-[0.15em] uppercase"
       >
-        <span data-copy-label>{t('contact.copy')}</span>
+        <span data-copy-label>{t('contact.copy.short')}</span>
         <span data-copied-label hidden>{t('contact.copied')}</span>
       </button>
-      <Button href={`/cv/ondrej-ulehla-${locale}.pdf`} variant="secondary" download>
-        {t('contact.cv')}
-      </Button>
     </div>
-
-    <div class="text-ink-muted mt-8 flex items-center gap-6 text-sm">
-      <a href={site.github} target="_blank" rel="me noopener" class="hover:text-ink underline decoration-[var(--line)] underline-offset-4 transition-colors">GitHub</a>
-      <a href={site.linkedin} target="_blank" rel="me noopener" class="hover:text-ink underline decoration-[var(--line)] underline-offset-4 transition-colors">LinkedIn</a>
+    <div class="grid grid-cols-3">
+      <a
+        href={site.github}
+        target="_blank"
+        rel="me noopener"
+        class="cell-flood px-4 py-4 text-center font-mono text-xs tracking-[0.15em] uppercase"
+      >
+        GitHub
+      </a>
+      <a
+        href={site.linkedin}
+        target="_blank"
+        rel="me noopener"
+        class="cell-flood border-line border-l px-4 py-4 text-center font-mono text-xs tracking-[0.15em] uppercase"
+      >
+        LinkedIn
+      </a>
+      <a
+        href={`/cv/ondrej-ulehla-${locale}.pdf`}
+        download
+        class="cell-flood border-line border-l px-4 py-4 text-center font-mono text-xs tracking-[0.15em] uppercase"
+      >
+        {t('contact.cv.short')}
+      </a>
     </div>
   </div>
 </section>

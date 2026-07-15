@@ -55,8 +55,10 @@ const en = {
   'contact.text':
     "Interested in working together, or just want to say hi? I'll get back to you within a day.",
   'contact.copy': 'Copy email',
+  'contact.copy.short': 'Copy',
   'contact.copied': 'Copied!',
   'contact.cv': 'Download CV (PDF)',
+  'contact.cv.short': 'CV (PDF)',
 
   'playground.title': '3D Playground',
   'playground.description':
@@ -181,8 +183,10 @@ const cs = {
   'contact.kicker': 'Kontakt',
   'contact.text': 'Zajímá vás spolupráce, nebo se chcete jen pozdravit? Ozvu se do jednoho dne.',
   'contact.copy': 'Kopírovat e-mail',
+  'contact.copy.short': 'Kopírovat',
   'contact.copied': 'Zkopírováno!',
   'contact.cv': 'Stáhnout CV (PDF)',
+  'contact.cv.short': 'CV (PDF)',
 
   'playground.title': '3D Playground',
   'playground.description':

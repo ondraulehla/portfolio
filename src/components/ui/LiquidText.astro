@@ -1,0 +1,238 @@
+---
+/**
+ * Poster text with an accent "liquid" living strictly inside the letterforms –
+ * wodniack's Rainbow pen technique: blob particles in a group with a gooey
+ * filter (blur + alpha threshold), masked by the text itself. Font family and
+ * size are inherited from the surrounding element, so this drops into any
+ * poster-scale heading.
+ */
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+const display = text.toUpperCase();
+// unique ids for this instance's SVG mask/filter defs
+const uid = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+---
+
+<span class="liquid-text" data-liquid-text>
+  <span class="sr-only">{text}</span>
+  <svg aria-hidden="true" data-fx-svg>
+    <defs>
+      <mask id={`fx-mask-${uid}`}>
+        <text class="fx-text" x="0" fill="#fff" data-fx-mask-text>{display}</text>
+      </mask>
+      <filter id={`fx-goo-${uid}`}>
+        <feGaussianBlur in="SourceGraphic" stdDeviation="8" data-fx-blur></feGaussianBlur>
+        <feColorMatrix
+          type="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"></feColorMatrix>
+      </filter>
+    </defs>
+    <text class="fx-text fx-base" x="0" data-fx-base>{display}</text>
+    <g filter={`url(#fx-goo-${uid})`} mask={`url(#fx-mask-${uid})`} data-fx-wrap></g>
+  </svg>
+</span>
+
+<style>
+  .liquid-text {
+    display: block;
+    line-height: 0;
+  }
+  .liquid-text svg {
+    display: block;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .fx-text {
+    font-family: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+  }
+  .fx-base {
+    fill: var(--accent);
+  }
+</style>
+
+<script>
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  function initLiquidText() {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    document.querySelectorAll<HTMLElement>('[data-liquid-text]').forEach((host) => {
+      if (host.dataset.bound) return;
+      host.dataset.bound = '1';
+
+      const svg = host.querySelector<SVGSVGElement>('[data-fx-svg]')!;
+      const base = svg.querySelector<SVGTextElement>('[data-fx-base]')!;
+      const maskText = svg.querySelector<SVGTextElement>('[data-fx-mask-text]')!;
+      const wrap = svg.querySelector<SVGGElement>('[data-fx-wrap]')!;
+      const blur = svg.querySelector<SVGElement>('[data-fx-blur]')!;
+
+      let W = 10;
+      let H = 10;
+      let FS = 64;
+
+      function layout() {
+        FS = parseFloat(getComputedStyle(base).fontSize);
+        const baselineY = FS * 0.9;
+        base.setAttribute('y', String(baselineY));
+        maskText.setAttribute('y', String(baselineY));
+        W = Math.ceil(base.getComputedTextLength()) + 4;
+        H = Math.ceil(FS * 1.02);
+        svg.setAttribute('width', String(W));
+        svg.setAttribute('height', String(H));
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+        // the gooey blur scales with the type size
+        blur.setAttribute('stdDeviation', String(Math.max(5, FS * 0.11)));
+      }
+      layout();
+      // the display font may still be loading on first paint
+      document.fonts?.ready.then(layout);
+      addEventListener('resize', layout);
+
+      if (reduced) return;
+
+      // grade the accent colour by cycling its oklch lightness
+      let aL = 55;
+      let aC = '0.2';
+      let aH = '33';
+      function readAccent() {
+        const m = getComputedStyle(document.documentElement)
+          .getPropertyValue('--accent')
+          .match(/oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)/);
+        if (m) {
+          aL = parseFloat(m[1]!);
+          aC = m[2]!;
+          aH = m[3]!;
+        }
+      }
+      readAccent();
+
+      type P = {
+        el: SVGCircleElement;
+        x: number;
+        y: number;
+        vx: number;
+        vy: number;
+        size: number;
+        seed: number;
+        freq: number;
+        amp: number;
+      };
+      const particles: P[] = [];
+      const mouse = { x: 0, y: 0, sx: 0, sy: 0, vx: 0, vy: 0, svx: 0, svy: 0, in: false };
+      const head = { x: 0, y: 0, vx: 0, vy: 0 };
+      let cnt = 0;
+      let running = false;
+      let visible = false;
+
+      function emit(x: number, y: number, vx: number, vy: number, size: number) {
+        if (size < 0.5) return;
+        cnt += 5;
+        const el = document.createElementNS(SVGNS, 'circle');
+        const l = Math.min(Math.max(aL - 14 + (cnt % 36), 30), 88);
+        el.setAttribute('fill', `oklch(${l}% ${aC} ${aH})`);
+        wrap.prepend(el);
+        particles.push({
+          el,
+          x,
+          y,
+          vx,
+          vy,
+          size,
+          seed: Math.random() * 1000,
+          freq: (0.5 + Math.random()) * 0.01,
+          amp: (1 - Math.random() * 2) * 0.5,
+        });
+      }
+
+      function frame(time: number) {
+        mouse.sx += (mouse.x - mouse.sx) * 0.1;
+        mouse.sy += (mouse.y - mouse.sy) * 0.1;
+        mouse.svx += (mouse.vx - mouse.svx) * 0.1;
+        mouse.svy += (mouse.vy - mouse.svy) * 0.1;
+        mouse.vx *= 0.85;
+        mouse.vy *= 0.85;
+        const diff = Math.hypot(mouse.x - mouse.sx, mouse.y - mouse.sy);
+
+        // idle emitter sweeps across the word (the pen's "head")
+        const hx = W * 0.5 + W * 0.45 * Math.cos(time * 0.0006);
+        const hy = H * 0.55 + H * 0.25 * Math.cos(time * 0.0011);
+        head.vx = head.x - hx;
+        head.vy = head.y - hy;
+        head.x = hx;
+        head.y = hy;
+
+        if (mouse.in && diff > 0.5) {
+          emit(mouse.sx, mouse.sy, mouse.svx * -0.25, mouse.svy * -0.25, Math.min(diff * 0.3, FS * 0.28));
+        } else {
+          emit(head.x, head.y, head.vx * 2, head.vy * 2, Math.min(Math.hypot(head.vx, head.vy) * 3, FS * 0.24));
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i]!;
+          p.x += Math.cos((time + p.seed) * p.freq) * p.amp + p.vx;
+          p.y += Math.sin((time + p.seed) * p.freq) * p.amp + p.vy;
+          p.vx *= 0.95;
+          p.vy *= 0.95;
+          p.size += Math.hypot(p.vx, p.vy);
+          p.size *= 0.85;
+          if (p.size < 1) {
+            p.el.remove();
+            particles.splice(i, 1);
+            continue;
+          }
+          p.el.setAttribute('cx', String(p.x));
+          p.el.setAttribute('cy', String(p.y));
+          p.el.setAttribute('r', String(p.size));
+        }
+
+        if (!visible && !particles.length) {
+          running = false;
+          return;
+        }
+        requestAnimationFrame(frame);
+      }
+
+      function kick() {
+        if (!running) {
+          running = true;
+          readAccent();
+          requestAnimationFrame(frame);
+        }
+      }
+
+      // run only while the text is on screen
+      new IntersectionObserver((entries) => {
+        visible = entries[0]!.isIntersecting;
+        if (visible) kick();
+      }).observe(host);
+
+      host.addEventListener('pointermove', (e) => {
+        const rect = svg.getBoundingClientRect();
+        // map viewport coords into SVG user space (max-width can shrink the svg)
+        const scale = rect.width > 0 ? W / rect.width : 1;
+        const x = (e.clientX - rect.left) * scale;
+        const y = (e.clientY - rect.top) * scale;
+        mouse.vx += mouse.x - x;
+        mouse.vy += mouse.y - y;
+        mouse.x = x;
+        mouse.y = y;
+        if (!mouse.in) {
+          mouse.in = true;
+          mouse.sx = x;
+          mouse.sy = y;
+        }
+        kick();
+      });
+      host.addEventListener('pointerleave', () => {
+        mouse.in = false;
+      });
+    });
+  }
+
+  initLiquidText();
+  document.addEventListener('astro:page-load', initLiquidText);
+</script>
