@@ -314,6 +314,11 @@ const nav = [
   let spyLinks: HTMLElement[] = [];
   let spySections: HTMLElement[] = [];
   let bandCurrent: string | undefined;
+  // clicking a nav link highlights it immediately and pins it while the
+  // smooth scroll is in flight – otherwise the underline would crawl
+  // through every section on the way down
+  let clickLock: string | undefined;
+  let clickLockTimer: ReturnType<typeof setTimeout> | undefined;
 
   // the accent underline slides between nav items, sized to the label text
   // (not the whole link, which carries tracking space and the ◇ marker)
@@ -332,15 +337,17 @@ const nav = [
     bar.style.transform = `translateX(${stack.offsetLeft}px)`;
   }
 
-  // the active section: whatever crosses the band, except at the very bottom
-  // of the page where the last (short) section could never reach it
+  // the active section: a clicked link wins while its scroll is in flight,
+  // then whatever crosses the band – except at the very bottom of the page,
+  // where the last (short) section could never reach it
   function applyActive() {
     const atBottom =
       innerHeight + scrollY >= document.documentElement.scrollHeight - 8;
     const current =
-      atBottom && spySections.length
+      clickLock ??
+      (atBottom && spySections.length
         ? SPY_MAP[spySections[spySections.length - 1]!.id]
-        : bandCurrent;
+        : bandCurrent);
     let target: HTMLElement | null = null;
     spyLinks.forEach((l) => {
       const active = l.dataset.spy === current;
@@ -351,12 +358,23 @@ const nav = [
   }
 
   function initSpy() {
+    clickLock = undefined;
     spyLinks = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
     const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
     const path = location.pathname.replace(/\/$/, '') || '/';
     routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
     spyLinks.forEach((l) => l.removeAttribute('data-active'));
     positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
+
+    spyLinks.forEach((l) => {
+      if (l.dataset.lockBound) return;
+      l.dataset.lockBound = '1';
+      l.addEventListener('click', () => {
+        if (!spySections.length) return; // navigating from a subpage instead
+        clickLock = l.dataset.spy;
+        applyActive();
+      });
+    });
 
     spyObserver?.disconnect();
     bandCurrent = undefined;
@@ -383,6 +401,21 @@ const nav = [
   }
   initSpy();
   document.addEventListener('astro:page-load', initSpy);
-  addEventListener('scroll', () => spySections.length && applyActive(), { passive: true });
+  addEventListener(
+    'scroll',
+    () => {
+      if (!spySections.length) return;
+      // release the click pin once the smooth scroll has settled
+      if (clickLock) {
+        clearTimeout(clickLockTimer);
+        clickLockTimer = setTimeout(() => {
+          clickLock = undefined;
+          applyActive();
+        }, 200);
+      }
+      applyActive();
+    },
+    { passive: true },
+  );
   addEventListener('resize', () => positionIndicator(activeLink));
 </script>
