@@ -110,7 +110,7 @@ html {
 @supports (-moz-appearance: none) {
   html {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklab, var(--ink-faint) 70%, transparent) transparent;
+    scrollbar-color: var(--accent) transparent;
   }
 }
 
@@ -130,11 +130,11 @@ html.theme-switching::view-transition-new(root) {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklab, var(--ink-faint) 55%, transparent);
+  background: var(--accent);
   border: 3px solid var(--surface);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: var(--accent-strong);
 }
 
 body {

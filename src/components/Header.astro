@@ -34,8 +34,10 @@ const nav = [
 
     <nav
       aria-label="Main"
-      class="hidden flex-1 items-center justify-center gap-7 px-6 font-mono text-xs tracking-[0.14em] uppercase xl:flex"
+      class="relative hidden flex-1 items-center justify-center gap-7 px-6 font-mono text-xs tracking-[0.14em] uppercase xl:flex"
     >
+      <!-- sliding scrollspy underline – positioned by script -->
+      <span class="nav-indicator" data-nav-indicator aria-hidden="true"></span>
       {
         nav.map((item) => (
           <a href={item.href} data-spy={item.spy} class="nav-roll text-ink-muted py-2">
@@ -251,19 +253,27 @@ const nav = [
     transform: translateY(-100%);
   }
 
-  /* scrollspy / current route: accent label with a hairline underline */
+  /* scrollspy / current route: accent label, underline slides between items */
   .nav-roll[data-active] {
     color: var(--accent);
-    position: relative;
   }
-  .nav-roll[data-active]::after {
-    content: '';
+  .nav-indicator {
     position: absolute;
+    top: calc(50% + 0.85em);
     left: 0;
-    right: 0;
-    bottom: 0.15rem;
+    width: 0;
     height: 1.5px;
     background: var(--accent);
+    opacity: 0;
+    transition:
+      transform 0.4s cubic-bezier(0.76, 0, 0.24, 1),
+      width 0.4s cubic-bezier(0.76, 0, 0.24, 1),
+      opacity 0.25s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nav-indicator {
+      transition: opacity 0.25s ease;
+    }
   }
 </style>
 
@@ -284,18 +294,44 @@ const nav = [
 
   // Scrollspy: highlight the nav item of the section crossing the viewport's
   // upper third (homepage only); route links highlight on their own page.
+  // Sections without their own nav item roll up under the nearest one.
+  const SPY_MAP: Record<string, string> = {
+    projects: 'projects',
+    about: 'about',
+    experience: 'about',
+    education: 'about',
+    skills: 'about',
+    contact: 'contact',
+  };
   let spyObserver: IntersectionObserver | undefined;
+  let activeLink: HTMLElement | null = null;
+
+  // the accent underline slides between nav items
+  function positionIndicator(target: HTMLElement | null) {
+    const bar = document.querySelector<HTMLElement>('[data-nav-indicator]');
+    if (!bar) return;
+    activeLink = target;
+    if (!target || !target.offsetParent) {
+      bar.style.opacity = '0';
+      return;
+    }
+    bar.style.opacity = '1';
+    bar.style.width = `${target.offsetWidth}px`;
+    bar.style.transform = `translateX(${target.offsetLeft}px)`;
+  }
+
   function initSpy() {
     const links = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
     const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
     const path = location.pathname.replace(/\/$/, '') || '/';
     routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
     links.forEach((l) => l.removeAttribute('data-active'));
+    positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
 
     spyObserver?.disconnect();
-    const sections = links
-      .map((l) => document.getElementById(l.dataset.spy!))
-      .filter((s): s is HTMLElement => !!s);
+    const sections = [...document.querySelectorAll<HTMLElement>('section[id]')].filter(
+      (s) => SPY_MAP[s.id],
+    );
     if (!sections.length) return;
 
     const inBand = new Set<string>();
@@ -306,8 +342,15 @@ const nav = [
           else inBand.delete(entry.target.id);
         }
         // first intersecting section in document order; none → nothing lit
-        const current = sections.find((s) => inBand.has(s.id))?.id;
-        links.forEach((l) => l.toggleAttribute('data-active', l.dataset.spy === current));
+        const section = sections.find((s) => inBand.has(s.id));
+        const current = section ? SPY_MAP[section.id] : undefined;
+        let target: HTMLElement | null = null;
+        links.forEach((l) => {
+          const active = l.dataset.spy === current;
+          l.toggleAttribute('data-active', active);
+          if (active) target = l;
+        });
+        positionIndicator(target);
       },
       { rootMargin: '-30% 0px -60% 0px' },
     );
@@ -315,4 +358,5 @@ const nav = [
   }
   initSpy();
   document.addEventListener('astro:page-load', initSpy);
+  addEventListener('resize', () => positionIndicator(activeLink));
 </script>
