@@ -1,6 +1,7 @@
 ---
 import Base from '@/layouts/Base.astro';
 import Button from '@/components/ui/Button.astro';
+import Emblem from '@/components/ui/Emblem.astro';
 import { useTranslations } from '@/i18n/utils';
 
 // The 404 page is served for any missing path; default to English UI.
@@ -16,16 +17,7 @@ const t = useTranslations(locale);
       <div class="tv-frame">
         <div class="tv-screen">
           <span class="tv-bouncer">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" class="size-6">
-              <rect x="7.5" y="7.5" width="11" height="11"></rect>
-              <rect x="29.5" y="7.5" width="11" height="11"></rect>
-              <rect x="7.5" y="29.5" width="11" height="11"></rect>
-              <rect x="29.5" y="29.5" width="11" height="11"></rect>
-              <rect x="18.5" y="4.5" width="11" height="11" transform="rotate(45 24 10)"></rect>
-              <rect x="32.5" y="18.5" width="11" height="11" transform="rotate(45 38 24)"></rect>
-              <rect x="18.5" y="32.5" width="11" height="11" transform="rotate(45 24 38)"></rect>
-              <rect x="4.5" y="18.5" width="11" height="11" transform="rotate(45 10 24)"></rect>
-            </svg>
+            <Emblem class="size-6" />
             <span class="font-poster text-2xl leading-none">404</span>
           </span>
         </div>

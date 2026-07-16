@@ -3,6 +3,7 @@ import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
 import { site } from '@/data/site';
 import ThemeToggle from '@/components/ThemeToggle.astro';
+import Emblem from '@/components/ui/Emblem.astro';
 
 interface Props {
   locale: Locale;
@@ -22,26 +23,10 @@ const nav = [
 <header class="border-line bg-surface/95 sticky top-0 z-40 border-b backdrop-blur-md">
   <div class="flex h-[5.25rem] items-stretch justify-between">
     <a href={home} class="group flex items-center gap-3.5 px-5 sm:px-7" aria-label="Ondřej Úlehla – home">
-      <!-- quilt-star emblem (outlined squares rosette) -->
-      <svg
+      <!-- rosette emblem (a-single-div "rosette-1") -->
+      <Emblem
         class="text-accent size-9 shrink-0 transition-transform duration-500 ease-out group-hover:rotate-45"
-        viewBox="0 0 48 48"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.1"
-        aria-hidden="true"
-      >
-        <rect x="7.5" y="7.5" width="11" height="11"></rect>
-        <rect x="29.5" y="7.5" width="11" height="11"></rect>
-        <rect x="7.5" y="29.5" width="11" height="11"></rect>
-        <rect x="29.5" y="29.5" width="11" height="11"></rect>
-        <rect x="18.5" y="4.5" width="11" height="11" transform="rotate(45 24 10)"></rect>
-        <rect x="32.5" y="18.5" width="11" height="11" transform="rotate(45 38 24)"></rect>
-        <rect x="18.5" y="32.5" width="11" height="11" transform="rotate(45 24 38)"></rect>
-        <rect x="4.5" y="18.5" width="11" height="11" transform="rotate(45 10 24)"></rect>
-        <path d="M24 15.5 L20.8 24 L24 32.5 L27.2 24 Z"></path>
-        <path d="M15.5 24 L24 20.8 L32.5 24 L24 27.2 Z"></path>
-      </svg>
+      />
       <!-- ULEHLA built from bars (à la single-div lettering); bars slide apart on hover -->
       <span class="sd-mark" aria-hidden="true"></span>
       <span class="sr-only">ULEHLA</span>

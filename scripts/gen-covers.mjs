@@ -52,12 +52,15 @@ function hatch(x, y, w, h, color = INK, opacity = 0.5) {
 }
 
 function quiltStar(cx, cy, s) {
-  const r = (x, y, w, rot = '') =>
-    `<rect x="${x}" y="${y}" width="${w}" height="${w}" ${rot ? `transform="rotate(${rot})"` : ''}/>`;
-  const u = s / 48;
-  return `<g fill="none" stroke="${INK}" stroke-opacity="0.7" stroke-width="${1.3 / u}" transform="translate(${cx - s / 2} ${cy - s / 2}) scale(${u})">
-    ${r(7.5, 7.5, 11)}${r(29.5, 7.5, 11)}${r(7.5, 29.5, 11)}${r(29.5, 29.5, 11)}
-    ${r(18.5, 4.5, 11, '45 24 10')}${r(32.5, 18.5, 11, '45 38 24')}${r(18.5, 32.5, 11, '45 24 38')}${r(4.5, 18.5, 11, '45 10 24')}
+  // "rosette-1" from a-single-div – the site emblem
+  const r = (x, y, rot = '') =>
+    `<rect x="${x}" y="${y}" width="30" height="30" ${rot ? `transform="rotate(${rot})"` : ''}/>`;
+  const u = s / 150;
+  return `<g fill="none" stroke="${INK}" stroke-opacity="0.7" stroke-width="${1.5 / u}" transform="translate(${cx - s / 2} ${cy - s / 2}) scale(${u})">
+    ${r(22, 22)}${r(98, 22)}${r(22, 98)}${r(98, 98)}
+    ${r(60, 6, '45 75 21')}${r(114, 60, '45 129 75')}${r(60, 114, '45 75 129')}${r(6, 60, '45 21 75')}
+    <polygon points="75,51 78.6,66.2 92,58 83.8,71.4 99,75 83.8,78.6 92,92 78.6,83.8 75,99 71.4,83.8 58,92 66.2,78.6 51,75 66.2,71.4 58,58 71.4,66.2"/>
+    <path d="M75 68v14M68 75h14"/>
   </g>`;
 }
 
