@@ -253,9 +253,15 @@ const nav = [
     transform: translateY(-100%);
   }
 
-  /* scrollspy / current route: accent label, underline slides between items */
+  /* scrollspy / current route: accent label, underline slides between items.
+     The active item is a "you are here" state, not an action – rolling to an
+     identical accent copy would communicate nothing, so it doesn't roll. */
   .nav-roll[data-active] {
     color: var(--accent);
+  }
+  .nav-roll[data-active]:hover .nav-roll__stack span,
+  .nav-roll[data-active]:focus-visible .nav-roll__stack span {
+    transform: none;
   }
   .nav-indicator {
     position: absolute;
