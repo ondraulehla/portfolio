@@ -875,8 +875,8 @@ export function initNeural(): void {
   function setRunning(run: boolean) {
     state.running = run;
     if (elToggle) elToggle.textContent = run ? elToggle.dataset.pause! : elToggle.dataset.resume!;
-    // the viewport-edge glow breathes only while the network is training
-    document.getElementById('nn-edge')?.classList.toggle('is-on', run);
+    // the panel glow breathes only while the network is training
+    document.querySelectorAll('.nn-glow').forEach((p) => p.classList.toggle('is-on', run));
   }
   setRunning(state.running);
 
