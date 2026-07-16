@@ -103,6 +103,32 @@ html {
   @media (prefers-reduced-motion: reduce) {
     scroll-behavior: auto;
   }
+  /* slim squared scrollbar in the site's ink (Firefox) */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--ink-faint) 70%, transparent) transparent;
+}
+
+/* Theme-toggle crossfade – scoped so page navigations keep their own timing. */
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease-in-out;
+}
+
+/* Slim squared scrollbar matching the hairline language (WebKit). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--ink-faint) 55%, transparent);
+  border: 3px solid var(--surface);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 body {

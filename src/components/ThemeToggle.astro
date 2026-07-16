@@ -68,10 +68,22 @@ const t = useTranslations(Astro.props.locale);
       btn.dataset.bound = 'true';
       btn.addEventListener('click', () => {
         const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = next;
-        try {
-          localStorage.setItem('theme', next);
-        } catch {}
+        const apply = () => {
+          document.documentElement.dataset.theme = next;
+          try {
+            localStorage.setItem('theme', next);
+          } catch {}
+        };
+        // soft crossfade between themes; the .theme-switching class scopes the
+        // slower animation to this transition only (not page navigations)
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduced && document.startViewTransition) {
+          document.documentElement.classList.add('theme-switching');
+          const vt = document.startViewTransition(apply);
+          vt.finished.finally(() => document.documentElement.classList.remove('theme-switching'));
+        } else {
+          apply();
+        }
       });
     });
 

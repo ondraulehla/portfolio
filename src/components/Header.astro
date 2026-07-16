@@ -13,9 +13,9 @@ const t = useTranslations(locale);
 const home = localePath(locale, '/');
 
 const nav = [
-  { href: `${home}#projects`, label: t('nav.projects') },
-  { href: `${home}#about`, label: t('nav.about') },
-  { href: `${home}#contact`, label: t('nav.contact') },
+  { href: `${home}#projects`, label: t('nav.projects'), spy: 'projects' },
+  { href: `${home}#about`, label: t('nav.about'), spy: 'about' },
+  { href: `${home}#contact`, label: t('nav.contact'), spy: 'contact' },
 ];
 ---
 
@@ -38,7 +38,7 @@ const nav = [
     >
       {
         nav.map((item) => (
-          <a href={item.href} class="nav-roll text-ink-muted py-2">
+          <a href={item.href} data-spy={item.spy} class="nav-roll text-ink-muted py-2">
             <span class="nav-roll__stack">
               <span>{item.label}</span>
               <span class="text-accent" aria-hidden="true">
@@ -48,7 +48,12 @@ const nav = [
           </a>
         ))
       }
-      <a href={localePath(locale, '/neural-network')} data-astro-prefetch="hover" class="nav-roll text-ink-muted py-2">
+      <a
+        href={localePath(locale, '/neural-network')}
+        data-astro-prefetch="hover"
+        data-route="/neural-network"
+        class="nav-roll text-ink-muted py-2"
+      >
         <span class="nav-roll__stack">
           <span>{t('nav.lab')}</span>
           <span class="text-accent" aria-hidden="true">{t('nav.lab')}</span>
@@ -245,6 +250,21 @@ const nav = [
   .nav-roll:focus-visible .nav-roll__stack span {
     transform: translateY(-100%);
   }
+
+  /* scrollspy / current route: accent label with a hairline underline */
+  .nav-roll[data-active] {
+    color: var(--accent);
+    position: relative;
+  }
+  .nav-roll[data-active]::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.15rem;
+    height: 1.5px;
+    background: var(--accent);
+  }
 </style>
 
 <script>
@@ -262,4 +282,33 @@ const nav = [
   initMenu();
   document.addEventListener('astro:page-load', initMenu);
 
+  // Scrollspy: highlight the nav item of the section crossing the viewport's
+  // upper third (homepage only); route links highlight on their own page.
+  let spyObserver: IntersectionObserver | undefined;
+  function initSpy() {
+    const links = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
+    const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
+    const path = location.pathname.replace(/\/$/, '') || '/';
+    routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
+    links.forEach((l) => l.removeAttribute('data-active'));
+
+    spyObserver?.disconnect();
+    const sections = links
+      .map((l) => document.getElementById(l.dataset.spy!))
+      .filter((s): s is HTMLElement => !!s);
+    if (!sections.length) return;
+
+    spyObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          links.forEach((l) => l.toggleAttribute('data-active', l.dataset.spy === entry.target.id));
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    sections.forEach((s) => spyObserver!.observe(s));
+  }
+  initSpy();
+  document.addEventListener('astro:page-load', initSpy);
 </script>

@@ -5,13 +5,6 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  redirects: {
-    '/en': '/',
-    '/en/neural-network': '/neural-network',
-    '/en/playground': '/playground',
-    '/en/projects/[slug]': '/projects/[slug]',
-  },
-  // TODO: replace with the final custom domain before launch
   site: 'https://ulehla.dev',
   output: 'static',
   trailingSlash: 'ignore',
