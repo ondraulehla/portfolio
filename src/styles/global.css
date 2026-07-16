@@ -18,10 +18,12 @@
   --ink-muted: oklch(44% 0.014 55);
   --ink-faint: oklch(58% 0.012 60);
   --line: oklch(88.5% 0.012 80);
-  --accent: oklch(55% 0.2 33);
-  --accent-strong: oklch(47% 0.2 32);
-  --accent-soft: oklch(93% 0.045 55);
-  --glow: oklch(55% 0.2 33 / 0.1);
+  /* hue 38 matches the dark-mode accent family (warmer, more orange)
+     while 56% lightness keeps AA contrast (4.8:1) on the paper */
+  --accent: oklch(56% 0.19 38);
+  --accent-strong: oklch(48% 0.19 38);
+  --accent-soft: oklch(93% 0.045 50);
+  --glow: oklch(56% 0.19 38 / 0.1);
   color-scheme: light;
 }
 
@@ -116,7 +118,6 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 2px;
 }
 
 /* Reveal-on-scroll elements: hidden only when JS + motion are available.
@@ -183,10 +184,10 @@ html.motion-ok [data-reveal] {
   @apply text-ink font-semibold;
 }
 .prose-custom code {
-  @apply bg-panel border-line rounded border px-1.5 py-0.5 font-mono text-[0.9em];
+  @apply bg-panel border-line border px-1.5 py-0.5 font-mono text-[0.9em];
 }
 .prose-custom pre {
-  @apply bg-panel border-line my-6 overflow-x-auto rounded-xl border p-5 text-sm;
+  @apply bg-panel border-line my-6 overflow-x-auto border p-5 text-sm;
 }
 .prose-custom pre code {
   @apply border-0 bg-transparent p-0;
@@ -195,5 +196,5 @@ html.motion-ok [data-reveal] {
   @apply border-accent text-ink-muted my-6 border-l-2 pl-5 italic;
 }
 .prose-custom img {
-  @apply border-line my-6 rounded-xl border;
+  @apply border-line my-6 border;
 }

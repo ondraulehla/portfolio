@@ -1,69 +1,107 @@
-# ondrejulehla.dev — osobní portfolio
+# ondrejulehla.dev
 
-Osobní web: profil, CV a případové studie projektů. Postaveno na **Astro 5+ / Tailwind CSS 4 / GSAP / Three.js**, dvojjazyčné (EN + CS), light/dark theme, statický výstup s Lighthouse ~100.
+Personal portfolio of **Ondřej Úlehla** – fullstack developer & AI engineer.
+Profile, CV and project case studies, plus an interactive [neural-network lab](https://ondrejulehla.dev/neural-network)
+built from my master's thesis and a procedural [3D island playground](https://ondrejulehla.dev/playground).
 
-## Rychlý start
+![Site card](public/og/default-en.png)
+
+Built with **Astro 5 / Tailwind CSS 4 / GSAP / Three.js**. Fully static output,
+English-only, light/dark theme.
+
+## Quickstart
 
 ```bash
 npm install
-npm run build   # i18n parity check + produkční build do dist/
+npm run build   # astro check-friendly production build into dist/
 ```
 
 <!-- readme-ci skip -->
 ```bash
-npm run dev     # dev server na localhost:4321
+npm run dev     # dev server on localhost:4321
 ```
 
-Bloky výše spouští při každém pushi [readme-ci](https://github.com/ondraulehla/readme-ci), takže quickstart nemůže potichu zastarat.
+The blocks above are executed on every push by
+[readme-ci](https://github.com/ondraulehla/readme-ci), so this quickstart
+cannot silently rot.
 
-## Příkazy
+## Commands
 
-| Příkaz | Popis |
+| Command | What it does |
 | --- | --- |
-| `npm run dev` | Dev server na `localhost:4321` |
-| `npm run build` | i18n parity check + produkční build do `dist/` |
-| `npm run preview` | Servíruje `dist/` |
-| `npm run check` | `astro check` (typy) |
-| `npm run pdf` | Vygeneruje `public/cv/*.pdf` a `public/og/*.png` z buildnutého webu (vyžaduje Chrome) |
+| `npm run dev` | Dev server on `localhost:4321` |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serves `dist/` |
+| `npm run check` | `astro check` (types) |
+| `npm test` | Vitest unit tests |
+| `npm run pdf` | Regenerates `public/cv/*.pdf` from the built site (needs Chrome) |
+| `node scripts/gen-covers.mjs` | Regenerates the project cover plates (SVG) |
+| `node scripts/gen-og.mjs` | Regenerates Open Graph share cards (needs librsvg) |
 
-## Kde se edituje obsah
+## Design language
 
-- **CV data (single source of truth)** — [src/data/cv.ts](src/data/cv.ts): profil, zkušenosti, vzdělání, skills, jazyky. Každý text je `{ en, cs }`. Z těchto dat se generuje web i PDF.
-- **Kontakty a odkazy** — [src/data/site.ts](src/data/site.ts)
-- **Případové studie** — `src/content/projects/{en,cs}/<slug>.mdx`; oba jazyky musí mít stejný slug (hlídá build). Frontmatter: title, summary, role, year, tech, problem/solution/outcome, cover, links.
-- **UI texty** — [src/i18n/ui.ts](src/i18n/ui.ts); chybějící český klíč = chyba typecheck.
-- **Barvy/tokeny** — [src/styles/global.css](src/styles/global.css) (`:root` + `[data-theme='dark']`)
+One system everywhere – warm bone paper, ink, a single vermilion accent:
 
-Po změně CV dat spusť `npm run build && npm run pdf` a commitni přegenerovaná PDF/OG.
+- **Technical plates** – project covers, OG cards and playground billboards
+  share one generated style: hairline grid, crop marks, mono spec labels and
+  an engraved line diagram per project ([scripts/gen-covers.mjs](scripts/gen-covers.mjs)).
+- **LiquidText** – poster headings are SVG with gooey accent metaballs living
+  strictly inside the letterforms ([src/components/ui/LiquidText.astro](src/components/ui/LiquidText.astro)).
+- **Rosette emblem** – a faithful port of *rosette-1* from
+  [a-single-div](https://github.com/lynnandtonic/a-single-div), reused in the
+  header, footer, favicon, 404 and the plates
+  ([src/components/ui/Emblem.astro](src/components/ui/Emblem.astro)).
+- **Hairline cells** – header, footer, contact and project spec bands are
+  bordered cells whose ink floods in from the bottom on hover (`.cell-flood`).
+- The bar-built **ULEHLA** wordmark morphs into **ONDREJ** on hover
+  (single-div gradient technique).
 
-## Úprava 3D mapy (playground)
+## Where content lives
 
-Layout ostrova je ručně editovatelný v **[src/playground/world.ts](src/playground/world.ts)** — každé pole má komentář:
+- **CV data (single source of truth)** – [src/data/cv.ts](src/data/cv.ts):
+  profile, experience, education, skills. Feeds both the site and the PDF.
+- **Contact & links** – [src/data/site.ts](src/data/site.ts)
+- **Case studies** – `src/content/projects/en/<slug>.mdx`
+  (frontmatter: title, summary, role, year, tech, problem/solution/outcome, cover, links)
+- **UI strings** – [src/i18n/ui.ts](src/i18n/ui.ts)
+- **Colour tokens** – [src/styles/global.css](src/styles/global.css)
+  (`:root` + `[data-theme='dark']`)
 
-- `mountains` — pole hor (pozice, výška, poloměr); klidně přidejte/uberte
-- `river` — amplitudy a frekvence meandrů + šířka údolí
-- `city` — pozice a poloměr městečka
-- `signSpots` — kde se vznášejí billboardy projektů
-- `forest.densityThreshold` — nižší číslo = více lesů; `maxTrees` strop počtu
-- `islandRadius`, `waterLevel`, `clouds.count`, `rocks.clustersPerMountain`
+After changing CV data run `npm run build && npm run pdf` and commit the
+regenerated PDF.
 
-Barvy terénu a objektů jsou v konstantě `COLORS` a nebe/světla v `SKY` v [src/playground/experience.ts](src/playground/experience.ts). Fyzika letu (rychlost, náklon) je tamtéž ve `startExperience` (`BASE_SPEED`, bank/pitch koeficienty). Po úpravě stačí `npm run dev` a otevřít `/en/playground`.
+## Editing the 3D playground
 
-## Architektura
+The island layout is hand-editable in
+[src/playground/world.ts](src/playground/world.ts) – every field is commented:
 
-- Hlavní web je čistě statický, JS ≈ 49 KB gzip (GSAP animace, deferred).
-- 3D playground (`/en/playground`) načítá Three.js (~134 KB gzip) **až po kliknutí** na enter-gate — hlavní stránky se ho nikdy nedotknou. Svět je plně procedurální, žádné GLB assety.
-- View Transitions přes `<ClientRouter />`, morph karty projektu → detail.
-- Reduced-motion: animace se vypnou, playground nabídne fallback.
+- `mountains`, `river`, `city` – terrain features (position, size, meanders)
+- `roads`, `bridge`, `pier`, `fields`, `windmill` – the hand-placed landmarks
+- `signSpots` – where the project billboards hover
+- `forest.densityThreshold`, `fauna` – trees, birds, sheep
+- `islandRadius`, `waterLevel`, `clouds.count`
+
+Terrain/object colours live in `COLORS` and sky/lighting in `SKY` in
+[src/playground/experience.ts](src/playground/experience.ts); flight physics
+sit in `startExperience` (`BASE_SPEED`, bank/pitch coefficients). Run
+`npm run dev` and open `/playground`.
+
+## Architecture notes
+
+- The main site is fully static; Three.js (~134 KB gzip) loads **only after
+  the playground enter-gate click** – regular pages never touch it. The world
+  is fully procedural, no GLB assets.
+- The neural lab is a plain-TypeScript MLP (no ML library) training live in
+  the browser; the decision surface, SVG schematic and 3D model all render
+  from the same weights.
+- View Transitions via `<ClientRouter />` – the project card cover morphs
+  into the detail page.
+- `prefers-reduced-motion` disables the animations; the playground offers a
+  fallback gate.
+- Anton + Inter woff2 are preloaded from the layout head.
 
 ## Deploy
 
-Vercel (statický output). `vercel.json` nastavuje immutable cache pro `/_astro` a security hlavičky. Před launchem změnit `site` v [astro.config.mjs](astro.config.mjs) na finální doménu a aktualizovat `Sitemap:` v [public/robots.txt](public/robots.txt).
-
-## TODO před spuštěním
-
-- [ ] Nahradit placeholder data v `cv.ts` (vzdělání, praxe — hledej `TODO(Ondřej)`)
-- [ ] Doplnit reálné texty, čísla a screenshoty do case studies (hledej `TODO` v MDX)
-- [ ] Potvrdit GitHub/LinkedIn URL v `site.ts`
-- [ ] Koupit doménu, nastavit ve Vercelu, aktualizovat `astro.config.mjs` + `robots.txt`
-- [ ] Přegenerovat `npm run pdf` po finálních datech
+Static output – any static host works. `site` in
+[astro.config.mjs](astro.config.mjs) and `Sitemap:` in
+[public/robots.txt](public/robots.txt) must point at the final domain.

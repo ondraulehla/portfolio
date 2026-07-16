@@ -51,21 +51,14 @@ const port = server.address().port;
 const browser = await chromium.launch({ channel: 'chrome' });
 const page = await browser.newPage();
 
-for (const lang of ['en']) {
-  await page.goto(`http://localhost:${port}/${lang}/cv/print/`, { waitUntil: 'networkidle' });
-  await page.pdf({
-    path: join(root, `public/cv/ondrej-ulehla-${lang}.pdf`),
-    format: 'A4',
-    printBackground: true,
-  });
-  console.log(`✓ public/cv/ondrej-ulehla-${lang}.pdf`);
-
-  // OG image: screenshot the homepage hero at OG dimensions.
-  await page.setViewportSize({ width: 1200, height: 630 });
-  await page.goto(`http://localhost:${port}/${lang}/`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: join(root, `public/og/default-${lang}.png`) });
-  console.log(`✓ public/og/default-${lang}.png`);
-}
+await page.goto(`http://localhost:${port}/cv/print/`, { waitUntil: 'networkidle' });
+await page.pdf({
+  path: join(root, 'public/cv/ondrej-ulehla-en.pdf'),
+  format: 'A4',
+  printBackground: true,
+});
+console.log('✓ public/cv/ondrej-ulehla-en.pdf');
+// OG images are owned by scripts/gen-og.mjs (plate-style cards).
 
 await browser.close();
 server.close();

@@ -12,7 +12,7 @@ const H = 675;
 const PAPER = '#f7f3ea';
 const INK = '#29221b';
 const LINE = '#e2dac8';
-const ACCENT = '#c2360c';
+const ACCENT = '#cb3a00';
 const MONO = "font-family='ui-monospace, Menlo, Consolas, monospace'";
 
 /* ---------- shared plate furniture ---------- */
