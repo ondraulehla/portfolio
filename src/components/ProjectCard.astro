@@ -16,12 +16,19 @@ const href = localePath(locale, `/projects/${slug}`);
 ---
 
 <article
-  class="group border-line hover:border-ink-faint relative overflow-hidden border transition-all duration-300 hover:shadow-[0_12px_40px_var(--glow)]"
+  class="group border-line hover:border-ink-faint relative border transition-all duration-300 hover:shadow-[0_12px_40px_var(--glow)]"
   data-reveal
+  data-liquid-halo
 >
+  <!-- liquid halo: gooey accent blobs breathe around the border on hover -->
+  <canvas
+    class="pointer-events-none absolute -inset-7 z-0 h-[calc(100%+3.5rem)] w-[calc(100%+3.5rem)] opacity-0 transition-opacity duration-300"
+    data-halo-canvas
+    aria-hidden="true"></canvas>
+
   <a href={href} class="absolute inset-0 z-10" aria-label={project.data.title} data-astro-prefetch="hover"></a>
 
-  <div class="overflow-hidden">
+  <div class="relative overflow-hidden">
     <Image
       src={project.data.cover}
       alt=""
@@ -32,7 +39,7 @@ const href = localePath(locale, `/projects/${slug}`);
     />
   </div>
 
-  <div class="p-6 sm:p-7">
+  <div class="relative p-6 sm:p-7">
     <div class="text-ink-faint flex items-center gap-3 font-mono text-xs tracking-wide">
       <span>{project.data.year}</span>
       <span aria-hidden="true">·</span>
@@ -66,3 +73,169 @@ const href = localePath(locale, `/projects/${slug}`);
     </p>
   </div>
 </article>
+
+<script>
+  /**
+   * The liquid halo: soft accent blobs are emitted along the card's border
+   * while it is hovered, drift outwards with a slight wiggle and dissolve –
+   * the controlled version of the LiquidText "escape" glow. The card's inner
+   * area is punched out each frame so the light only lives around the edge.
+   */
+  const PAD = 28; // canvas inset around the card (matches -inset-7)
+
+  function initHalos() {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || matchMedia('(hover: none)').matches) return;
+
+    document.querySelectorAll<HTMLElement>('[data-liquid-halo]').forEach((card) => {
+      if (card.dataset.bound) return;
+      card.dataset.bound = '1';
+
+      const canvas = card.querySelector<HTMLCanvasElement>('[data-halo-canvas]')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !('filter' in ctx)) return;
+
+      let dpr = 1;
+      let W = 0;
+      let H = 0;
+
+      function resize() {
+        dpr = Math.min(devicePixelRatio || 1, 2);
+        W = canvas.offsetWidth;
+        H = canvas.offsetHeight;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+      }
+
+      // accent, graded like LiquidText
+      let aL = 56;
+      let aC = '0.19';
+      let aH = '38';
+      function readAccent() {
+        const m = getComputedStyle(document.documentElement)
+          .getPropertyValue('--accent')
+          .match(/oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)/);
+        if (m) {
+          aL = parseFloat(m[1]!);
+          aC = m[2]!;
+          aH = m[3]!;
+        }
+      }
+
+      type P = { x: number; y: number; vx: number; vy: number; size: number; seed: number; l: number };
+      const particles: P[] = [];
+      let hovered = false;
+      let running = false;
+      let cnt = 0;
+
+      // a random point on the card's border with its outward normal
+      function emit() {
+        const w = W - PAD * 2;
+        const h = H - PAD * 2;
+        const perimeter = 2 * (w + h);
+        let t = Math.random() * perimeter;
+        let x = PAD;
+        let y = PAD;
+        let nx = 0;
+        let ny = 0;
+        if (t < w) {
+          x = PAD + t;
+          ny = -1; // top edge
+        } else if ((t -= w) < h) {
+          x = PAD + w;
+          y = PAD + t;
+          nx = 1; // right edge
+        } else if ((t -= h) < w) {
+          x = PAD + w - t;
+          y = PAD + h;
+          ny = 1; // bottom edge
+        } else {
+          y = PAD + h - (t - w);
+          nx = -1; // left edge
+        }
+        cnt += 7;
+        const speed = 0.25 + Math.random() * 0.4;
+        particles.push({
+          x,
+          y,
+          vx: nx * speed + (Math.random() - 0.5) * 0.3,
+          vy: ny * speed + (Math.random() - 0.5) * 0.3,
+          size: 7 + Math.random() * 11,
+          seed: Math.random() * 1000,
+          l: Math.min(Math.max(aL - 10 + (cnt % 26), 34), 85),
+        });
+      }
+
+      function frame(time: number) {
+        if (hovered && particles.length < 42) emit();
+
+        ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx!.clearRect(0, 0, W, H);
+
+        // soft gooey pass
+        ctx!.filter = 'blur(9px)';
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i]!;
+          p.x += p.vx + Math.cos((time + p.seed) * 0.006) * 0.35;
+          p.y += p.vy + Math.sin((time + p.seed) * 0.007) * 0.35;
+          p.size *= hovered ? 0.985 : 0.94;
+          if (p.size < 1.2) {
+            particles.splice(i, 1);
+            continue;
+          }
+          // breathe
+          const pulse = 1 + Math.sin((time + p.seed) * 0.004) * 0.18;
+          ctx!.fillStyle = `oklch(${p.l}% ${aC} ${aH} / 0.5)`;
+          ctx!.beginPath();
+          ctx!.arc(p.x, p.y, p.size * pulse, 0, Math.PI * 2);
+          ctx!.fill();
+        }
+        ctx!.filter = 'none';
+
+        // punch the card's interior out so the glow hugs the border only
+        ctx!.globalCompositeOperation = 'destination-out';
+        ctx!.fillRect(PAD + 1, PAD + 1, W - PAD * 2 - 2, H - PAD * 2 - 2);
+        ctx!.globalCompositeOperation = 'source-over';
+
+        if (!particles.length && !hovered) {
+          running = false;
+          canvas.style.opacity = '0';
+          return;
+        }
+        requestAnimationFrame(frame);
+      }
+
+      function kick() {
+        if (!running) {
+          running = true;
+          readAccent();
+          resize();
+          canvas.style.opacity = '1';
+          requestAnimationFrame(frame);
+        }
+      }
+
+      card.addEventListener('mouseenter', () => {
+        hovered = true;
+        kick();
+      });
+      card.addEventListener('mouseleave', () => {
+        hovered = false;
+        canvas.style.opacity = '0';
+      });
+
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          hovered = false;
+          running = false;
+          particles.length = 0;
+        },
+        { once: true },
+      );
+    });
+  }
+
+  initHalos();
+  document.addEventListener('astro:page-load', initHalos);
+</script>
