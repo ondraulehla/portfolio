@@ -18,6 +18,8 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
 ---
 
 <Base {locale} title={`${t('nn.title')} – Ondřej Úlehla`} description={t('nn.intro')}>
+  <!-- breathes around the viewport while the network is training -->
+  <div class="edge-pulse" id="nn-edge" aria-hidden="true"></div>
   <section class="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
     <div class="mb-10">
       <h1 class="font-poster text-[length:clamp(3rem,6vw,4.5rem)]">
