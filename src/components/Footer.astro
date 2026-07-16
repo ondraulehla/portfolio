@@ -32,12 +32,14 @@ const year = new Date().getFullYear();
       {t('footer.built')}
     </p>
 
-    <div class="flex items-stretch font-mono text-xs tracking-[0.15em] uppercase">
+    <!-- three equal cells, together exactly as wide as the header's four
+         w-16 cells (w-64), so both blocks share the same left edge -->
+    <div class="flex items-stretch font-mono text-xs tracking-[0.15em] uppercase sm:grid sm:w-64 sm:grid-cols-3">
       <a
         href={site.github}
         rel="me noopener"
         target="_blank"
-        class="cell-flood border-line hidden items-center border-l px-5 sm:flex"
+        class="cell-flood border-line hidden items-center justify-center border-l sm:flex"
       >
         GitHub
       </a>
@@ -45,11 +47,14 @@ const year = new Date().getFullYear();
         href={site.linkedin}
         rel="me noopener"
         target="_blank"
-        class="cell-flood border-line hidden items-center border-l px-5 sm:flex"
+        class="cell-flood border-line hidden items-center justify-center border-l sm:flex"
       >
         LinkedIn
       </a>
-      <a href={`mailto:${site.email}`} class="cell-flood border-line flex items-center border-l px-5">
+      <a
+        href={`mailto:${site.email}`}
+        class="cell-flood border-line flex items-center justify-center border-l px-5 sm:px-0"
+      >
         E-mail
       </a>
     </div>

@@ -332,9 +332,12 @@ const nav = [
     }
     const stack = target.querySelector<HTMLElement>('.nav-roll__stack') ?? target;
     const tracking = parseFloat(getComputedStyle(stack).letterSpacing) || 0;
+    // sub-pixel rects (offsetLeft/Width round to integers and drift by ±1px)
+    const navRect = bar.parentElement!.getBoundingClientRect();
+    const rect = stack.getBoundingClientRect();
     bar.style.opacity = '1';
-    bar.style.width = `${stack.offsetWidth - tracking}px`;
-    bar.style.transform = `translateX(${stack.offsetLeft}px)`;
+    bar.style.width = `${rect.width - tracking}px`;
+    bar.style.transform = `translateX(${rect.left - navRect.left}px)`;
   }
 
   // the active section: a clicked link wins while its scroll is in flight,
