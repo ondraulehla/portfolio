@@ -241,6 +241,7 @@ export async function startExperience(): Promise<void> {
   scene.add(buildRocks());
   scene.add(buildTown());
   scene.add(buildBridge());
+  scene.add(buildFarm());
   const pier = buildPier();
   scene.add(pier);
   const moored = pier.getObjectByName('moored') as THREE.Group;
@@ -771,6 +772,7 @@ function buildForests(): THREE.Group {
     if (fieldTint(x, z) >= 0) continue;
     if (Math.hypot(x - WORLD.windmill.x, z - WORLD.windmill.z) < 6) continue;
     if (Math.hypot(x - WORLD.pier.x, z - WORLD.pier.z) < 8) continue;
+    if (Math.hypot(x - WORLD.farm.x, z - WORLD.farm.z) < 17) continue;
     // forests grow where the forest-noise says so – organic patches with soft edges
     const density = fbm(x * 0.03 + 700, z * 0.03 + 700);
     if (density < WORLD.forest.densityThreshold) continue;
@@ -916,42 +918,74 @@ function buildBridge(): THREE.Group {
     joints.push({ x: xL + (xR - xL) * t, y: yL + (yR - yL) * t + Math.sin(t * Math.PI) * 1.15 });
   }
 
-  // deck + hand rails as connected segments – no gaps between pieces
+  // deck planks (two alternating wood tones), side stringers and rails –
+  // all segments share their end points, so nothing gaps
+  const woodLight = new THREE.MeshStandardMaterial({ color: 0x9a7750, roughness: 0.9 });
   for (let i = 0; i < SEG; i++) {
     const a = joints[i]!;
     const b = joints[i + 1]!;
     const len = Math.hypot(b.x - a.x, b.y - a.y) + 0.1;
     const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(len, 0.22, 3.2), wood);
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(len, 0.22, 3.2), i % 2 ? wood : woodLight);
     deck.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, z);
     deck.rotation.z = angle;
     deck.castShadow = true;
     group.add(deck);
+    // stringer beams carrying the deck, visible from the water
+    for (const side of [-1.25, 1.25]) {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(len + 0.12, 0.3, 0.34), woodDark);
+      beam.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 - 0.24, z + side);
+      beam.rotation.z = angle;
+      group.add(beam);
+    }
+    // top rail + mid rail on both sides
     for (const side of [-1.45, 1.45]) {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.1, 0.1), wood);
-      rail.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + 1.0, z + side);
-      rail.rotation.z = angle;
-      group.add(rail);
+      for (const [ry, s] of [
+        [1.05, 0.11],
+        [0.58, 0.08],
+      ] as const) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(len, s, s), wood);
+        rail.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + ry, z + side);
+        rail.rotation.z = angle;
+        group.add(rail);
+      }
     }
   }
 
-  // posts carry the rails at every other joint; piles drop to the riverbed
-  for (let i = 0; i <= SEG; i += 2) {
+  // rail posts at every joint; piles drop to the riverbed at every other one
+  for (let i = 0; i <= SEG; i++) {
     const j = joints[i]!;
     for (const side of [-1.45, 1.45]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.05, 0.16), woodDark);
-      post.position.set(j.x, j.y + 0.5, z + side);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.15, 0.15), woodDark);
+      post.position.set(j.x, j.y + 0.52, z + side);
       group.add(post);
     }
-    const ground = Math.max(getHeight(j.x, z), WATER_LEVEL - 2.2);
-    if (j.y - ground > 0.6) {
-      const pile = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.17, 0.21, j.y - ground + 0.4, 6),
-        woodDark,
-      );
-      pile.position.set(j.x, (j.y + ground) / 2 - 0.1, z);
-      group.add(pile);
+    if (i % 2 === 0) {
+      const ground = Math.max(getHeight(j.x, z), WATER_LEVEL - 2.2);
+      if (j.y - ground > 0.6) {
+        for (const side of [-1.05, 1.05]) {
+          const pile = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.15, 0.19, j.y - ground + 0.4, 6),
+            woodDark,
+          );
+          pile.position.set(j.x, (j.y + ground) / 2 - 0.1, z + side);
+          group.add(pile);
+        }
+      }
     }
+  }
+
+  // stone abutments anchoring the ends into the banks
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: COLORS.rock,
+    roughness: 1,
+    flatShading: true,
+  });
+  for (const end of [joints[0]!, joints[SEG]!]) {
+    const abutment = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.4, 4.2), stoneMat);
+    abutment.position.set(end.x, end.y - 0.75, z);
+    abutment.rotation.y = 0.06;
+    group.add(abutment);
   }
   return group;
 }
@@ -1067,6 +1101,119 @@ function buildWindmill(): THREE.Group {
   blades.add(hub);
   blades.position.set(M.x, baseY + 6.6, M.z + 2.1);
   group.add(blades);
+  return group;
+}
+
+/** Farmstead on the west meadow: red barn, silo, fenced paddock and an orchard. */
+function buildFarm(): THREE.Group {
+  const group = new THREE.Group();
+  const F = WORLD.farm;
+  const y = getHeight(F.x, F.z);
+  const rot = 0.35;
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xb0503a, roughness: 0.9 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xe8dfcc, roughness: 0.95 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x5f4a38, roughness: 0.9, flatShading: true });
+  const woodDark = new THREE.MeshStandardMaterial({ color: 0x6d5136, roughness: 0.95 });
+
+  // barn: long red box, ridge along its length, bone trim door
+  const barn = new THREE.Mesh(new THREE.BoxGeometry(4.6, 3.1, 7), wallMat);
+  barn.position.set(F.x, y + 1.55, F.z);
+  barn.rotation.y = rot;
+  barn.castShadow = true;
+  group.add(barn);
+  const roof = new THREE.Mesh(buildGableRoofGeometry(), roofMat);
+  roof.scale.set(5.3, 2.2, 7.9);
+  roof.position.set(F.x, y + 3.1, F.z);
+  roof.rotation.y = rot;
+  roof.castShadow = true;
+  group.add(roof);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.1, 0.18), trimMat);
+  door.position.set(F.x + Math.sin(rot) * 3.55, y + 1.05, F.z + Math.cos(rot) * 3.55);
+  door.rotation.y = rot;
+  group.add(door);
+
+  // silo beside the barn
+  const silo = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.25, 1.35, 5.4, 9),
+    new THREE.MeshStandardMaterial({ color: 0xd8cdb8, roughness: 0.9, flatShading: true }),
+  );
+  silo.position.set(F.x - 4.4, y + 2.7, F.z - 1.5);
+  silo.castShadow = true;
+  group.add(silo);
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1.28, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+    roofMat,
+  );
+  dome.position.set(F.x - 4.4, y + 5.4, F.z - 1.5);
+  group.add(dome);
+
+  // fenced paddock east of the barn with a couple of haystacks
+  const px = F.x + 8.5;
+  const pz = F.z + 3;
+  const pw = 11;
+  const pl = 8;
+  const railMat = woodDark;
+  for (const [x0, z0, x1, z1] of [
+    [px - pw / 2, pz - pl / 2, px + pw / 2, pz - pl / 2],
+    [px + pw / 2, pz - pl / 2, px + pw / 2, pz + pl / 2],
+    [px + pw / 2, pz + pl / 2, px - pw / 2, pz + pl / 2],
+    [px - pw / 2, pz + pl / 2, px - pw / 2, pz - pl / 2],
+  ] as const) {
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const posts = Math.round(len / 2.2);
+    for (let i = 0; i <= posts; i++) {
+      const t = i / posts;
+      const x = x0 + (x1 - x0) * t;
+      const z = z0 + (z1 - z0) * t;
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.1, 0.16), railMat);
+      post.position.set(x, getHeight(x, z) + 0.55, z);
+      group.add(post);
+    }
+    for (const ry of [0.45, 0.85]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.09, 0.09), railMat);
+      const mx = (x0 + x1) / 2;
+      const mz = (z0 + z1) / 2;
+      rail.position.set(mx, getHeight(mx, mz) + ry, mz);
+      rail.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
+      group.add(rail);
+    }
+  }
+  const hayMat = new THREE.MeshStandardMaterial({ color: 0xd9b95c, roughness: 1, flatShading: true });
+  for (const [hx, hz, s] of [
+    [px - 2.5, pz - 1, 1],
+    [px + 1.8, pz + 1.6, 0.8],
+  ] as const) {
+    const hay = new THREE.Mesh(new THREE.ConeGeometry(1.1 * s, 1.6 * s, 8), hayMat);
+    hay.position.set(hx, getHeight(hx, hz) + 0.8 * s, hz);
+    hay.castShadow = true;
+    group.add(hay);
+  }
+
+  // orchard: a small grid of round fruit trees south of the barn
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c452e, roughness: 1 });
+  const canopyMats = [
+    new THREE.MeshStandardMaterial({ color: 0x6d9e4f, roughness: 0.95, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: 0x86b35c, roughness: 0.95, flatShading: true }),
+  ];
+  let t = 0;
+  for (let gx = 0; gx < 4; gx++) {
+    for (let gz = 0; gz < 3; gz++) {
+      t++;
+      const x = F.x - 3 + gx * 3.1 + (hash2(t, 31) - 0.5) * 0.9;
+      const z = F.z + 8.5 + gz * 3.1 + (hash2(t, 67) - 0.5) * 0.9;
+      const gy = getHeight(x, z);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1, 5), trunkMat);
+      trunk.position.set(x, gy + 0.5, z);
+      group.add(trunk);
+      const canopy = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1 + hash2(t, 13) * 0.35, 1),
+        canopyMats[t % 2]!,
+      );
+      canopy.position.set(x, gy + 1.6, z);
+      canopy.castShadow = true;
+      group.add(canopy);
+    }
+  }
   return group;
 }
 

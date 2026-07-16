@@ -76,7 +76,7 @@ const home = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"
   ${emblem(1040, 360, 220)}
 
   <line x1="60" y1="${H - 74}" x2="${W - 60}" y2="${H - 74}" stroke="${INK}" stroke-opacity="0.35" stroke-width="1"/>
-  ${mono(60, H - 44, 'I DESIGN, BUILD AND SHIP COMPLETE PRODUCTS', { size: 14, opacity: 0.6, ls: 2.4 })}
+  ${mono(60, H - 44, 'I BUILD AND SHIP COMPLETE PRODUCTS', { size: 14, opacity: 0.6, ls: 2.4 })}
   ${mono(W - 60, H - 44, '2026', { anchor: 'end', size: 14, opacity: 0.6, ls: 2.4 })}
 </svg>`;
 

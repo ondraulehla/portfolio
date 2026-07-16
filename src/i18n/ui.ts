@@ -1,7 +1,7 @@
 import type { Locale } from './config';
 
 const en = {
-  'site.title': 'Ondřej Úlehla – Fullstack Developer & AI Engineer',
+  'site.title': 'OU – Fullstack Developer & AI Engineer',
   'site.description':
     'Fullstack developer and AI engineer building fast, well-crafted products – from client analysis to production deployment.',
   'nav.about': 'About',
@@ -22,7 +22,7 @@ const en = {
   'hero.title.line1': 'Fullstack developer',
   'hero.title.line2': '& AI engineer',
   'hero.subtitle':
-    'I design, build and ship complete products – from client analysis and architecture to polished frontend, robust backend and AI integrations.',
+    'I build and ship complete products – working directly with clients from analysis and architecture through robust backends and AI integrations to polished frontend design.',
   'hero.cta.projects': 'View projects',
   'hero.cta.cv': 'Download CV',
   'hero.cta.playground': 'Explore in 3D',
@@ -131,7 +131,7 @@ const en = {
 } as const;
 
 const cs = {
-  'site.title': 'Ondřej Úlehla – Fullstack vývojář & AI inženýr',
+  'site.title': 'OU – Fullstack vývojář & AI inženýr',
   'site.description':
     'Fullstack vývojář a AI inženýr. Stavím rychlé a promyšlené produkty – od analýzy s klientem po nasazení do produkce.',
   'nav.about': 'O mně',
@@ -152,7 +152,7 @@ const cs = {
   'hero.title.line1': 'Fullstack vývojář',
   'hero.title.line2': '& AI inženýr',
   'hero.subtitle':
-    'Navrhuji, stavím a dodávám kompletní produkty – od analýzy s klientem přes architekturu po vyladěný frontend, robustní backend a AI integrace.',
+    'Stavím a dodávám kompletní produkty – s klienty od analýzy a architektury přes robustní backend a AI integrace až po vyladěný design frontendu.',
   'hero.cta.projects': 'Prohlédnout projekty',
   'hero.cta.cv': 'Stáhnout CV',
   'hero.cta.playground': 'Prozkoumat ve 3D',

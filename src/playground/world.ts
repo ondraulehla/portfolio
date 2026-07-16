@@ -75,6 +75,13 @@ export const WORLD = {
         { x: -20, z: 4 },
         { x: -36, z: -8 },
       ],
+      // bridge road fork → south to the farmstead
+      [
+        { x: -20, z: 4 },
+        { x: -24, z: 18 },
+        { x: -27, z: 32 },
+        { x: -29, z: 42 },
+      ],
       [
         { x: 46, z: 46 },
         { x: 52, z: 64 },
@@ -98,6 +105,9 @@ export const WORLD = {
     { x: 41, z: 47, w: 8, l: 6, rot: 0.35, tint: 0xb5d068 },
   ],
   windmill: { x: 46, z: 68 },
+
+  /** Farmstead on the west meadow across the river from the town. */
+  farm: { x: -32, z: 48 },
 
   fauna: { birds: 7, sheep: 14 },
 } as const;
