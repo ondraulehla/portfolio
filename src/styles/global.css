@@ -103,9 +103,15 @@ html {
   @media (prefers-reduced-motion: reduce) {
     scroll-behavior: auto;
   }
-  /* slim squared scrollbar in the site's ink (Firefox) */
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--ink-faint) 70%, transparent) transparent;
+}
+
+/* Slim ink scrollbar, Firefox only – setting scrollbar-width in Chromium
+   would disable the ::-webkit-scrollbar styling below. */
+@supports (-moz-appearance: none) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--ink-faint) 70%, transparent) transparent;
+  }
 }
 
 /* Theme-toggle crossfade – scoped so page navigations keep their own timing. */

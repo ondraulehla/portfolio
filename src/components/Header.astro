@@ -298,12 +298,16 @@ const nav = [
       .filter((s): s is HTMLElement => !!s);
     if (!sections.length) return;
 
+    const inBand = new Set<string>();
     spyObserver = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          links.forEach((l) => l.toggleAttribute('data-active', l.dataset.spy === entry.target.id));
+          if (entry.isIntersecting) inBand.add(entry.target.id);
+          else inBand.delete(entry.target.id);
         }
+        // first intersecting section in document order; none → nothing lit
+        const current = sections.find((s) => inBand.has(s.id))?.id;
+        links.forEach((l) => l.toggleAttribute('data-active', l.dataset.spy === current));
       },
       { rootMargin: '-30% 0px -60% 0px' },
     );
