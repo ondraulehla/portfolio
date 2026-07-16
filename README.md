@@ -1,8 +1,8 @@
-# ondrejulehla.dev
+# ulehla.dev
 
 Personal portfolio of **Ondřej Úlehla** – fullstack developer & AI engineer.
-Profile, CV and project case studies, plus an interactive [neural-network lab](https://ondrejulehla.dev/neural-network)
-built from my master's thesis and a procedural [3D island playground](https://ondrejulehla.dev/playground).
+Profile, CV and project case studies, plus an interactive [neural-network lab](https://ulehla.dev/neural-network)
+built from my master's thesis and a procedural [3D island playground](https://ulehla.dev/playground).
 
 ![Site card](public/og/default-en.png)
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ondrejulehla.dev/sitemap-index.xml
+Sitemap: https://ulehla.dev/sitemap-index.xml

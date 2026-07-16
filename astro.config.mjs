@@ -12,7 +12,7 @@ export default defineConfig({
     '/en/projects/[slug]': '/projects/[slug]',
   },
   // TODO: replace with the final custom domain before launch
-  site: 'https://ondrejulehla.dev',
+  site: 'https://ulehla.dev',
   output: 'static',
   trailingSlash: 'ignore',
   prefetch: {
