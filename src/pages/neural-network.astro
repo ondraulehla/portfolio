@@ -75,9 +75,12 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
 
       <div class="ml-auto flex items-end gap-4">
         <div class="text-ink-faint font-mono text-xs">
-          <div>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></div>
-          <div>{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
-          <div>{t('nn.acc')} <span id="nn-acc" class="text-ink">–</span></div>
+          <div class="flex items-center gap-2">
+            <span id="nn-live" class="nn-live" title="Training" aria-hidden="true"></span>
+            <span>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></span>
+          </div>
+          <div class="pl-4">{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
+          <div class="pl-4">{t('nn.acc')} <span id="nn-acc" class="text-ink">–</span></div>
         </div>
         <button type="button" id="nn-toggle" data-pause={t('nn.pause')} data-resume={t('nn.resume')} class="nn-chip nn-chip-solid"
           >{t('nn.pause')}</button
@@ -101,7 +104,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
 
     <!-- panels: identical technical cells – header strip, plot, caption footer -->
     <div class="grid gap-6 lg:grid-cols-2">
-      <figure class="border-line nn-glow flex flex-col border">
+      <figure class="border-line flex flex-col border">
         <div class="border-line flex min-h-11 items-center justify-between gap-3 border-b px-3 py-1.5">
           <span class="text-ink font-mono text-xs font-semibold tracking-[0.15em] uppercase">{t('nn.panel.surface')}</span>
           <div id="nn-legend" class="flex gap-4" data-l-class={t('nn.class')}></div>
@@ -113,7 +116,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
           {t('nn.surface')}
         </figcaption>
       </figure>
-      <figure id="nn-schem-wrap" class="border-line nn-glow relative flex flex-col border">
+      <figure id="nn-schem-wrap" class="border-line relative flex flex-col border">
         <div class="border-line flex min-h-11 items-center justify-between gap-3 border-b px-3 py-1.5">
           <span class="text-ink font-mono text-xs font-semibold tracking-[0.15em] uppercase">{t('nn.panel.network')}</span>
           <div class="flex items-center gap-1.5">
@@ -145,7 +148,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
           {t('nn.schematic')}
         </figcaption>
       </figure>
-      <figure class="border-line nn-glow flex flex-col border lg:col-span-2">
+      <figure class="border-line flex flex-col border lg:col-span-2">
         <div class="border-line flex min-h-11 items-center border-b px-3 py-1.5">
           <span class="text-ink font-mono text-xs font-semibold tracking-[0.15em] uppercase">{t('nn.panel.model')}</span>
         </div>

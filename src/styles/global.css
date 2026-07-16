@@ -89,46 +89,38 @@
   background-size: 100% 100%;
 }
 
-/* Panel pulse – a soft accent glow breathing behind the neural-lab panels
-   while the network is training. Plain (non-inset) shadows only radiate
-   outwards, so the panel interiors stay clean; staggered delays keep the
-   three panels from pulsing in lockstep. */
-.nn-glow {
-  position: relative;
+/* Training status light – the site's diamond marker as a tiny "REC" LED
+   next to the epoch counter: breathing accent while the network trains,
+   a faint hollow outline while paused. */
+.nn-live {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  rotate: 45deg;
+  border: 1.5px solid var(--ink-faint);
+  transition:
+    border-color 0.4s ease,
+    background 0.4s ease;
 }
-.nn-glow::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  box-shadow:
-    0 0 2.25rem 0.1rem color-mix(in oklab, var(--accent) 55%, transparent),
-    0 0 4.5rem 0.9rem color-mix(in oklab, var(--accent) 30%, transparent);
-  opacity: 0;
-  transition: opacity 0.8s ease;
+.nn-live.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  animation: live-breathe 2.6s ease-in-out infinite;
 }
-.nn-glow.is-on::before {
-  animation: edge-breathe 3.4s ease-in-out infinite;
-}
-.nn-glow.is-on:nth-of-type(2)::before {
-  animation-delay: -1.1s;
-}
-.nn-glow.is-on:nth-of-type(3)::before {
-  animation-delay: -2.3s;
-}
-@keyframes edge-breathe {
+@keyframes live-breathe {
   0%,
   100% {
-    opacity: 0.18;
+    opacity: 0.45;
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 0%, transparent);
   }
   50% {
-    opacity: 0.65;
+    opacity: 1;
+    box-shadow: 0 0 0.6rem 0.1rem color-mix(in oklab, var(--accent) 55%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nn-glow.is-on::before {
+  .nn-live.is-on {
     animation: none;
-    opacity: 0.3;
   }
 }
 
