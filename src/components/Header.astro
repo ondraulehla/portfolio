@@ -305,8 +305,12 @@ const nav = [
   };
   let spyObserver: IntersectionObserver | undefined;
   let activeLink: HTMLElement | null = null;
+  let spyLinks: HTMLElement[] = [];
+  let spySections: HTMLElement[] = [];
+  let bandCurrent: string | undefined;
 
-  // the accent underline slides between nav items
+  // the accent underline slides between nav items, sized to the label text
+  // (not the whole link, which carries tracking space and the ◇ marker)
   function positionIndicator(target: HTMLElement | null) {
     const bar = document.querySelector<HTMLElement>('[data-nav-indicator]');
     if (!bar) return;
@@ -315,24 +319,45 @@ const nav = [
       bar.style.opacity = '0';
       return;
     }
+    const stack = target.querySelector<HTMLElement>('.nav-roll__stack') ?? target;
+    const tracking = parseFloat(getComputedStyle(stack).letterSpacing) || 0;
     bar.style.opacity = '1';
-    bar.style.width = `${target.offsetWidth}px`;
-    bar.style.transform = `translateX(${target.offsetLeft}px)`;
+    bar.style.width = `${stack.offsetWidth - tracking}px`;
+    bar.style.transform = `translateX(${stack.offsetLeft}px)`;
+  }
+
+  // the active section: whatever crosses the band, except at the very bottom
+  // of the page where the last (short) section could never reach it
+  function applyActive() {
+    const atBottom =
+      innerHeight + scrollY >= document.documentElement.scrollHeight - 8;
+    const current =
+      atBottom && spySections.length
+        ? SPY_MAP[spySections[spySections.length - 1]!.id]
+        : bandCurrent;
+    let target: HTMLElement | null = null;
+    spyLinks.forEach((l) => {
+      const active = l.dataset.spy === current;
+      l.toggleAttribute('data-active', active);
+      if (active) target = l;
+    });
+    positionIndicator(target);
   }
 
   function initSpy() {
-    const links = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
+    spyLinks = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
     const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
     const path = location.pathname.replace(/\/$/, '') || '/';
     routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
-    links.forEach((l) => l.removeAttribute('data-active'));
+    spyLinks.forEach((l) => l.removeAttribute('data-active'));
     positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
 
     spyObserver?.disconnect();
-    const sections = [...document.querySelectorAll<HTMLElement>('section[id]')].filter(
+    bandCurrent = undefined;
+    spySections = [...document.querySelectorAll<HTMLElement>('section[id]')].filter(
       (s) => SPY_MAP[s.id],
     );
-    if (!sections.length) return;
+    if (!spySections.length) return;
 
     const inBand = new Set<string>();
     spyObserver = new IntersectionObserver(
@@ -342,21 +367,16 @@ const nav = [
           else inBand.delete(entry.target.id);
         }
         // first intersecting section in document order; none → nothing lit
-        const section = sections.find((s) => inBand.has(s.id));
-        const current = section ? SPY_MAP[section.id] : undefined;
-        let target: HTMLElement | null = null;
-        links.forEach((l) => {
-          const active = l.dataset.spy === current;
-          l.toggleAttribute('data-active', active);
-          if (active) target = l;
-        });
-        positionIndicator(target);
+        const section = spySections.find((s) => inBand.has(s.id));
+        bandCurrent = section ? SPY_MAP[section.id] : undefined;
+        applyActive();
       },
       { rootMargin: '-30% 0px -60% 0px' },
     );
-    sections.forEach((s) => spyObserver!.observe(s));
+    spySections.forEach((s) => spyObserver!.observe(s));
   }
   initSpy();
   document.addEventListener('astro:page-load', initSpy);
+  addEventListener('scroll', () => spySections.length && applyActive(), { passive: true });
   addEventListener('resize', () => positionIndicator(activeLink));
 </script>
