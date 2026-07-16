@@ -11,8 +11,11 @@ interface Props {
 }
 const { text } = Astro.props;
 const display = text.toUpperCase();
-// unique ids for this instance's SVG mask/filter defs
-const uid = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+// unique ids for this instance's SVG mask/filter defs – the random suffix
+// keeps ids collision-proof while old and new pages briefly coexist during
+// view transitions (a broken mask ref would spill the blobs page-wide)
+const uid =
+  text.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).slice(2, 7);
 ---
 
 <span class="liquid-text" data-liquid-text>
@@ -42,7 +45,9 @@ const uid = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   .liquid-text svg {
     display: block;
     max-width: 100%;
-    overflow: visible;
+    /* hard fence: even if the text mask ever failed, the liquid could not
+       escape the heading's box */
+    overflow: hidden;
   }
   .fx-text {
     font-family: inherit;
@@ -149,6 +154,7 @@ const uid = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       }
 
       function frame(time: number) {
+        if (killed) return;
         mouse.sx += (mouse.x - mouse.sx) * 0.1;
         mouse.sy += (mouse.y - mouse.sy) * 0.1;
         mouse.svx += (mouse.vx - mouse.svx) * 0.1;
@@ -197,12 +203,26 @@ const uid = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       }
 
       function kick() {
-        if (!running) {
+        if (!running && !killed) {
           running = true;
           readAccent();
           requestAnimationFrame(frame);
         }
       }
+
+      // stop the loop and drop every blob the moment a page swap starts, so
+      // no liquid is mid-flight while old and new DOM briefly coexist
+      let killed = false;
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          killed = true;
+          running = false;
+          particles.forEach((p) => p.el.remove());
+          particles.length = 0;
+        },
+        { once: true },
+      );
 
       // run only while the text is on screen
       new IntersectionObserver((entries) => {
