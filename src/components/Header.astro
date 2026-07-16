@@ -358,13 +358,30 @@ const nav = [
   }
 
   function initSpy() {
-    clickLock = undefined;
     spyLinks = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
     const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
     const path = location.pathname.replace(/\/$/, '') || '/';
     routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
-    spyLinks.forEach((l) => l.removeAttribute('data-active'));
-    positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
+
+    spyObserver?.disconnect();
+    bandCurrent = undefined;
+    spySections = [...document.querySelectorAll<HTMLElement>('section[id]')].filter(
+      (s) => SPY_MAP[s.id],
+    );
+
+    // hash navigation (nav clicks included) re-runs initSpy mid-scroll – the
+    // pin must survive it, or the underline parks on whatever passes the band
+    clickLock =
+      spySections.length && SPY_MAP[location.hash.slice(1)]
+        ? SPY_MAP[location.hash.slice(1)]
+        : undefined;
+
+    if (clickLock) {
+      applyActive();
+    } else {
+      spyLinks.forEach((l) => l.removeAttribute('data-active'));
+      positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
+    }
 
     spyLinks.forEach((l) => {
       if (l.dataset.lockBound) return;
@@ -376,11 +393,6 @@ const nav = [
       });
     });
 
-    spyObserver?.disconnect();
-    bandCurrent = undefined;
-    spySections = [...document.querySelectorAll<HTMLElement>('section[id]')].filter(
-      (s) => SPY_MAP[s.id],
-    );
     if (!spySections.length) return;
 
     const inBand = new Set<string>();
