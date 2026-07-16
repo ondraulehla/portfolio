@@ -43,9 +43,18 @@ export function initGate(): void {
   enter.addEventListener('click', async () => {
     enter.disabled = true;
     loading.hidden = false;
-    const { startExperience } = await import('./experience');
-    await startExperience();
-    gate.remove();
+    try {
+      const { startExperience } = await import('./experience');
+      await startExperience();
+      gate.remove();
+    } catch {
+      // stale chunk from a previous deploy – one hard reload recovers
+      try {
+        if (sessionStorage.getItem('chunk-reload')) return;
+        sessionStorage.setItem('chunk-reload', '1');
+      } catch {}
+      location.reload();
+    }
   });
 }
 

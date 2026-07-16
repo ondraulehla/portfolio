@@ -52,6 +52,24 @@ const { locale, title, description, ogImage, noindex, chrome = true } = Astro.pr
         document.addEventListener('astro:after-swap', apply);
       })();
     </script>
+    <script is:inline>
+      // Stale-deploy recovery: a tab left open across a deploy references
+      // hashed chunks that no longer exist – any failed chunk load triggers
+      // one full reload to pick up the fresh HTML (guarded against loops).
+      addEventListener('vite:preloadError', function (e) {
+        e.preventDefault();
+        try {
+          if (sessionStorage.getItem('chunk-reload')) return;
+          sessionStorage.setItem('chunk-reload', '1');
+        } catch {}
+        location.reload();
+      });
+      addEventListener('load', function () {
+        try {
+          sessionStorage.removeItem('chunk-reload');
+        } catch {}
+      });
+    </script>
     <Seo {title} {description} {locale} {ogImage} {noindex} />
     <JsonLd {locale} />
     <ClientRouter />

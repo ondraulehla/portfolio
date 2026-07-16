@@ -359,7 +359,16 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
   function initLab() {
     if (!document.getElementById('nn-surface')) return;
     if (webglOk()) {
-      import('@/neural/experience').then((m) => m.initNeural());
+      import('@/neural/experience')
+        .then((m) => m.initNeural())
+        .catch(() => {
+          // stale chunk from a previous deploy – one hard reload recovers
+          try {
+            if (sessionStorage.getItem('chunk-reload')) return;
+            sessionStorage.setItem('chunk-reload', '1');
+          } catch {}
+          location.reload();
+        });
     } else {
       const note = document.getElementById('nn-webgl');
       if (note) note.hidden = false;
