@@ -1,6 +1,10 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import '@/styles/global.css';
+// hashed URLs of the two above-the-fold faces – preloaded so the poster
+// headline and body text don't flash in a fallback font
+import antonWoff2 from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import interWoff2 from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import Seo from '@/components/seo/Seo.astro';
 import JsonLd from '@/components/seo/JsonLd.astro';
 import Header from '@/components/Header.astro';
@@ -27,6 +31,8 @@ const { locale, title, description, ogImage, noindex, chrome = true } = Astro.pr
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href={antonWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={interWoff2} as="font" type="font/woff2" crossorigin />
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
       // Pre-paint theme resolution – must stay inline and tiny to avoid FOUC.

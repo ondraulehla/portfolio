@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
 import Base from '@/layouts/Base.astro';
 import Badge from '@/components/ui/Badge.astro';
+import LiquidText from '@/components/ui/LiquidText.astro';
 import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
 
@@ -26,76 +27,68 @@ const siblings = (await getCollection('projects', (e) => e.id.startsWith(`${loca
 const index = siblings.findIndex((e) => e.id === entry.id);
 const next = siblings[(index + 1) % siblings.length];
 const nextSlug = next && next.id !== entry.id ? next.id.split('/').slice(1).join('/') : null;
-
-const meta = [
-  { label: t('project.role'), value: entry.data.role },
-  { label: t('project.year'), value: String(entry.data.year) },
-];
 ---
 
-<Base {locale} title={`${entry.data.title} – Ondřej Úlehla`} description={entry.data.summary}>
+<Base {locale} title={`${entry.data.title} – Ondřej Úlehla`} description={entry.data.summary} ogImage={`/og/${slug}.png`}>
   <article class="mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
     <a
       href={`${localePath(locale, '/')}#projects`}
-      class="text-ink-muted hover:text-ink inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+      class="text-ink-muted hover:text-accent inline-flex items-center gap-2 font-mono text-xs tracking-[0.15em] uppercase transition-colors"
     >
-      <svg
-        class="size-4"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"></path></svg
-      >
-      {t('project.back')}
+      ← {t('project.back')}
     </a>
 
     <header class="mt-8">
-      <h1
-        class="font-display text-ink text-[length:var(--text-fluid-lg)] leading-tight font-bold tracking-tight"
-        transition:name={`title-${slug}`}
-      >
-        {entry.data.title}
+      <h1 class="font-poster text-[length:clamp(2.6rem,5.5vw,4rem)]" transition:name={`title-${slug}`}>
+        <LiquidText text={entry.data.title} />
       </h1>
-      <p class="text-ink-muted mt-4 max-w-2xl text-lg leading-relaxed">{entry.data.summary}</p>
-
-      <dl class="text-ink-muted mt-6 flex flex-wrap gap-x-10 gap-y-3 text-sm">
-        {
-          meta.map((item) => (
-            <div>
-              <dt class="text-ink-faint font-mono text-xs tracking-wide uppercase">{item.label}</dt>
-              <dd class="text-ink mt-1 font-medium">{item.value}</dd>
-            </div>
-          ))
-        }
-        <div>
-          <dt class="text-ink-faint font-mono text-xs tracking-wide uppercase">{t('project.stack')}</dt>
-          <dd class="mt-1.5 flex max-w-md flex-wrap gap-1.5">
-            {entry.data.tech.map((item) => <Badge>{item}</Badge>)}
-          </dd>
-        </div>
-      </dl>
-
-      {
-        (entry.data.links.repo || entry.data.links.live) && (
-          <div class="mt-6 flex gap-4 text-sm font-semibold">
-            {entry.data.links.repo && (
-              <a href={entry.data.links.repo} target="_blank" rel="noopener" class="text-accent hover:text-accent-strong underline underline-offset-4">
-                {t('project.repo')} ↗
-              </a>
-            )}
-            {entry.data.links.live && (
-              <a href={entry.data.links.live} target="_blank" rel="noopener" class="text-accent hover:text-accent-strong underline underline-offset-4">
-                {t('project.live')} ↗
-              </a>
-            )}
-          </div>
-        )
-      }
+      <p class="text-ink-muted mt-5 max-w-2xl text-lg leading-relaxed">{entry.data.summary}</p>
     </header>
+
+    <!-- spec band: hairline cells like the header, links flood with ink -->
+    <div class="border-line mt-8 border" data-reveal>
+      <dl class="flex flex-wrap items-stretch font-mono text-xs">
+        <div class="border-line border-r px-5 py-3">
+          <dt class="text-ink-faint tracking-[0.15em] uppercase">{t('project.role')}</dt>
+          <dd class="text-ink mt-1 font-semibold">{entry.data.role}</dd>
+        </div>
+        <div class="border-line border-r px-5 py-3">
+          <dt class="text-ink-faint tracking-[0.15em] uppercase">{t('project.year')}</dt>
+          <dd class="text-accent mt-1 font-semibold">{entry.data.year}</dd>
+        </div>
+        <div class="min-w-4 flex-1"></div>
+        {
+          entry.data.links.repo && (
+            <a
+              href={entry.data.links.repo}
+              target="_blank"
+              rel="noopener"
+              class="cell-flood border-line flex items-center border-l px-5 font-semibold tracking-[0.15em] uppercase"
+            >
+              {t('project.repo')} ↗
+            </a>
+          )
+        }
+        {
+          entry.data.links.live && (
+            <a
+              href={entry.data.links.live}
+              target="_blank"
+              rel="noopener"
+              class="cell-flood border-line flex items-center border-l px-5 font-semibold tracking-[0.15em] uppercase"
+            >
+              {t('project.live')} ↗
+            </a>
+          )
+        }
+      </dl>
+      <div class="border-line flex flex-wrap items-baseline gap-x-3 gap-y-1.5 border-t px-5 py-3">
+        <span class="text-ink-faint font-mono text-xs tracking-[0.15em] uppercase">{t('project.stack')}</span>
+        <span class="flex flex-wrap gap-1.5">
+          {entry.data.tech.map((item) => <Badge>{item}</Badge>)}
+        </span>
+      </div>
+    </div>
 
     <Image
       src={entry.data.cover}
@@ -108,7 +101,11 @@ const meta = [
       fetchpriority="high"
     />
 
-    <div class="border-line mt-10 grid gap-4 sm:grid-cols-3" data-reveal>
+    <!-- problem / solution / outcome as one panel of technical cells -->
+    <div
+      class="border-line mt-10 grid divide-y divide-[var(--line)] border sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+      data-reveal
+    >
       {
         (
           [
@@ -117,9 +114,11 @@ const meta = [
             [t('project.outcome'), entry.data.outcome],
           ] as const
         ).map(([label, text]) => (
-          <div class="border-line bg-panel/50 border p-5">
-            <h2 class="text-accent font-mono text-xs font-semibold tracking-[0.15em] uppercase">{label}</h2>
-            <p class="text-ink-muted mt-2 text-sm leading-relaxed">{text}</p>
+          <div class="flex flex-col">
+            <h2 class="border-line text-accent border-b px-5 py-2.5 font-mono text-xs font-semibold tracking-[0.15em] uppercase">
+              {label}
+            </h2>
+            <p class="text-ink-muted p-5 text-sm leading-relaxed">{text}</p>
           </div>
         ))
       }
@@ -131,31 +130,19 @@ const meta = [
 
     {
       nextSlug && (
-        <footer class="border-line mt-16 border-t pt-8">
+        <footer class="mt-16">
           <a
             href={localePath(locale, `/projects/${nextSlug}`)}
             data-astro-prefetch="hover"
-            class="group flex items-center justify-between"
+            class="cell-flood border-line group flex items-center justify-between border px-5 py-4"
           >
             <div>
-              <p class="text-ink-faint font-mono text-xs tracking-wide uppercase">{t('project.next')}</p>
-              <p class="font-display text-ink group-hover:text-accent mt-1 text-xl font-semibold transition-colors">
-                {next!.data.title}
-              </p>
+              <p class="font-mono text-xs tracking-[0.15em] uppercase opacity-60">{t('project.next')}</p>
+              <p class="font-poster mt-1 text-2xl">{next!.data.title}</p>
             </div>
-            <svg
-              class="text-ink-muted group-hover:text-accent size-6 transition-all group-hover:translate-x-1"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14m-7-7 7 7-7 7" />
-            </svg>
+            <span class="font-mono text-xl" aria-hidden="true">
+              →
+            </span>
           </a>
         </footer>
       )
