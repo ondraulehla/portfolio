@@ -316,6 +316,10 @@ const nav = [
   let spyLinks: HTMLElement[] = [];
   let spySections: HTMLElement[] = [];
   let bandCurrent: string | undefined;
+  // on a subpage the current route's link owns the underline outright – scroll
+  // and spy state are irrelevant there. Keeping this explicit is what stops the
+  // indicator from vanishing when a stale timer or scroll fires post-navigation.
+  let routeTarget: HTMLElement | null = null;
   // clicking a nav link highlights it immediately and pins it while the
   // smooth scroll is in flight – otherwise the underline would crawl
   // through every section on the way down
@@ -324,7 +328,7 @@ const nav = [
 
   // the accent underline slides between nav items, sized to the label text
   // (not the whole link, which carries tracking space and the ◇ marker)
-  function positionIndicator(target: HTMLElement | null) {
+  function positionIndicator(target: HTMLElement | null, retry = true) {
     const bar = document.querySelector<HTMLElement>('[data-nav-indicator]');
     if (!bar) return;
     activeLink = target;
@@ -333,21 +337,32 @@ const nav = [
       return;
     }
     const stack = target.querySelector<HTMLElement>('.nav-roll__stack') ?? target;
-    const tracking = parseFloat(getComputedStyle(stack).letterSpacing) || 0;
-    // sub-pixel rects (offsetLeft/Width round to integers and drift by ±1px)
     const navRect = bar.parentElement!.getBoundingClientRect();
     const rect = stack.getBoundingClientRect();
+    // right after a view-transition swap the header can measure zero-width for
+    // a frame – re-measure next frame instead of hiding the bar
+    if (rect.width === 0 && retry) {
+      requestAnimationFrame(() => positionIndicator(target, false));
+      return;
+    }
+    const tracking = parseFloat(getComputedStyle(stack).letterSpacing) || 0;
     bar.style.opacity = '1';
     bar.style.width = `${rect.width - tracking}px`;
     bar.style.transform = `translateX(${rect.left - navRect.left}px)`;
   }
 
-  // the active section: a clicked link wins while its scroll is in flight,
-  // then whatever crosses the band – except at the very bottom of the page,
-  // where the last (short) section could never reach it
+  // resolve which nav item the underline should sit under, then move it there
   function applyActive() {
-    const atBottom =
-      innerHeight + scrollY >= document.documentElement.scrollHeight - 8;
+    // subpage: the route link wins, full stop
+    if (routeTarget) {
+      spyLinks.forEach((l) => l.removeAttribute('data-active'));
+      positionIndicator(routeTarget);
+      return;
+    }
+    // homepage: a clicked link wins while its scroll is in flight, then whatever
+    // crosses the band – except at the very bottom, which the last (short)
+    // section can never reach
+    const atBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 8;
     const current =
       clickLock ??
       (atBottom && spySections.length
@@ -363,10 +378,18 @@ const nav = [
   }
 
   function initSpy() {
+    // kill any pin timer left pending by the page we just left
+    clearTimeout(clickLockTimer);
+
     spyLinks = [...document.querySelectorAll<HTMLElement>('[data-spy]')];
     const routeLinks = [...document.querySelectorAll<HTMLElement>('[data-route]')];
     const path = location.pathname.replace(/\/$/, '') || '/';
-    routeLinks.forEach((l) => l.toggleAttribute('data-active', l.dataset.route === path));
+    routeTarget = null;
+    routeLinks.forEach((l) => {
+      const on = l.dataset.route === path;
+      l.toggleAttribute('data-active', on);
+      if (on) routeTarget = l;
+    });
 
     spyObserver?.disconnect();
     bandCurrent = undefined;
@@ -381,12 +404,9 @@ const nav = [
         ? SPY_MAP[location.hash.slice(1)]
         : undefined;
 
-    if (clickLock) {
-      applyActive();
-    } else {
-      spyLinks.forEach((l) => l.removeAttribute('data-active'));
-      positionIndicator(routeLinks.find((l) => l.hasAttribute('data-active')) ?? null);
-    }
+    // position immediately; positionIndicator re-measures next frame if the
+    // just-swapped header still reports a zero-width label
+    applyActive();
 
     spyLinks.forEach((l) => {
       if (l.dataset.lockBound) return;
@@ -421,7 +441,7 @@ const nav = [
   addEventListener(
     'scroll',
     () => {
-      if (!spySections.length) return;
+      if (routeTarget || !spySections.length) return;
       // release the click pin once the smooth scroll has settled
       if (clickLock) {
         clearTimeout(clickLockTimer);

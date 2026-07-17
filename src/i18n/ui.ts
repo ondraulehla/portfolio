@@ -78,6 +78,7 @@ const en = {
   'nn.title': 'Neural Network Lab',
   'nn.intro':
     'The interactive neural network from my master’s thesis “Modeling Neural Networks in Virtual Reality”. Build your own network: pick the input features, add layers and neurons, click an edge to change a single weight – and watch the decision surface learn your dataset by backpropagation, live in the browser, while the 3D model lights up below.',
+  'nn.panel.config': 'Configuration',
   'nn.panel.surface': 'Decision surface',
   'nn.panel.network': 'Network',
   'nn.panel.model': '3D model',
@@ -208,6 +209,7 @@ const cs = {
   'nn.title': 'Laboratoř neuronových sítí',
   'nn.intro':
     'Interaktivní neuronová síť z mé diplomové práce „Modelování neuronových sítí ve virtuální realitě". Postavte si vlastní síť: zvolte vstupní příznaky, přidejte vrstvy a neurony, kliknutím na hranu změňte jednotlivou váhu – a sledujte, jak se rozhodovací plocha učí váš dataset backpropagací, naživo v prohlížeči. 3D model dole se u toho rozsvěcuje.',
+  'nn.panel.config': 'Konfigurace',
   'nn.panel.surface': 'Rozhodovací plocha',
   'nn.panel.network': 'Síť',
   'nn.panel.model': '3D model',

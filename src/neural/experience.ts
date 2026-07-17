@@ -604,14 +604,15 @@ export function initNeural(): void {
 
     const add = document.createElement('button');
     add.type = 'button';
-    add.className = 'nn-chip';
+    add.className = 'nn-add';
     add.textContent = d.lAdd!;
     add.disabled = state.hidden.length >= MAX_HIDDEN_LAYERS;
     add.addEventListener('click', () => {
       state.hidden.push(4);
       rebuild(false);
     });
-    named(' ', add);
+    // appended bare (no label column) so it bottom-aligns with the steppers
+    layersEl.appendChild(add);
     arrow();
 
     // output units: 1 = binary, 2–3 = softmax classes → new dataset labels
