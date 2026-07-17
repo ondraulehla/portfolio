@@ -47,7 +47,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         </div>
       </div>
 
-      <div>
+      <div class="border-line sm:border-l sm:pl-8">
         <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.activation')}</p>
         <div class="flex gap-1.5" role="group">
           {
@@ -60,7 +60,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         </div>
       </div>
 
-      <div>
+      <div class="border-line sm:border-l sm:pl-8">
         <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.lr')}</p>
         <div class="flex gap-1.5" role="group">
           {
@@ -73,22 +73,27 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         </div>
       </div>
 
-      <div class="ml-auto flex items-end gap-4">
-        <div class="text-ink-faint font-mono text-xs">
-          <div class="flex items-center gap-2">
-            <span id="nn-live" class="nn-live" title="Training" aria-hidden="true"></span>
-            <span>{t('nn.epoch')} <span id="nn-epoch" class="text-ink">0</span></span>
-          </div>
-          <div class="pl-4">{t('nn.loss')} <span id="nn-loss" class="text-ink">–</span></div>
-          <div class="pl-4">{t('nn.acc')} <span id="nn-acc" class="text-ink">–</span></div>
-        </div>
-        <button type="button" id="nn-toggle" data-pause={t('nn.pause')} data-resume={t('nn.resume')} class="nn-chip nn-chip-solid"
-          >{t('nn.pause')}</button
+      <div class="ml-auto flex items-end gap-5">
+        <!-- fixed-width readout + button so Pause ⇄ Resume never shifts layout -->
+        <dl class="grid min-w-40 grid-cols-[auto_1fr] gap-x-3 font-mono text-xs tabular-nums">
+          <dt class="text-ink-faint tracking-[0.1em] uppercase">{t('nn.epoch')}</dt>
+          <dd id="nn-epoch" class="text-ink text-right">0</dd>
+          <dt class="text-ink-faint tracking-[0.1em] uppercase">{t('nn.loss')}</dt>
+          <dd id="nn-loss" class="text-ink text-right">–</dd>
+          <dt class="text-ink-faint tracking-[0.1em] uppercase">{t('nn.acc')}</dt>
+          <dd id="nn-acc" class="text-ink text-right">–</dd>
+        </dl>
+        <button
+          type="button"
+          id="nn-toggle"
+          data-pause={t('nn.pause')}
+          data-resume={t('nn.resume')}
+          class="nn-chip nn-chip-solid w-28">{t('nn.pause')}</button
         >
         <button type="button" id="nn-reset" class="nn-chip">{t('nn.reset')}</button>
       </div>
 
-      <div class="basis-full">
+      <div class="border-line basis-full border-t pt-4">
         <p class="text-ink-faint mb-1.5 font-mono text-xs tracking-wide uppercase">{t('nn.layers')}</p>
         <div
           id="nn-layers"

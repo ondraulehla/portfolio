@@ -875,10 +875,7 @@ export function initNeural(): void {
   function setRunning(run: boolean) {
     state.running = run;
     if (elToggle) elToggle.textContent = run ? elToggle.dataset.pause! : elToggle.dataset.resume!;
-    // the status diamond breathes only while the network is training
-    document.getElementById('nn-live')?.classList.toggle('is-on', run);
   }
-  setRunning(state.running);
 
   function bindGroup(selector: string, onPick: (value: string, btn: HTMLElement) => void) {
     document.querySelectorAll<HTMLElement>(selector).forEach((btn) => {

@@ -89,41 +89,6 @@
   background-size: 100% 100%;
 }
 
-/* Training status light – the site's diamond marker as a tiny "REC" LED
-   next to the epoch counter: breathing accent while the network trains,
-   a faint hollow outline while paused. */
-.nn-live {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  rotate: 45deg;
-  border: 1.5px solid var(--ink-faint);
-  transition:
-    border-color 0.4s ease,
-    background 0.4s ease;
-}
-.nn-live.is-on {
-  border-color: var(--accent);
-  background: var(--accent);
-  animation: live-breathe 2.6s ease-in-out infinite;
-}
-@keyframes live-breathe {
-  0%,
-  100% {
-    opacity: 0.45;
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 0%, transparent);
-  }
-  50% {
-    opacity: 1;
-    box-shadow: 0 0 0.6rem 0.1rem color-mix(in oklab, var(--accent) 55%, transparent);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .nn-live.is-on {
-    animation: none;
-  }
-}
-
 /* Technical hatching – the site's tape/filler texture (see header + dividers). */
 .hatch {
   background-image: repeating-linear-gradient(

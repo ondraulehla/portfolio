@@ -2,7 +2,7 @@
 import type { Locale } from '@/i18n/config';
 import { useTranslations } from '@/i18n/utils';
 import { site } from '@/data/site';
-import SectionHeading from '@/components/ui/SectionHeading.astro';
+import LiquidText from '@/components/ui/LiquidText.astro';
 
 interface Props {
   locale: Locale;
@@ -11,13 +11,17 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 ---
 
-<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-28" id="contact">
-  <SectionHeading id="contact-heading" heading={t('contact.heading')} />
-
-  <p class="text-ink-muted -mt-4 max-w-xl text-lg" data-reveal>{t('contact.text')}</p>
+<!-- the closing section sits centred, unlike the left-anchored ones above -->
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 text-center sm:px-8 sm:py-28" id="contact">
+  <div data-reveal>
+    <h2 id="contact-heading" class="font-poster text-[length:clamp(3rem,6vw,4.5rem)]">
+      <span class="inline-block"><LiquidText text={t('contact.heading')} /></span>
+    </h2>
+    <p class="text-ink-muted mx-auto mt-6 max-w-xl text-lg">{t('contact.text')}</p>
+  </div>
 
   <!-- technical band: hairline cells with the header's ink-flood hover -->
-  <div class="border-line mt-10 max-w-2xl border" data-reveal>
+  <div class="border-line mx-auto mt-10 max-w-2xl border text-left" data-reveal>
     <div class="border-line flex items-stretch border-b">
       <a
         href={`mailto:${site.email}`}
