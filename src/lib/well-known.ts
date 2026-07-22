@@ -1,12 +1,12 @@
 /**
  * Bodies for the /.well-known/ discovery documents.
  *
- * Cloudflare Pages has historically dropped directories whose names begin with
- * a dot from a deployment, which would silently 404 everything under
- * /.well-known/. So each document is also emitted under /well-known/ (no dot)
- * and public/_redirects proxies the canonical path onto the mirror. Both route
- * files render from the functions here, so the two copies are byte-identical
- * and the advertised skill digests stay correct whichever one is served.
+ * Cloudflare Pages drops directories whose names begin with a dot, so these are
+ * emitted at /well-known/ (no dot) and public/_redirects 200-proxies the
+ * canonical /.well-known/ paths onto them. Verified on the 2026-07-22 deploy:
+ * the dotted copies were never served even when built, and once a Functions
+ * directory was added they broke asset publishing outright, so they are no
+ * longer emitted at all. The canonical URLs still resolve – via the proxy.
  */
 import { createHash } from 'node:crypto';
 import {
