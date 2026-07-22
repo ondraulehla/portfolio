@@ -430,6 +430,78 @@ covers['tradeup-calculator'] = plate(
   })(),
 );
 
+/* 09 agent-flight-recorder: one task fanned into three recorded sandbox
+   flights – two land, the third diverges mid-path */
+covers['agent-flight-recorder'] = plate(
+  9,
+  'agent-flight-recorder',
+  'Run tasks n times in e2b sandboxes · record every trace · pass rate, flakiness, cost',
+  (() => {
+    let d = '';
+    // the task card
+    d += box(100, 264, 220, 150);
+    d += mono(210, 310, 'TASK.YAML', { size: 16, anchor: 'middle', weight: 600 });
+    d += mono(210, 336, 'PROMPT', { size: 12, anchor: 'middle', opacity: 0.5, ls: 2 });
+    d += mono(210, 356, 'ASSERTIONS ×3', { size: 12, anchor: 'middle', opacity: 0.5, ls: 2 });
+    d += mono(210, 376, 'FIXTURES', { size: 12, anchor: 'middle', opacity: 0.5, ls: 2 });
+    // fan out to three parallel flights
+    d += arrow(320, 339, 398, 215);
+    d += arrow(320, 339, 398, 339);
+    d += arrow(320, 339, 398, 463);
+
+    // flight path vertices shared by all runs (a tool call each)
+    const path = [
+      [415, 70],
+      [475, 40],
+      [540, 55],
+      [605, 30],
+      [680, 45],
+      [805, 35],
+    ];
+    const lanes = [165, 291, 417];
+    lanes.forEach((yt, i) => {
+      const diverged = i === 2;
+      // the sandbox: a dashed room the flight cannot leave
+      d += box(400, yt, 410, 96, { dash: '7 6', sw: 1.8 });
+      d += mono(414, yt + 22, `E2B SANDBOX 0${i + 1}`, { size: 11, opacity: 0.45, ls: 2 });
+      const upto = diverged ? 4 : path.length;
+      const pts = path.slice(0, upto).map(([x, dy]) => `${x},${yt + dy}`);
+      d += `<polyline points="${pts.join(' ')}" ${mid}/>`;
+      if (diverged) {
+        // ghost of the expected route, then the accent fork
+        const ghost = path.slice(3).map(([x, dy]) => `${x},${yt + dy}`);
+        d += `<polyline points="${ghost.join(' ')}" ${thin} stroke-opacity="0.3" stroke-dasharray="3 7"/>`;
+        d += `<polyline points="605,${yt + 30} 660,${yt + 78} 730,${yt + 88}" ${acc}/>`;
+        d += diamond(605, yt + 30, 13);
+      }
+      // tool-call fixes along the recorded route
+      const dots = diverged ? [...path.slice(0, 4), null] : path;
+      dots.forEach((p) => {
+        if (!p) return;
+        d += `<circle cx="${p[0]}" cy="${yt + p[1]}" r="4.5" fill="${PAPER}" stroke="${INK}" stroke-width="2"/>`;
+      });
+      // assertion verdict
+      const my = yt + 48;
+      d += `<line x1="810" y1="${my}" x2="848" y2="${my}" ${thin} stroke-dasharray="2 6"/>`;
+      d += box(848, my - 26, 52, 52, { sw: 2.2, stroke: diverged ? ACCENT : INK });
+      d += diverged
+        ? `<path d="M864 ${my - 10} l20 20 M884 ${my - 10} l-20 20" ${acc}/>`
+        : `<path d="M862 ${my} l9 10 l17 -20" ${mid}/>`;
+      d += diverged
+        ? mono(920, my + 5, 'DIVERGED · STEP 4', { size: 15, fill: ACCENT, weight: 600 })
+        : mono(920, my + 5, 'PASS', { size: 15, opacity: 0.6 });
+    });
+
+    // the ledger line
+    d += mono(400, 560, '3 FLIGHTS · PASS RATE 2/3 · COST / SUCCESS $0.0942', {
+      size: 15,
+      opacity: 0.6,
+      ls: 2,
+    });
+    return d;
+  })(),
+);
+
 /* ---------- write files ---------- */
 for (const [slug, svg] of Object.entries(covers)) {
   const path = `src/assets/projects/${slug}/cover.svg`;

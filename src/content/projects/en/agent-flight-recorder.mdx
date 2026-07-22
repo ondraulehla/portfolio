@@ -1,0 +1,83 @@
+---
+title: 'agent-flight-recorder'
+summary: 'A flight recorder for AI agents – run a task N times in isolated E2B sandboxes, record every trace, measure pass rate, flakiness and cost per success, and diff the trajectories of two runs.'
+role: 'Author & Maintainer'
+year: 2026
+order: 1
+featured: true
+tech: ['Python', 'E2B', 'Claude Code', 'CLI', 'pytest']
+problem: 'Agents are non-deterministic – the same prompt can take a different execution path every run, so a demo that works once tells you nothing about reliability or cost in production.'
+solution: 'A recorder that executes each run in a fresh E2B micro-VM, captures the full trace to JSONL, evaluates assertions, and reports pass rate, flakiness and cost per success – plus an aligned diff showing the exact step where two runs diverged.'
+outcome: 'One command turns "it worked on my machine, once" into measured reliability: N recorded flights, a statistics table, and the first divergent tool call between any two of them.'
+cover: '@/assets/projects/agent-flight-recorder/cover.svg'
+links:
+  repo: 'https://github.com/ondraulehla/agent-flight-recorder'
+---
+
+## Context
+
+Every aviation incident investigation starts with the flight recorder: a full,
+timestamped record of what actually happened. AI agents crash too – they just
+do it quietly, on the third retry, in someone's CI. And because agents are
+non-deterministic, the run you watched succeed says very little about the runs
+you didn't watch.
+
+I built this after [readme-ci](https://github.com/ondraulehla/readme-ci) and
+[mcp-sandbox](https://github.com/ondraulehla/mcp-sandbox), which both treat
+E2B sandboxes as disposable clean rooms. The next question was obvious: if a
+run is fully isolated, why not record all of it – and run it many times?
+
+## Problem
+
+Three things are nearly impossible to answer about an agent from ad-hoc runs:
+
+- **Reliability** – does the task pass 10/10 times, or 6/10? A single success
+  can't tell you.
+- **Cost of success** – average cost per *run* is misleading when some runs
+  fail; what you pay for is a passing one.
+- **Where runs diverge** – two runs of the same prompt take different paths.
+  Which tool call was the fork in the road?
+
+## Solution
+
+A task is a YAML file: a prompt, assertions that define success, and optional
+fixtures (files and setup commands planted in the workspace first). The runner
+then:
+
+1. boots a fresh [E2B](https://e2b.dev) sandbox per run – no state leaks
+   between flights
+2. executes the task with Claude Code in headless mode
+   (`claude -p --output-format stream-json`)
+3. parses every streamed message – assistant turns, tool calls, tool results,
+   rate-limit events – into trace events appended to `trace.jsonl`
+4. evaluates assertions inside the sandbox (file checks, arbitrary commands)
+   and against the final answer
+5. aggregates N parallel runs into a table: pass rate, duration ±σ, tool
+   calls, and **cost per success**
+
+The part I care most about is `flightrec diff`: it aligns two traces and marks
+each step `=` (matched), `≈` (same action, cosmetic differences), or `-`/`+`
+(only in one run) – so when a batch has both passing and failing runs, the
+report shows the exact tool call where the failing one left the happy path.
+`flightrec compare -m sonnet -m haiku` runs the same task under two models and
+answers the reliability-vs-cost question with numbers instead of vibes.
+
+## Outcome
+
+- A working demo task plants two bugs in a small Python module and asks the
+  agent to make the tests pass – with a checksum assertion so it can't "fix"
+  the tests instead; three parallel runs pass with cost per success measured
+  to the cent
+- Rate-limit events are recorded per run, so a slow batch is distinguishable
+  from a throttled one
+- The trace-parsing core is pure and fully unit-tested; sandbox I/O is
+  isolated in one module, so the suite runs offline
+
+## What I learned
+
+Trajectory alignment is the interesting algorithmic bit: raw traces differ in
+harmless ways (timestamps, generated file content), so the diff has to score
+*semantic* similarity of tool calls rather than string equality – close enough
+to pair `≈` steps, strict enough that a genuinely different edit shows up as a
+fork. Getting that threshold right is what turns a wall of JSONL into the one
+line you actually need: "here is where the two flights parted."
