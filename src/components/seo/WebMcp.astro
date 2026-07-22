@@ -1,0 +1,128 @@
+---
+/**
+ * WebMCP – exposes this site's content as tools to an agent driving the
+ * browser (navigator.modelContext). The tools fetch the same markdown
+ * renderings published at /index.md and /projects/*.md rather than inlining
+ * anything, so the payload stays a few hundred bytes and can never go stale.
+ * No-ops in browsers without the API.
+ */
+import { loadProjects, projectSlug } from '@/lib/agent-content';
+import { site } from '@/data/site';
+
+const projects = (await loadProjects()).map((entry) => ({
+  slug: projectSlug(entry),
+  title: entry.data.title,
+  year: entry.data.year,
+  summary: entry.data.summary,
+  tech: entry.data.tech,
+}));
+
+const context = {
+  projects,
+  contact: { email: site.email, github: site.github, linkedin: site.linkedin, name: site.name },
+};
+---
+
+<script type="application/json" id="webmcp-data" set:html={JSON.stringify(context)} is:inline />
+
+<script>
+  interface McpContent {
+    content: { type: 'text'; text: string }[];
+  }
+  interface ProjectRef {
+    slug: string;
+    title: string;
+    year: number;
+    summary: string;
+    tech: string[];
+  }
+
+  function text(value: string): McpContent {
+    return { content: [{ type: 'text', text: value }] };
+  }
+
+  async function fetchText(path: string): Promise<string> {
+    const res = await fetch(path, { headers: { Accept: 'text/markdown, text/plain' } });
+    if (!res.ok) throw new Error(`${path} returned ${res.status}`);
+    return res.text();
+  }
+
+  function registerWebMcp() {
+    const modelContext = (navigator as any).modelContext;
+    if (!modelContext?.provideContext) return;
+
+    const raw = document.getElementById('webmcp-data')?.textContent;
+    if (!raw) return;
+    const data = JSON.parse(raw) as {
+      projects: ProjectRef[];
+      contact: { email: string; github: string; linkedin: string; name: string };
+    };
+
+    modelContext.provideContext({
+      tools: [
+        {
+          name: 'get_profile',
+          description:
+            "Get Ondřej Úlehla's full profile as markdown: bio, work experience, education, skills, languages and contact details. Use this to answer any question about their background or fit for a role.",
+          inputSchema: { type: 'object', properties: {} },
+          execute: async () => text(await fetchText('/index.md')),
+        },
+        {
+          name: 'list_projects',
+          description:
+            'List the case studies published on this site, with year, one-line summary and tech stack. Use get_project for the full write-up of any of them.',
+          inputSchema: { type: 'object', properties: {} },
+          execute: async () =>
+            text(
+              data.projects
+                .map(
+                  (p) =>
+                    `- ${p.title} (${p.year}) [slug: ${p.slug}]\n  ${p.summary}\n  Tech: ${p.tech.join(', ')}`,
+                )
+                .join('\n'),
+            ),
+        },
+        {
+          name: 'get_project',
+          description:
+            'Get the full case study for one project as markdown – problem, solution, outcome and the detailed write-up. Pass a slug from list_projects.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              slug: { type: 'string', description: 'Project slug, e.g. "agent-audit"' },
+            },
+            required: ['slug'],
+          },
+          execute: async ({ slug }: { slug: string }) => {
+            const match = data.projects.find((p) => p.slug === slug);
+            if (!match) {
+              return text(
+                `No project with slug "${slug}". Available: ${data.projects.map((p) => p.slug).join(', ')}.`,
+              );
+            }
+            return text(await fetchText(`/projects/${match.slug}.md`));
+          },
+        },
+        {
+          name: 'get_contact',
+          description: 'Get the ways to reach Ondřej Úlehla: email, GitHub and LinkedIn.',
+          inputSchema: { type: 'object', properties: {} },
+          execute: async () =>
+            text(
+              [
+                `Name: ${data.contact.name}`,
+                `Email: ${data.contact.email}`,
+                `GitHub: ${data.contact.github}`,
+                `LinkedIn: ${data.contact.linkedin}`,
+              ].join('\n'),
+            ),
+        },
+      ],
+    });
+  }
+
+  // provideContext replaces the whole tool set, so re-running it after a
+  // client-side navigation refreshes rather than duplicates the tools.
+  registerWebMcp();
+  document.addEventListener('astro:page-load', registerWebMcp);
+</script>

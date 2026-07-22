@@ -1,4 +1,5 @@
 {
+  "$comment": "Kept in sync with public/_headers. The live site is served from Cloudflare, so _headers is what applies today; this file only matters if the deploy ever moves to Vercel.",
   "headers": [
     {
       "source": "/_astro/(.*)",
@@ -7,6 +8,23 @@
     {
       "source": "/models/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </llms.txt>; rel=\"service-doc\"; type=\"text/plain\", </index.md>; rel=\"alternate\"; type=\"text/markdown\", </.well-known/agent-skills/index.json>; rel=\"related\"; type=\"application/json\""
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [{ "key": "Content-Type", "value": "application/linkset+json; charset=utf-8" }]
+    },
+    {
+      "source": "/(.*).md",
+      "headers": [{ "key": "Content-Type", "value": "text/markdown; charset=utf-8" }]
     },
     {
       "source": "/(.*)",

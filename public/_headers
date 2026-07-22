@@ -1,0 +1,32 @@
+# Cloudflare response headers. The site is served from Cloudflare, so this
+# file – not vercel.json – is what actually applies.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Hashed filenames, so these can never go stale.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# RFC 8288 discovery links: point agents at the machine-readable renderings
+# of this page without them having to guess the paths.
+/
+  Link: </.well-known/api-catalog>; rel="api-catalog", </llms.txt>; rel="service-doc"; type="text/plain", </index.md>; rel="alternate"; type="text/markdown", </.well-known/agent-skills/index.json>; rel="related"; type="application/json"
+
+/projects/*
+  Link: </.well-known/api-catalog>; rel="api-catalog", </llms.txt>; rel="service-doc"; type="text/plain"
+
+# RFC 9264 media type – the catalog is a linkset, not plain JSON. Both the
+# canonical path and the dotless mirror it may be proxied from (see _redirects).
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; charset=utf-8
+
+/well-known/api-catalog
+  Content-Type: application/linkset+json; charset=utf-8
+
+/*.md
+  Content-Type: text/markdown; charset=utf-8

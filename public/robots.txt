@@ -1,4 +1,67 @@
+# ulehla.dev – personal portfolio of Ondřej Úlehla.
+# Crawling is welcome. A machine-readable index of this site lives at
+# https://ulehla.dev/llms.txt, and every page is also served as markdown
+# by appending .md to its path.
+
 User-agent: *
+# Content Signals (https://contentsignals.org): search indexing and answer
+# grounding are welcome; using this site as model training data is not.
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+# AI assistants and answer engines – explicitly allowed. Being read by an
+# agent on a recruiter's behalf is the point of this site.
+User-agent: GPTBot
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: YouBot
 Allow: /
 
 Sitemap: https://ulehla.dev/sitemap-index.xml

@@ -1,0 +1,7 @@
+# Cloudflare Pages has historically excluded directories beginning with a dot
+# from a deployment, which would 404 everything under /.well-known/. These
+# 200-proxy rules serve the dotless mirrors at the canonical paths, and are a
+# harmless no-op if the dot directory does upload.
+/.well-known/api-catalog  /well-known/api-catalog  200
+/.well-known/agent-skills/index.json  /well-known/agent-skills/index.json  200
+/.well-known/agent-skills/:skill/SKILL.md  /well-known/agent-skills/:skill/SKILL.md  200
