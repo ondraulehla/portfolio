@@ -64,7 +64,10 @@ const en = {
     'A small interactive 3D world. Take off, fly over the island and discover my projects – built with Three.js.',
   'playground.enter': 'Take off',
   'playground.loading': 'Loading world…',
-  'playground.controls': '←→ turn · ↑↓ climb & dive (WASD works too)',
+  'playground.controls': 'Controls',
+  'playground.controls.turn': 'turn',
+  'playground.controls.pitch': 'climb & dive',
+  'playground.controls.alt': 'WASD works too',
   'playground.enterProject': 'to open project',
   'playground.pressEnter': 'Press Enter',
   'playground.fallback.motion':
@@ -195,7 +198,10 @@ const cs = {
     'Malý interaktivní 3D svět. Vzlétněte, prolétněte se nad ostrovem a objevte mé projekty – postaveno na Three.js.',
   'playground.enter': 'Vzlétnout',
   'playground.loading': 'Načítám svět…',
-  'playground.controls': '←→ zatáčení · ↑↓ stoupání a klesání (funguje i WASD)',
+  'playground.controls': 'Ovládání',
+  'playground.controls.turn': 'zatáčení',
+  'playground.controls.pitch': 'stoupání a klesání',
+  'playground.controls.alt': 'funguje i WASD',
   'playground.enterProject': 'pro otevření projektu',
   'playground.pressEnter': 'Stiskněte Enter',
   'playground.fallback.motion':

@@ -1,0 +1,36 @@
+---
+/**
+ * Flight control legend – hairline key caps with mono labels, rule-separated.
+ * Shared by the playground's pre-flight briefing and the in-flight HUD so the
+ * strip you learn on the gate is the same one that stays in the corner.
+ * The "WASD too" note is left to the caller: the HUD keeps it inline, the gate
+ * drops it to its own line so a wrapped row never dangles a separator.
+ */
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const groups = [
+  { keys: ['←', '→'], label: t('playground.controls.turn') },
+  { keys: ['↑', '↓'], label: t('playground.controls.pitch') },
+];
+---
+
+{
+  groups.map((group, i) => (
+    <>
+      {i > 0 && <span class="pg-rule" aria-hidden="true" />}
+      <span class="pg-keygroup">
+        {group.keys.map((key) => (
+          <kbd class="pg-key">{key}</kbd>
+        ))}
+        <span class="pg-hint">{group.label}</span>
+      </span>
+    </>
+  ))
+}

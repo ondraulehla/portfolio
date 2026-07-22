@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '@/layouts/Base.astro';
+import KeyLegend from '@/components/ui/KeyLegend.astro';
 import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
 
@@ -33,14 +34,13 @@ const worldData = {
   <div class="fixed inset-0" id="playground-root">
     <canvas id="playground-canvas" class="block h-full w-full"></canvas>
 
-    <!-- top bar -->
-    <div class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4 sm:p-6">
-      <a
-        href={localePath(locale, '/')}
-        class="bg-surface/80 border-line text-ink pointer-events-auto inline-flex items-center gap-2 border px-4 py-2 text-sm font-semibold backdrop-blur-md"
-      >
+    <!-- top bar: instrument cells floated over the world -->
+    <div
+      class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 sm:p-6"
+    >
+      <a href={localePath(locale, '/')} class="pg-panel cell-flood pg-back pointer-events-auto">
         <svg
-          class="size-4"
+          class="size-3.5"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="none"
@@ -52,73 +52,114 @@ const worldData = {
         >
         {t('playground.back')}
       </a>
-      <p
-        class="bg-surface/80 border-line text-ink-muted hidden border px-4 py-2 font-mono text-xs backdrop-blur-md sm:block"
-        id="hud-controls"
-        hidden
-      >
-        {t('playground.controls')}
-      </p>
+
+      <!-- control legend, same strip as the gate briefing -->
+      <div class="pg-panel pg-hud" id="hud-controls" hidden>
+        <KeyLegend {locale} />
+        <span class="pg-rule" aria-hidden="true"></span>
+        <span class="pg-hint">{t('playground.controls.alt')}</span>
+      </div>
     </div>
 
-    <!-- proximity prompt -->
+    <!-- proximity prompt – clears the touch pad on phones, sits low on desktop -->
     <div
-      class="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center sm:bottom-16"
+      class="pointer-events-none absolute inset-x-0 bottom-36 z-20 flex justify-center px-4 sm:bottom-16"
       id="hud-prompt"
       hidden
     >
-      <p class="bg-surface/90 border-accent text-ink border px-5 py-2.5 text-sm font-semibold shadow-lg backdrop-blur-md">
-        <kbd class="bg-accent text-surface mr-2 px-2 py-0.5 font-mono text-xs">Enter</kbd>
-        <span id="hud-prompt-text"></span>
+      <p class="pg-panel pg-prompt">
+        <kbd class="pg-key pg-key-accent">Enter</kbd>
+        <span class="pg-hint pg-hint-strong" id="hud-prompt-text"></span>
       </p>
     </div>
 
     <!-- touch controls -->
-    <div class="absolute right-4 bottom-4 z-20 grid select-none grid-cols-3 gap-1.5 sm:hidden" id="touch-pad" hidden>
+    <div
+      class="absolute right-4 bottom-4 z-20 grid grid-cols-3 gap-1.5 select-none sm:hidden"
+      id="touch-pad"
+      hidden
+    >
       {
         (
           [
-            ['', '', ''],
-            ['up', '▲', 'col-start-2'],
-            ['left', '◀', 'col-start-1'],
-            ['down', '▼', 'col-start-2'],
-            ['right', '▶', 'col-start-3'],
+            ['up', '▲', 'col-start-2 row-start-1'],
+            ['left', '◀', 'col-start-1 row-start-2'],
+            ['down', '▼', 'col-start-2 row-start-2'],
+            ['right', '▶', 'col-start-3 row-start-2'],
           ] as const
-        )
-          .slice(1)
-          .map(([key, glyph, pos]) => (
-            <button
-              type="button"
-              data-touch-key={key}
-              class={`bg-surface/80 border-line text-ink size-12 border text-lg backdrop-blur-md active:scale-95 ${pos} ${key === 'up' ? 'row-start-1' : 'row-start-2'}`}
-              aria-label={key}
-            >
-              {glyph}
-            </button>
-          ))
+        ).map(([key, glyph, pos]) => (
+          <button
+            type="button"
+            data-touch-key={key}
+            class={`pg-panel pg-pad ${pos}`}
+            aria-label={key}
+          >
+            {glyph}
+          </button>
+        ))
       }
     </div>
 
-    <!-- enter gate -->
-    <div class="bg-surface/95 absolute inset-0 z-30 flex items-center justify-center p-6 backdrop-blur-sm" id="gate">
-      <div class="max-w-md text-center">
-        <p class="text-accent mb-3 font-mono text-xs font-semibold tracking-[0.2em] uppercase">Three.js</p>
-        <h1 class="font-display text-ink text-4xl font-bold tracking-tight">{t('playground.title')}</h1>
-        <p class="text-ink-muted mt-4 text-lg">{t('playground.description')}</p>
-        <p class="text-ink-faint mt-2 font-mono text-sm" id="gate-note" hidden></p>
-        <button
-          type="button"
-          id="gate-enter"
-          class="bg-accent text-surface hover:bg-accent-strong mt-8 inline-flex items-center gap-2 px-7 py-3 text-base font-semibold shadow-[0_4px_24px_var(--glow)] transition-all active:scale-[0.97]"
+    <!-- enter gate: a pre-flight briefing card in the site's console language -->
+    <div
+      class="bg-surface/95 absolute inset-0 z-30 flex items-center justify-center p-4 backdrop-blur-sm"
+      id="gate"
+    >
+      <div class="border-line bg-surface w-full max-w-lg border">
+        <!-- header strip -->
+        <div
+          class="border-line flex min-h-11 items-center justify-between gap-3 border-b px-3 py-1.5"
         >
+          <span
+            class="text-ink inline-flex items-center gap-2.5 font-mono text-xs font-semibold tracking-[0.15em] uppercase"
+          >
+            <span class="border-accent inline-block size-2 rotate-45 border" aria-hidden="true"
+            ></span>
+            {t('nav.playground')}
+          </span>
+          <span class="text-ink-faint font-mono text-xs tracking-[0.12em] uppercase">Three.js</span>
+        </div>
+
+        <!-- title + brief -->
+        <div class="px-4 py-7 sm:px-6">
+          <h1 class="font-poster text-ink text-[length:clamp(2.5rem,9vw,3.5rem)] leading-[0.95]">
+            {t('playground.title')}
+          </h1>
+          <p class="text-ink-muted mt-4 leading-relaxed">{t('playground.description')}</p>
+          <p class="text-ink-faint mt-3 font-mono text-sm leading-relaxed" id="gate-note" hidden>
+          </p>
+        </div>
+
+        <!-- control legend -->
+        <div class="border-line border-t px-4 py-3.5 sm:px-6">
+          <p class="pg-label">{t('playground.controls')}</p>
+          <div class="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
+            <KeyLegend {locale} />
+          </div>
+          <p class="pg-hint pg-hint-faint mt-2.5">{t('playground.controls.alt')}</p>
+        </div>
+
+        <!-- transport -->
+        <button type="button" id="gate-enter" class="border-line pg-transport w-full border-t">
           {t('playground.enter')}
         </button>
-        <p class="text-ink-faint mt-4 text-sm" id="gate-loading" hidden>{t('playground.loading')}</p>
+        <p
+          class="border-line text-ink-faint border-t px-4 py-2 font-mono text-xs tracking-[0.12em] uppercase sm:px-6"
+          id="gate-loading"
+          hidden
+        >
+          {t('playground.loading')}
+        </p>
       </div>
     </div>
   </div>
 
-  <script type="application/json" id="playground-data" set:html={JSON.stringify(worldData)} is:inline />
+  <script
+    type="application/json"
+    id="playground-data"
+    set:html={JSON.stringify(worldData)}
+    is:inline
+  />
 
   <script>
     import { initGate } from '@/playground/gate';
@@ -133,9 +174,143 @@ const worldData = {
   </script>
 </Base>
 
-<style>
+<style is:global>
   /* Playground never scrolls. */
-  :global(body) {
+  body {
     overflow: hidden;
+  }
+
+  /* ---- instrument chrome ---------------------------------------------------
+     The HUD borrows the lab console's language: hairline cells, mono uppercase
+     labels, accent reserved for the one actionable thing on screen. Panels sit
+     over a moving 3D world, so they are frosted rather than opaque. */
+  .pg-panel {
+    border: 1px solid var(--line);
+    /* background-color, not the shorthand – .cell-flood paints its ink flood
+       as a background-image on the same element and must survive */
+    background-color: color-mix(in oklab, var(--surface) 82%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  .pg-label {
+    color: var(--ink-faint);
+    font: 600 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* key cap – the same hairline cell as the lab's steppers */
+  .pg-key {
+    display: inline-flex;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.35rem;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font: 600 0.72rem/1 var(--font-mono);
+  }
+  .pg-key-accent {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--surface);
+  }
+
+  .pg-keygroup {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .pg-hint {
+    color: var(--ink-muted);
+    font: 600 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pg-keygroup .pg-hint {
+    margin-left: 0.25rem;
+  }
+  .pg-hint-strong {
+    color: var(--ink);
+  }
+  .pg-hint-faint {
+    color: var(--ink-faint);
+  }
+  .pg-rule {
+    width: 1px;
+    height: 1rem;
+    background: var(--line);
+  }
+
+  /* back cell: hairline cell that floods with ink like the header's nav cells */
+  .pg-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    font: 600 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* control legend – no display utilities here, so the `hidden` attribute the
+     experience toggles stays the single source of truth */
+  .pg-hud {
+    display: none;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 0.85rem;
+  }
+  @media (min-width: 40rem) {
+    .pg-hud:not([hidden]) {
+      display: flex;
+    }
+  }
+
+  .pg-prompt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.85rem;
+    border-left: 2px solid var(--accent);
+  }
+
+  .pg-pad {
+    display: flex;
+    width: 3rem;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-muted);
+    font-size: 1rem;
+    transition:
+      background 0.12s,
+      color 0.12s,
+      border-color 0.12s;
+  }
+  .pg-pad:active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--surface);
+  }
+
+  /* gate transport – the lab's primary transport button, full width */
+  .pg-transport {
+    padding: 0.95rem 1rem;
+    background: var(--accent);
+    color: var(--surface);
+    font: 600 0.75rem/1 var(--font-mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .pg-transport:hover:not(:disabled) {
+    background: var(--accent-strong);
+  }
+  .pg-transport:disabled {
+    background: color-mix(in oklab, var(--accent) 45%, transparent);
+    cursor: default;
   }
 </style>
