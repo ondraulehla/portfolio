@@ -1,7 +1,10 @@
-# Cloudflare Pages has historically excluded directories beginning with a dot
-# from a deployment, which would 404 everything under /.well-known/. These
-# 200-proxy rules serve the dotless mirrors at the canonical paths, and are a
-# harmless no-op if the dot directory does upload.
+# Cloudflare Pages excludes directories beginning with a dot from a deployment,
+# so nothing under /.well-known/ is uploaded (verified on the 2026-07-22 deploy:
+# the dotless mirrors served fine while the dotted paths 404'd). These rules
+# 200-proxy the canonical paths onto the mirrors emitted by src/lib/well-known.ts.
+#
+# Use splats, not :placeholders – a `:skill` placeholder rule silently failed to
+# match on Pages while the static rules beside it worked. `/blog/* /news/:splat 200`
+# is the form Cloudflare documents for proxying.
 /.well-known/api-catalog  /well-known/api-catalog  200
-/.well-known/agent-skills/index.json  /well-known/agent-skills/index.json  200
-/.well-known/agent-skills/:skill/SKILL.md  /well-known/agent-skills/:skill/SKILL.md  200
+/.well-known/agent-skills/*  /well-known/agent-skills/:splat  200
