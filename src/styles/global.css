@@ -12,18 +12,20 @@
    Warm hues (60–75 for neutrals, 32 for accent) deliberately avoid the cold
    indigo/violet default that reads as "generated". */
 :root {
-  --surface: oklch(98.2% 0.008 83);
-  --panel: oklch(95.8% 0.011 83);
+  /* sand paper rather than near-white: same warm hue family, more chroma
+     and a touch less light, so the page reads as material, not screen */
+  --surface: oklch(95.9% 0.023 84);
+  --panel: oklch(93.2% 0.027 83);
   --ink: oklch(21% 0.012 55);
-  --ink-muted: oklch(44% 0.014 55);
-  --ink-faint: oklch(58% 0.012 60);
-  --line: oklch(88.5% 0.012 80);
-  /* hue 38 matches the dark-mode accent family (warmer, more orange)
-     while 56% lightness keeps AA contrast (4.8:1) on the paper */
-  --accent: oklch(56% 0.19 38);
-  --accent-strong: oklch(48% 0.19 38);
-  --accent-soft: oklch(93% 0.045 50);
-  --glow: oklch(56% 0.19 38 / 0.1);
+  --ink-muted: oklch(43% 0.016 55);
+  --ink-faint: oklch(56% 0.016 62);
+  --line: oklch(86.5% 0.028 82);
+  /* hue 38 matches the dark-mode accent family (warmer, more orange);
+     55% lightness keeps AA contrast (≥4.5:1) on the sand */
+  --accent: oklch(55% 0.19 38);
+  --accent-strong: oklch(47% 0.19 38);
+  --accent-soft: oklch(90.5% 0.05 55);
+  --glow: oklch(55% 0.19 38 / 0.1);
   color-scheme: light;
 }
 
