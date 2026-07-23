@@ -115,7 +115,11 @@ export function initNeural(): void {
 
   function writeHash(): void {
     const hash = `#${state.dataset}/${arch().join('-')}/${state.activation}/${state.lr}`;
-    history.replaceState(null, '', hash);
+    if (location.hash === hash) return;
+    // Astro's ClientRouter keeps its navigation index in history.state –
+    // replacing it with null strands the router, and nav clicks from this
+    // page start getting swallowed. Always carry the state over.
+    history.replaceState(history.state, '', hash);
   }
 
   /** Reflect state in the segmented controls (hash seeding, presets). */
@@ -663,18 +667,22 @@ export function initNeural(): void {
       arrow();
     });
 
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'nn-add';
-    add.textContent = d.lAdd!;
-    add.disabled = state.hidden.length >= MAX_HIDDEN_LAYERS;
-    add.addEventListener('click', () => {
-      state.hidden.push(4);
-      rebuild(false);
-    });
-    // appended bare (no label column) so it bottom-aligns with the steppers
-    layersEl.appendChild(add);
-    arrow();
+    // at the layer cap the button disappears instead of sitting disabled, so
+    // the row never wraps OUTPUT onto a second line; removing a layer brings
+    // it back
+    if (state.hidden.length < MAX_HIDDEN_LAYERS) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'nn-add';
+      add.textContent = d.lAdd!;
+      add.addEventListener('click', () => {
+        state.hidden.push(4);
+        rebuild(false);
+      });
+      // appended bare (no label column) so it bottom-aligns with the steppers
+      layersEl.appendChild(add);
+      arrow();
+    }
 
     // output units: 1 = binary sigmoid, 2–4 = softmax classes → new dataset
     // labels. Tooltips spell the head change out, since 1 → 2 keeps two

@@ -155,7 +155,12 @@ const classCounts = ['2', '3', '4'] as const;
              the overflow-x scroll never engages, pushing the page sideways -->
         <div class="border-line min-w-0 border-t px-4 py-2.5 sm:py-3.5 lg:border-t-0 lg:border-l">
           <p class="nn-cell-label">{t('nn.challenges')}</p>
-          <div class="nn-scroll-row mt-2.5 flex gap-2 overflow-x-auto sm:flex-wrap">
+          <!-- horizontal (scrolling on phones) below lg, a quiet side column
+               beside the steppers above it – the row then survives even a
+               full 6-8-10-10-10-4 architecture without wrapping OUTPUT -->
+          <div
+            class="nn-scroll-row mt-2.5 flex gap-2 overflow-x-auto sm:flex-wrap lg:flex-col lg:items-start lg:overflow-visible"
+          >
             <button type="button" data-nn-preset="spiral" class="nn-add" title={t('nn.ch.spiralTip')}>
               {t('nn.ch.spiral')}
             </button>

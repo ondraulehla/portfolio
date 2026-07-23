@@ -630,7 +630,10 @@ export async function startExperience(): Promise<void> {
       const b = boat.userData as { angle: number; radius: number; speed: number };
       b.angle += b.speed * dt;
       boat.position.set(Math.cos(b.angle) * b.radius, WATER_LEVEL + 0.12, Math.sin(b.angle) * b.radius);
-      boat.rotation.y = -b.angle;
+      // bow (+x) along the orbit's tangent, not the radius – so the boats
+      // sail ahead instead of drifting sideways; the sign flips for the one
+      // circling the other way
+      boat.rotation.y = -b.angle - Math.sign(b.speed) * (Math.PI / 2);
       boat.rotation.z = Math.sin(elapsed * 1.3 + i * 2) * 0.045;
       boat.position.y += Math.sin(elapsed * 1.1 + i * 1.7) * 0.08;
     });
