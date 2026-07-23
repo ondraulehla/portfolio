@@ -6,6 +6,7 @@ import Experience from '@/components/sections/Experience.astro';
 import Education from '@/components/sections/Education.astro';
 import Skills from '@/components/sections/Skills.astro';
 import ProjectsGrid from '@/components/sections/ProjectsGrid.astro';
+import Writing from '@/components/sections/Writing.astro';
 import Contact from '@/components/sections/Contact.astro';
 import SectionBackdrop from '@/components/ui/SectionBackdrop.astro';
 import type { Locale } from '@/i18n/config';
@@ -21,6 +22,7 @@ const t = useTranslations(locale);
     <SectionBackdrop />
     <div class="relative">
       <ProjectsGrid {locale} />
+      <Writing {locale} />
       <About {locale} />
       <Experience {locale} />
       <Education {locale} />

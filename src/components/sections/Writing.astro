@@ -1,0 +1,65 @@
+---
+/**
+ * Writing – the notes, surfaced on the homepage. Deliberately not a nav item
+ * yet: one strong note in a quiet band reads as intent, one post under a
+ * "Blog" tab reads as an abandoned schedule. Grows into /notes + a nav link
+ * once there are a few of them.
+ */
+import type { Locale } from '@/i18n/config';
+import { useTranslations } from '@/i18n/utils';
+import { localePath } from '@/i18n/utils';
+import SectionHeading from '@/components/ui/SectionHeading.astro';
+import { loadNotes } from '@/lib/agent-content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const notes = await loadNotes();
+const fmt = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+---
+
+{
+  notes.length > 0 && (
+    <section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="writing">
+      <SectionHeading heading={t('writing.heading')} />
+
+      <div class="border-line divide-y divide-[var(--line)] border" data-reveal>
+        {notes.map((note) => (
+          <a
+            href={localePath(locale, `/notes/${note.id}`)}
+            class="group grid gap-x-8 gap-y-2 px-5 py-5 sm:grid-cols-[11rem_1fr_auto] sm:items-baseline sm:px-6"
+          >
+            <time
+              datetime={note.data.date.toISOString().slice(0, 10)}
+              class="text-ink-faint font-mono text-xs tracking-[0.12em] uppercase"
+            >
+              {fmt.format(note.data.date)}
+            </time>
+            <span class="min-w-0">
+              <span class="font-display text-ink group-hover:text-accent block text-lg font-semibold tracking-[-0.01em] transition-colors">
+                {note.data.title}
+              </span>
+              <span class="text-ink-muted mt-1 line-clamp-2 block text-sm leading-relaxed sm:line-clamp-1">
+                {note.data.summary}
+              </span>
+            </span>
+            <span
+              class="text-accent hidden font-mono text-sm transition-transform duration-300 group-hover:translate-x-1 sm:block"
+              aria-hidden="true"
+            >
+              →
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}

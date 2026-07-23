@@ -49,6 +49,8 @@ const en = {
   'project.back': 'Back to projects',
   'project.next': 'Next project',
 
+  'writing.heading': 'Writing',
+
   'contact.heading': "Let's talk",
   'contact.kicker': 'Contact',
   'contact.text': 'Interested in working together, or just want to say hi?',
@@ -199,6 +201,8 @@ const cs = {
   'project.live': 'Živě',
   'project.back': 'Zpět na projekty',
   'project.next': 'Další projekt',
+
+  'writing.heading': 'Texty',
 
   'contact.heading': 'Pojďme si napsat',
   'contact.kicker': 'Kontakt',
