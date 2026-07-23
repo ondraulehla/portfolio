@@ -126,6 +126,7 @@ export function initNeural(): void {
         .forEach((b) => b.setAttribute('aria-pressed', String(match(b.dataset.value!))));
     };
     sync('[data-nn-dataset]', (v) => v === state.dataset);
+    sync('[data-nn-classes]', (v) => parseInt(v, 10) === classCount());
     sync('[data-nn-activation]', (v) => v === state.activation);
     sync('[data-nn-lr]', (v) => parseFloat(v) === state.lr);
     sync('[data-nn-edges]', (v) => v === state.edgeMode);
@@ -912,6 +913,8 @@ export function initNeural(): void {
     updateHud();
     drawSpark();
     writeHash();
+    // any path that changes the architecture must keep the classes pill honest
+    syncSegButtons();
   }
 
   // ---- loss sparkline -------------------------------------------------------
@@ -1018,6 +1021,13 @@ export function initNeural(): void {
 
   bindGroup('[data-nn-dataset]', (v) => {
     state.dataset = v as DatasetKind;
+    rebuild(true);
+  });
+  bindGroup('[data-nn-classes]', (v) => {
+    const k = parseInt(v, 10);
+    if (classCount() === k) return; // outputs 1 and 2 both mean two classes
+    // "2" returns to the default binary head; 3–4 need that many softmax units
+    state.outputs = k === 2 ? 1 : k;
     rebuild(true);
   });
   bindGroup('[data-nn-activation]', (v) => {

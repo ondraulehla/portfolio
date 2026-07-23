@@ -15,6 +15,7 @@ const datasets = [
 ] as const;
 const activations = ['tanh', 'sigmoid', 'relu'] as const;
 const learningRates = ['0.03', '0.15', '0.5'] as const;
+const classCounts = ['2', '3', '4'] as const;
 ---
 
 <Base {locale} title={`${t('nn.title')} – Ondřej Úlehla`} description={t('nn.intro')}>
@@ -72,8 +73,11 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
         </div>
       </div>
 
-      <!-- parameter cells: hairline-divided columns of segmented controls -->
-      <div class="grid divide-y divide-[var(--line)] sm:grid-cols-[4fr_3fr_3fr] sm:divide-x sm:divide-y-0">
+      <!-- parameter cells: dataset + its class count, then activation and lr.
+           One row on wide screens, semantic 2×2 pairs on tablets, a stack on
+           phones – borders are hand-placed per breakpoint since divide-*
+           cannot follow a wrapping grid. -->
+      <div class="sm:grid-cols-2 lg:grid-cols-[4fr_2fr_3fr_3fr] grid">
         <div class="px-4 py-3.5">
           <p class="nn-cell-label">{t('nn.dataset')}</p>
           <div class="nn-seg mt-2.5" role="group">
@@ -86,7 +90,26 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
             }
           </div>
         </div>
-        <div class="px-4 py-3.5">
+        <div class="border-line border-t px-4 py-3.5 sm:border-t-0 sm:border-l">
+          <p class="nn-cell-label">{t('nn.classes')}</p>
+          <div class="nn-seg mt-2.5" role="group">
+            {
+              classCounts.map((value, i) => (
+                <button
+                  type="button"
+                  data-nn-classes
+                  data-value={value}
+                  aria-pressed={i === 0 ? 'true' : 'false'}
+                  title={t('nn.classesTip')}
+                  class="nn-seg-btn tabular-nums"
+                >
+                  {value}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+        <div class="border-line border-t px-4 py-3.5 lg:border-t-0 lg:border-l">
           <p class="nn-cell-label">{t('nn.activation')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
@@ -98,7 +121,7 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
             }
           </div>
         </div>
-        <div class="px-4 py-3.5">
+        <div class="border-line border-t px-4 py-3.5 sm:border-l lg:border-t-0">
           <p class="nn-cell-label">{t('nn.lr')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
