@@ -49,6 +49,8 @@ export const WORLD = {
     { x: 74, z: 40, h: 17 },
     { x: 18, z: 8, h: 21 },
     { x: 44, z: 68, h: 14 },
+    // west shore, clear of the mountain range to its north-east
+    { x: -70, z: 8, h: 16 },
   ],
 
   /** Forests: lower densityThreshold (0..1) → more/larger woods. */
