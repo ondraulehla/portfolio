@@ -69,6 +69,7 @@ export function initNeural(): void {
     outputs: 1,
     lr: 0.15,
     running: true,
+    turbo: false,
     epoch: 0,
     loss: 1,
     acc: 0,
@@ -77,6 +78,53 @@ export function initNeural(): void {
   };
   const arch = () => [state.inputs, ...state.hidden, state.outputs];
   const classCount = () => (state.outputs === 1 ? 2 : state.outputs);
+
+  // ---- configuration ↔ URL hash ---------------------------------------------
+  // #dataset/arch/activation/lr, e.g. #spiral/6-8-6-1/tanh/0.15 – a lab state
+  // is a link you can put in a message or a case study.
+  const DATASETS: DatasetKind[] = ['circle', 'xor', 'spiral', 'gaussian'];
+  const ACTIVATIONS: Activation[] = ['tanh', 'sigmoid', 'relu'];
+
+  function readHash(): void {
+    const parts = location.hash.slice(1).split('/');
+    if (parts.length !== 4) return;
+    const [ds, archStr, act, lrStr] = parts as [string, string, string, string];
+    const sizes = archStr.split('-').map(Number);
+    const lr = parseFloat(lrStr);
+    if (!DATASETS.includes(ds as DatasetKind)) return;
+    if (!ACTIVATIONS.includes(act as Activation)) return;
+    if (sizes.length < 2 || sizes.length > 2 + MAX_HIDDEN_LAYERS) return;
+    if (sizes.some((n) => !Number.isInteger(n) || n < 1)) return;
+    const [inputs, ...rest] = sizes as [number, ...number[]];
+    const outputs = rest.pop()!;
+    if (inputs > MAX_FEATURES || outputs > MAX_OUTPUTS || rest.some((n) => n > MAX_NEURONS)) return;
+    if (!(lr > 0 && lr <= 1)) return;
+    state.dataset = ds as DatasetKind;
+    state.activation = act as Activation;
+    state.inputs = inputs;
+    state.hidden = rest;
+    state.outputs = outputs;
+    state.lr = lr;
+  }
+  readHash();
+
+  function writeHash(): void {
+    const hash = `#${state.dataset}/${arch().join('-')}/${state.activation}/${state.lr}`;
+    history.replaceState(null, '', hash);
+  }
+
+  /** Reflect state in the segmented controls (hash seeding, presets). */
+  function syncSegButtons(): void {
+    const sync = (selector: string, match: (v: string) => boolean) => {
+      document
+        .querySelectorAll<HTMLElement>(selector)
+        .forEach((b) => b.setAttribute('aria-pressed', String(match(b.dataset.value!))));
+    };
+    sync('[data-nn-dataset]', (v) => v === state.dataset);
+    sync('[data-nn-activation]', (v) => v === state.activation);
+    sync('[data-nn-lr]', (v) => parseFloat(v) === state.lr);
+    sync('[data-nn-edges]', (v) => v === state.edgeMode);
+  }
 
   let data: Point[] = makeDataset(state.dataset, 220, 7, classCount());
   let net = new MLP(arch(), state.activation, 42);
@@ -507,6 +555,8 @@ export function initNeural(): void {
     onChange: (v: number) => void;
     onRemove?: () => void;
     removeLabel?: string;
+    plusTitle?: string;
+    minusTitle?: string;
   }): HTMLSpanElement {
     const box = document.createElement('span');
     box.className = 'nn-layer';
@@ -516,6 +566,7 @@ export function initNeural(): void {
     minus.className = 'nn-step';
     minus.textContent = '−';
     minus.disabled = opts.value <= opts.min;
+    if (opts.minusTitle) minus.title = opts.minusTitle;
     minus.addEventListener('click', () => opts.onChange(opts.value - 1));
 
     const num = document.createElement('span');
@@ -527,6 +578,7 @@ export function initNeural(): void {
     plus.className = 'nn-step';
     plus.textContent = '+';
     plus.disabled = opts.value >= opts.max;
+    if (opts.plusTitle) plus.title = opts.plusTitle;
     plus.addEventListener('click', () => opts.onChange(opts.value + 1));
 
     box.append(minus, num, plus);
@@ -564,13 +616,16 @@ export function initNeural(): void {
       layersEl.appendChild(wrap);
     };
 
-    // input features: changing the count changes what the network sees
+    // input features: changing the count changes what the network sees –
+    // the button tooltips name the exact feature that would come or go
     named(
       d.lInput!,
       stepper({
         value: state.inputs,
         min: 1,
         max: MAX_FEATURES,
+        plusTitle: state.inputs < MAX_FEATURES ? `+ ${FEATURE_NAMES[state.inputs]}` : undefined,
+        minusTitle: state.inputs > 1 ? `− ${FEATURE_NAMES[state.inputs - 1]}` : undefined,
         onChange: (v) => {
           state.inputs = v;
           rebuild(false);
@@ -827,6 +882,7 @@ export function initNeural(): void {
     if (resetData) data = makeDataset(state.dataset, 220, 7, classCount());
     net = new MLP(arch(), state.activation, 42);
     state.epoch = 0;
+    lossHistory.length = 0;
     renderLayers();
     renderLegend();
     buildNetwork();
@@ -834,6 +890,52 @@ export function initNeural(): void {
     drawSurface();
     paintActivations();
     updateHud();
+    drawSpark();
+    writeHash();
+  }
+
+  // ---- loss sparkline -------------------------------------------------------
+  // the last ~240 samples; convergence, plateaus and a hand-broken weight all
+  // show as shape, which three running digits cannot
+  const spark = document.getElementById('nn-spark') as HTMLCanvasElement | null;
+  const lossHistory: number[] = [];
+  const SPARK_CAP = 240;
+
+  function drawSpark() {
+    if (!spark) return;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = spark.clientWidth;
+    const h = spark.clientHeight;
+    if (w === 0) return;
+    if (spark.width !== Math.round(w * dpr)) {
+      spark.width = Math.round(w * dpr);
+      spark.height = Math.round(h * dpr);
+    }
+    const ctx = spark.getContext('2d')!;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (lossHistory.length < 2) return;
+    const max = Math.max(...lossHistory);
+    const min = Math.min(...lossHistory);
+    const span = Math.max(max - min, 1e-4);
+    const css = getComputedStyle(document.documentElement);
+    // faint floor line, then the loss curve in accent
+    ctx.strokeStyle = css.getPropertyValue('--line').trim();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h - 0.5);
+    ctx.lineTo(w, h - 0.5);
+    ctx.stroke();
+    ctx.strokeStyle = css.getPropertyValue('--accent').trim();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    lossHistory.forEach((v, i) => {
+      const x = (i / (SPARK_CAP - 1)) * w;
+      const y = 1 + (1 - (v - min) / span) * (h - 3);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
   }
 
   // ---- loop -----------------------------------------------------------------
@@ -841,15 +943,21 @@ export function initNeural(): void {
   let frame = 0;
   function tick() {
     if (state.running) {
-      for (let s = 0; s < 3; s++) state.loss = net.trainStep(data, state.lr, state.inputs);
-      state.epoch += 3;
+      const steps = state.turbo ? 15 : 3;
+      for (let s = 0; s < steps; s++) state.loss = net.trainStep(data, state.lr, state.inputs);
+      state.epoch += steps;
       if (frame % 2 === 0) drawSurface();
       if (frame % 4 === 0) {
         updateEdges();
         updateSchematic();
       }
       paintActivations();
-      if (frame % 6 === 0) updateHud();
+      if (frame % 6 === 0) {
+        updateHud();
+        lossHistory.push(state.loss);
+        if (lossHistory.length > SPARK_CAP) lossHistory.shift();
+        drawSpark();
+      }
     }
     controls.update();
     renderer.render(scene, camera);
@@ -898,15 +1006,69 @@ export function initNeural(): void {
   });
   bindGroup('[data-nn-lr]', (v) => {
     state.lr = parseFloat(v);
+    writeHash();
   });
   bindGroup('[data-nn-edges]', (v) => {
     state.edgeMode = v as 'weights' | 'flow';
+    // signal flow describes one concrete point – if none is pinned yet, pin
+    // the centre so the marker shows exactly what the edges refer to
+    if (state.edgeMode === 'flow' && !pinned) {
+      pinned = { x: 0.5, y: 0.5 };
+      drawSurface();
+    }
     updateSchematic();
     updateEdges();
   });
 
   elToggle?.addEventListener('click', () => setRunning(!state.running));
   document.getElementById('nn-reset')?.addEventListener('click', () => rebuild(false));
+
+  // fast-forward: five times the steps per frame while latched
+  const elFfwd = document.getElementById('nn-ffwd');
+  elFfwd?.addEventListener('click', () => {
+    state.turbo = !state.turbo;
+    elFfwd.setAttribute('aria-pressed', String(state.turbo));
+    if (state.turbo && !state.running) setRunning(true);
+  });
+
+  // one-click challenges: configurations that each demonstrate one idea
+  const PRESETS: Record<string, () => void> = {
+    // the hard dataset, beaten with feature engineering + a second layer
+    spiral: () => {
+      state.dataset = 'spiral';
+      state.activation = 'tanh';
+      state.inputs = 6;
+      state.hidden = [8, 6];
+      state.outputs = 1;
+      state.lr = 0.15;
+    },
+    // x·y makes XOR linearly separable – one tiny layer instead of depth
+    xor: () => {
+      state.dataset = 'xor';
+      state.activation = 'tanh';
+      state.inputs = 5;
+      state.hidden = [2];
+      state.outputs = 1;
+      state.lr = 0.15;
+    },
+    // softmax over three gaussian blobs
+    classes: () => {
+      state.dataset = 'gaussian';
+      state.activation = 'tanh';
+      state.inputs = 2;
+      state.hidden = [6];
+      state.outputs = 3;
+      state.lr = 0.15;
+    },
+  };
+  document.querySelectorAll<HTMLElement>('[data-nn-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      PRESETS[btn.dataset.nnPreset!]?.();
+      setRunning(true);
+      rebuild(true);
+      syncSegButtons();
+    });
+  });
 
   const onResize = () => {
     resize();
@@ -951,6 +1113,9 @@ export function initNeural(): void {
   drawSurface();
   paintActivations();
   updateHud();
+  // a hash-seeded configuration must win over the server-rendered defaults
+  syncSegButtons();
+  writeHash();
   raf = requestAnimationFrame(tick);
 }
 

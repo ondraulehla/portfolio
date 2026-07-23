@@ -45,6 +45,8 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
               <dt class="text-ink-faint tracking-[0.12em] uppercase">{t('nn.loss')}</dt>
               <dd id="nn-loss" class="text-ink inline-block w-12 text-right font-semibold">–</dd>
             </div>
+            <!-- the last ~240 loss samples, drawn by the lab -->
+            <canvas id="nn-spark" class="hidden h-6 w-28 sm:block" aria-hidden="true"></canvas>
             <div class="flex items-baseline gap-1.5">
               <dt class="text-ink-faint tracking-[0.12em] uppercase">{t('nn.acc')}</dt>
               <dd id="nn-acc" class="text-ink inline-block w-10 text-right font-semibold">–</dd>
@@ -57,6 +59,13 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
               data-pause={t('nn.pause')}
               data-resume={t('nn.resume')}
               class="nn-transport nn-transport-primary w-24">{t('nn.pause')}</button
+            >
+            <button
+              type="button"
+              id="nn-ffwd"
+              aria-pressed="false"
+              title={t('nn.turboTip')}
+              class="nn-transport border-line border-l tabular-nums">{t('nn.turbo')}</button
             >
             <button type="button" id="nn-reset" class="nn-transport border-line border-l">{t('nn.reset')}</button>
           </div>
@@ -114,6 +123,22 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
           data-l-add={t('nn.addLayer')}
           data-l-remove={t('nn.removeLayer')}
         >
+        </div>
+      </div>
+
+      <!-- challenges: one-click configurations that show what the lab can do -->
+      <div class="border-line border-t px-4 py-3.5">
+        <p class="nn-cell-label">{t('nn.challenges')}</p>
+        <div class="mt-2.5 flex flex-wrap gap-2">
+          <button type="button" data-nn-preset="spiral" class="nn-add" title={t('nn.ch.spiralTip')}>
+            {t('nn.ch.spiral')}
+          </button>
+          <button type="button" data-nn-preset="xor" class="nn-add" title={t('nn.ch.xorTip')}>
+            {t('nn.ch.xor')}
+          </button>
+          <button type="button" data-nn-preset="classes" class="nn-add" title={t('nn.ch.classesTip')}>
+            {t('nn.ch.classes')}
+          </button>
         </div>
       </div>
     </div>
@@ -269,6 +294,14 @@ const learningRates = ['0.03', '0.15', '0.5'] as const;
   .nn-transport-primary:hover {
     background: var(--accent-strong);
     color: var(--surface);
+  }
+  /* latched transport state (the ×5 fast-forward) */
+  .nn-transport[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--surface);
+  }
+  .nn-transport[aria-pressed='true']:hover {
+    background: var(--accent-strong);
   }
 
   /* architecture steppers: a labelled group per layer */
