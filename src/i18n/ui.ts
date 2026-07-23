@@ -112,8 +112,9 @@ const en = {
   'nn.ch.spiralTip': 'All six input features and two hidden layers – watch the surface wind up',
   'nn.ch.xor': 'XOR without depth',
   'nn.ch.xorTip': 'The x·y feature makes XOR linearly separable – one tiny hidden layer is enough',
-  'nn.ch.classes': 'Three classes',
-  'nn.ch.classesTip': 'Three gaussian blobs under a softmax output',
+  'nn.ch.classes': 'Three rings',
+  'nn.ch.classesTip':
+    'Concentric classes under a softmax – the quadratic features are what makes them separable',
   'nn.surface':
     'Decision surface – every point gets the colour of the class the network predicts there; hover to probe the network, click to pin the point (rings mark the neurons it fires)',
   'nn.class': 'Class',
@@ -134,7 +135,7 @@ const en = {
   'nn.about.p1':
     'The network is a small multilayer perceptron running entirely in your browser – plain TypeScript, no ML library. Every animation frame it takes a few gradient-descent steps on the visible dataset, and the decision surface repaints each point of the plane with the colour of the class the network currently predicts there.',
   'nn.about.p2':
-    'The whole architecture is yours to break. Choose which engineered features of the point (x, y) feed the input layer, add hidden layers and neurons, and switch the output between a single sigmoid unit and a 2–3-class softmax – the datasets regenerate with matching classes. Click any edge in the schematic to set that weight by hand and watch the surface deform; resume training and backpropagation repairs your intervention.',
+    'The whole architecture is yours to break. Choose which engineered features of the point (x, y) feed the input layer, add hidden layers and neurons, and switch the output between a single sigmoid unit and a 2–4-class softmax – the datasets regenerate with matching classes. Click any edge in the schematic to set that weight by hand and watch the surface deform; resume training and backpropagation repairs your intervention.',
   'nn.about.p3':
     'In the original thesis this ran as two cooperating systems: a web app encoded the architecture, weights and training parameters, and a virtual-reality world in Resonite decoded them into a walk-through 3D model of the network – a “3D brain” driving objects in the scene. The 3D view above is a nod to that world: each layer’s neurons sit on a ring, glow and grow with their activations, while edges carry the sign and strength of their weights.',
 
@@ -261,8 +262,9 @@ const cs = {
   'nn.ch.spiralTip': 'Všech šest vstupních featur a dvě skryté vrstvy – sleduj, jak se plocha stočí',
   'nn.ch.xor': 'XOR bez hloubky',
   'nn.ch.xorTip': 'Featura x·y udělá XOR lineárně separovatelný – stačí jedna malá vrstva',
-  'nn.ch.classes': 'Tři třídy',
-  'nn.ch.classesTip': 'Tři gaussovské shluky pod softmax výstupem',
+  'nn.ch.classes': 'Tři prstence',
+  'nn.ch.classesTip':
+    'Soustředné třídy pod softmaxem – oddělitelné je dělají až kvadratické featury',
   'nn.surface':
     'Rozhodovací plocha – každý bod dostane barvu třídy, kterou tam síť predikuje; najetím síť sondujete, kliknutím bod připnete (prstence označí neurony, které pro něj pálí)',
   'nn.class': 'Třída',
@@ -283,7 +285,7 @@ const cs = {
   'nn.about.p1':
     'Síť je malý vícevrstvý perceptron běžící celý ve vašem prohlížeči – čistý TypeScript, žádná ML knihovna. Každý snímek animace udělá pár kroků gradientního sestupu na zobrazeném datasetu a rozhodovací plocha překreslí každý bod roviny barvou třídy, kterou tam síť právě predikuje.',
   'nn.about.p2':
-    'Celou architekturu si můžete rozbít podle libosti. Vyberte, které odvozené příznaky bodu (x, y) vstupují do sítě, přidejte skryté vrstvy a neurony a přepněte výstup mezi jedním sigmoidovým neuronem a softmaxem se 2–3 třídami – datasety se přegenerují s odpovídajícími třídami. Kliknutím na hranu ve schématu nastavíte konkrétní váhu ručně a uvidíte, jak se plocha zdeformuje; po spuštění tréninku backpropagace váš zásah zase opraví.',
+    'Celou architekturu si můžete rozbít podle libosti. Vyberte, které odvozené příznaky bodu (x, y) vstupují do sítě, přidejte skryté vrstvy a neurony a přepněte výstup mezi jedním sigmoidovým neuronem a softmaxem se 2–4 třídami – datasety se přegenerují s odpovídajícími třídami. Kliknutím na hranu ve schématu nastavíte konkrétní váhu ručně a uvidíte, jak se plocha zdeformuje; po spuštění tréninku backpropagace váš zásah zase opraví.',
   'nn.about.p3':
     'V původní diplomce to běželo jako dva spolupracující systémy: webová aplikace zakódovala architekturu, váhy a parametry tréninku a svět ve virtuální realitě (Resonite) je dekódoval do průchozího 3D modelu sítě – „3D mozku", který ovládal objekty ve scéně. 3D pohled výše je poctou tomu světu: neurony každé vrstvy sedí na prstenci, září a rostou podle svých aktivací a hrany nesou znaménko i sílu svých vah.',
 

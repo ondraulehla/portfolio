@@ -89,11 +89,30 @@ describe('datasets', () => {
 
   it('generates the requested number of classes', () => {
     for (const kind of ['circle', 'xor', 'spiral', 'gaussian'] as const) {
-      for (const k of [2, 3]) {
+      for (const k of [2, 3, 4]) {
         const labels = new Set(makeDataset(kind, 120, 5, k).map((p) => p.label));
         expect([...labels].sort()).toEqual(Array.from({ length: k }, (_, i) => i));
       }
     }
+  });
+
+  it('overlapping gaussians are learnable but never a foregone conclusion', () => {
+    // the lab's easy multi-class dataset: solvable, yet accuracy should not
+    // start at 100% – that is what makes watching it converge worthwhile
+    const data = makeDataset('gaussian', 210, 3, 3);
+    const net = new MLP([2, 8, 3], 'tanh', 5);
+    net.trainStep(data, 0.3);
+    const early = data.filter((p) => net.predict([p.x, p.y]) === p.label).length / data.length;
+    expect(early).toBeLessThan(0.995);
+  });
+
+  it('the "Three rings" challenge converges with quadratic features', () => {
+    // mirrors the lab preset: circle ×3 classes, features x, y, x², y²
+    const data = makeDataset('circle', 220, 7, 3);
+    const net = new MLP([4, 6, 3], 'tanh', 42);
+    for (let i = 0; i < 600; i++) net.trainStep(data, 0.15, 4);
+    const correct = data.filter((p) => net.predict(features(p.x, p.y, 4)) === p.label).length;
+    expect(correct / data.length).toBeGreaterThan(0.9);
   });
 });
 

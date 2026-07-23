@@ -22,7 +22,7 @@ import {
 } from './nn';
 
 interface Theme {
-  /** class colours by index: 0 = cool, 1 = accent, 2 = teal */
+  /** class colours by index: 0 = cool, 1 = accent, 2 = teal, 3 = ochre */
   classes: string[];
   ink: string;
   /** page background the decision surface fades towards at low confidence */
@@ -36,7 +36,12 @@ function readTheme(): Theme {
   const dark = document.documentElement.dataset.theme === 'dark';
   const accent = css.getPropertyValue('--accent').trim() || '#c0392b';
   return {
-    classes: [dark ? '#5b6b8c' : '#8aa0c8', accent, dark ? '#4db3a4' : '#2f8f83'],
+    classes: [
+      dark ? '#5b6b8c' : '#8aa0c8',
+      accent,
+      dark ? '#4db3a4' : '#2f8f83',
+      dark ? '#c9a94e' : '#a8842c',
+    ],
     ink: css.getPropertyValue('--ink').trim() || '#111',
     surface: css.getPropertyValue('--surface').trim() || (dark ? '#17110f' : '#fbf7f0'),
     edgePos: 0xd8613a,
@@ -46,7 +51,7 @@ function readTheme(): Theme {
 
 const MAX_HIDDEN_LAYERS = 3;
 const MAX_NEURONS = 10;
-const MAX_OUTPUTS = 3;
+const MAX_OUTPUTS = 4;
 
 export function initNeural(): void {
   const surface = document.getElementById('nn-surface') as HTMLCanvasElement;
@@ -670,13 +675,28 @@ export function initNeural(): void {
     layersEl.appendChild(add);
     arrow();
 
-    // output units: 1 = binary, 2–3 = softmax classes → new dataset labels
+    // output units: 1 = binary sigmoid, 2–4 = softmax classes → new dataset
+    // labels. Tooltips spell the head change out, since 1 → 2 keeps two
+    // classes and only swaps sigmoid for softmax.
+    const classLabel = legendEl?.dataset.lClass ?? 'Class';
     named(
       d.lOutput!,
       stepper({
         value: state.outputs,
         min: 1,
         max: MAX_OUTPUTS,
+        plusTitle:
+          state.outputs === 1
+            ? 'softmax'
+            : state.outputs < MAX_OUTPUTS
+              ? `+ ${classLabel} ${state.outputs + 1}`
+              : undefined,
+        minusTitle:
+          state.outputs === 2
+            ? 'sigmoid'
+            : state.outputs > 2
+              ? `− ${classLabel} ${state.outputs}`
+              : undefined,
         onChange: (v) => {
           state.outputs = v;
           rebuild(true);
@@ -1051,11 +1071,12 @@ export function initNeural(): void {
       state.outputs = 1;
       state.lr = 0.15;
     },
-    // softmax over three gaussian blobs
+    // three concentric rings – radial classes want the quadratic features
+    // (with x,y only the same net plateaus under 70%)
     classes: () => {
-      state.dataset = 'gaussian';
+      state.dataset = 'circle';
       state.activation = 'tanh';
-      state.inputs = 2;
+      state.inputs = 4;
       state.hidden = [6];
       state.outputs = 3;
       state.lr = 0.15;

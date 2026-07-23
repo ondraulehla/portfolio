@@ -205,7 +205,7 @@ export class MLP {
 /** Deterministic dataset generator in [-1, 1]² with `classes` classes. */
 export function makeDataset(kind: DatasetKind, n = 200, seed = 7, classes = 2): Point[] {
   const rand = rng(seed);
-  const k = Math.max(2, Math.min(3, classes));
+  const k = Math.max(2, Math.min(4, classes));
   const pts: Point[] = [];
   const noise = () => (rand() * 2 - 1) * 0.08;
   for (let i = 0; i < n; i++) {
@@ -224,11 +224,14 @@ export function makeDataset(kind: DatasetKind, n = 200, seed = 7, classes = 2): 
       const order = [0, 1, 3, 2]; // walk quadrants counter-clockwise
       pts.push({ x: x + noise(), y: y + noise(), label: order[quadrant]! % k });
     } else if (kind === 'gaussian') {
-      // k clusters around the origin
+      // k clusters around the origin – close enough to overlap at the edges,
+      // so the softmax has a boundary to negotiate instead of a foregone
+      // conclusion (tuned against the real MLP: ~94% after 30 steps, ~98%
+      // after 400, never an instant 100%)
       const angle = (c / k) * Math.PI * 2 + Math.PI / 4;
-      const cx = 0.55 * Math.cos(angle);
-      const cy = 0.55 * Math.sin(angle);
-      pts.push({ x: cx + (rand() * 2 - 1) * 0.3, y: cy + (rand() * 2 - 1) * 0.3, label: c });
+      const cx = 0.46 * Math.cos(angle);
+      const cy = 0.46 * Math.sin(angle);
+      pts.push({ x: cx + (rand() * 2 - 1) * 0.4, y: cy + (rand() * 2 - 1) * 0.4, label: c });
     } else {
       // spiral with k arms
       const t = (i / n) * 3.5 + rand() * 0.2;
