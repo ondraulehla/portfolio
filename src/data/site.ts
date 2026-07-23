@@ -1,4 +1,3 @@
-// TODO(Ondřej): confirm final domain, socials and email before launch.
 export const site = {
   name: 'Ondřej Úlehla',
   email: 'ondrejulehla@gmail.com',

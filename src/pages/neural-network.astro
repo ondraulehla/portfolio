@@ -78,7 +78,7 @@ const classCounts = ['2', '3', '4'] as const;
            phones – borders are hand-placed per breakpoint since divide-*
            cannot follow a wrapping grid. -->
       <div class="sm:grid-cols-2 lg:grid-cols-[4fr_2fr_3fr_3fr] grid">
-        <div class="px-4 py-3.5">
+        <div class="px-4 py-2.5 sm:py-3.5">
           <p class="nn-cell-label">{t('nn.dataset')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
@@ -90,7 +90,7 @@ const classCounts = ['2', '3', '4'] as const;
             }
           </div>
         </div>
-        <div class="border-line border-t px-4 py-3.5 sm:border-t-0 sm:border-l">
+        <div class="border-line border-t px-4 py-2.5 sm:py-3.5 sm:border-t-0 sm:border-l">
           <p class="nn-cell-label">{t('nn.classes')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
@@ -109,7 +109,7 @@ const classCounts = ['2', '3', '4'] as const;
             }
           </div>
         </div>
-        <div class="border-line border-t px-4 py-3.5 lg:border-t-0 lg:border-l">
+        <div class="border-line border-t px-4 py-2.5 sm:py-3.5 lg:border-t-0 lg:border-l">
           <p class="nn-cell-label">{t('nn.activation')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
@@ -121,7 +121,7 @@ const classCounts = ['2', '3', '4'] as const;
             }
           </div>
         </div>
-        <div class="border-line border-t px-4 py-3.5 sm:border-l lg:border-t-0">
+        <div class="border-line border-t px-4 py-2.5 sm:py-3.5 sm:border-l lg:border-t-0">
           <p class="nn-cell-label">{t('nn.lr')}</p>
           <div class="nn-seg mt-2.5" role="group">
             {
@@ -135,33 +135,37 @@ const classCounts = ['2', '3', '4'] as const;
         </div>
       </div>
 
-      <!-- architecture: input features → hidden layers → output units -->
-      <div class="border-line border-t px-4 py-3.5">
-        <p class="nn-cell-label">{t('nn.layers')}</p>
-        <div
-          id="nn-layers"
-          class="mt-3 flex flex-wrap items-end gap-1.5"
-          data-l-input={t('nn.input')}
-          data-l-output={t('nn.output')}
-          data-l-add={t('nn.addLayer')}
-          data-l-remove={t('nn.removeLayer')}
-        >
+      <!-- architecture + challenges: one row on wide screens (the steppers
+           leave the right half empty anyway), stacked cells below lg. On
+           phones the challenge row scrolls sideways instead of wrapping. -->
+      <div class="border-line grid border-t lg:grid-cols-[1fr_auto]">
+        <div class="min-w-0 px-4 py-2.5 sm:py-3.5">
+          <p class="nn-cell-label">{t('nn.layers')}</p>
+          <div
+            id="nn-layers"
+            class="mt-3 flex flex-wrap items-end gap-1.5"
+            data-l-input={t('nn.input')}
+            data-l-output={t('nn.output')}
+            data-l-add={t('nn.addLayer')}
+            data-l-remove={t('nn.removeLayer')}
+          >
+          </div>
         </div>
-      </div>
-
-      <!-- challenges: one-click configurations that show what the lab can do -->
-      <div class="border-line border-t px-4 py-3.5">
-        <p class="nn-cell-label">{t('nn.challenges')}</p>
-        <div class="mt-2.5 flex flex-wrap gap-2">
-          <button type="button" data-nn-preset="spiral" class="nn-add" title={t('nn.ch.spiralTip')}>
-            {t('nn.ch.spiral')}
-          </button>
-          <button type="button" data-nn-preset="xor" class="nn-add" title={t('nn.ch.xorTip')}>
-            {t('nn.ch.xor')}
-          </button>
-          <button type="button" data-nn-preset="classes" class="nn-add" title={t('nn.ch.classesTip')}>
-            {t('nn.ch.classes')}
-          </button>
+        <!-- min-w-0: without it the grid track grows to the row's content and
+             the overflow-x scroll never engages, pushing the page sideways -->
+        <div class="border-line min-w-0 border-t px-4 py-2.5 sm:py-3.5 lg:border-t-0 lg:border-l">
+          <p class="nn-cell-label">{t('nn.challenges')}</p>
+          <div class="nn-scroll-row mt-2.5 flex gap-2 overflow-x-auto sm:flex-wrap">
+            <button type="button" data-nn-preset="spiral" class="nn-add" title={t('nn.ch.spiralTip')}>
+              {t('nn.ch.spiral')}
+            </button>
+            <button type="button" data-nn-preset="xor" class="nn-add" title={t('nn.ch.xorTip')}>
+              {t('nn.ch.xor')}
+            </button>
+            <button type="button" data-nn-preset="classes" class="nn-add" title={t('nn.ch.classesTip')}>
+              {t('nn.ch.classes')}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -173,7 +177,9 @@ const classCounts = ['2', '3', '4'] as const;
           <span class="text-ink font-mono text-xs font-semibold tracking-[0.15em] uppercase">{t('nn.panel.surface')}</span>
           <div id="nn-legend" class="flex gap-4" data-l-class={t('nn.class')}></div>
         </div>
-        <div class="p-3">
+        <!-- flex-1 + centring absorbs the grid's equal-height stretch, so a
+             shorter plot floats in the middle instead of leaving a void -->
+        <div class="flex flex-1 items-center p-3">
           <canvas id="nn-surface" class="mx-auto block aspect-square w-full max-w-[520px]"></canvas>
         </div>
         <figcaption class="border-line text-ink-faint mt-auto border-t px-3 py-2 font-mono text-xs leading-relaxed">
@@ -205,7 +211,7 @@ const classCounts = ['2', '3', '4'] as const;
             </div>
           </div>
         </div>
-        <div class="p-3">
+        <div class="flex flex-1 items-center p-3">
           <div id="nn-schematic" class="aspect-[56/43] w-full"></div>
         </div>
         <div id="nn-tip" class="nn-tip" hidden></div>
@@ -402,11 +408,20 @@ const classCounts = ['2', '3', '4'] as const;
     color: var(--ink-muted);
     font: 600 0.72rem/1 var(--font-mono);
     letter-spacing: 0.05em;
+    white-space: nowrap;
     cursor: pointer;
     transition:
       background 0.15s,
       border-color 0.15s,
       color 0.15s;
+  }
+
+  /* phone-width challenge row scrolls sideways without a visible scrollbar */
+  .nn-scroll-row {
+    scrollbar-width: none;
+  }
+  .nn-scroll-row::-webkit-scrollbar {
+    display: none;
   }
   .nn-add:hover:not(:disabled) {
     border-color: var(--accent);

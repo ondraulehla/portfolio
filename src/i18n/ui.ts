@@ -1,7 +1,7 @@
 import type { Locale } from './config';
 
 const en = {
-  'site.title': 'OU – Fullstack Developer & AI Engineer',
+  'site.title': 'Ondřej Úlehla – Fullstack Developer & AI Engineer',
   'site.description':
     'Fullstack developer and AI engineer building fast, well-crafted products – from client analysis to production deployment.',
   'nav.about': 'About',
@@ -18,7 +18,6 @@ const en = {
   'lang.switchShort': 'CS',
   'skip.content': 'Skip to content',
 
-  'hero.available': 'Open to new opportunities',
   'hero.title.line1': 'Fullstack developer',
   'hero.title.line2': '& AI engineer',
   'hero.subtitle':
@@ -153,7 +152,7 @@ const en = {
 } as const;
 
 const cs = {
-  'site.title': 'OU – Fullstack vývojář & AI inženýr',
+  'site.title': 'Ondřej Úlehla – Fullstack vývojář & AI inženýr',
   'site.description':
     'Fullstack vývojář a AI inženýr. Stavím rychlé a promyšlené produkty – od analýzy s klientem po nasazení do produkce.',
   'nav.about': 'O mně',
@@ -170,7 +169,6 @@ const cs = {
   'lang.switchShort': 'EN',
   'skip.content': 'Přeskočit na obsah',
 
-  'hero.available': 'Otevřený novým příležitostem',
   'hero.title.line1': 'Fullstack vývojář',
   'hero.title.line2': '& AI inženýr',
   'hero.subtitle':

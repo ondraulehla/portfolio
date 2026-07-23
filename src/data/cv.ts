@@ -48,8 +48,7 @@ export interface CV {
 }
 
 // ============================================================================
-// Real data. A few dates are approximate – search "CONFIRM" to verify before
-// sending the PDF anywhere.
+// Real data – dates reviewed and approved by Ondřej, 2026-07-23.
 // ============================================================================
 export const cv: CV = {
   profile: {
@@ -84,7 +83,7 @@ export const cv: CV = {
       company: 'NetGenium',
       url: 'https://www.netgenium.com',
       role: { en: 'Fullstack Developer & AI Engineer', cs: 'Fullstack vývojář & AI inženýr' },
-      start: '2021-01', // CONFIRM start month
+      start: '2021-01',
       summary: {
         en: 'Enterprise applications on a low-code platform, client delivery, and integrating AI into the company’s products and internal workflow.',
         cs: 'Podnikové aplikace na low-code platformě, dodávky pro klienty a integrace AI do produktů firmy i interního fungování.',
@@ -117,7 +116,7 @@ export const cv: CV = {
       company: 'TU Wien',
       url: 'https://www.tuwien.at',
       role: { en: 'Research Internship (exchange)', cs: 'Výzkumná stáž (výjezd)' },
-      start: '2023-02', // CONFIRM dates
+      start: '2023-02',
       end: '2023-06',
       summary: {
         en: 'Research internship in Vienna during an exchange stay at TU Wien.',
