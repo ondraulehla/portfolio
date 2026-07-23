@@ -23,20 +23,13 @@ const t = useTranslations(locale);
       }
     </div>
 
+    <!-- languages live in the CV PDF; here they'd only state the obvious -->
     <dl class="border-line h-fit divide-y divide-[var(--line)] border" data-reveal>
       {
         cv.profile.facts.map((fact) => (
           <div class="flex items-baseline justify-between gap-4 px-5 py-4">
             <dt class="text-ink-faint text-sm">{fact.label[locale]}</dt>
             <dd class="text-ink text-sm font-semibold">{fact.value[locale]}</dd>
-          </div>
-        ))
-      }
-      {
-        cv.languages.map((lang) => (
-          <div class="flex items-baseline justify-between gap-4 px-5 py-4">
-            <dt class="text-ink-faint text-sm">{lang.name[locale]}</dt>
-            <dd class="text-ink text-sm font-semibold">{lang.level[locale]}</dd>
           </div>
         ))
       }

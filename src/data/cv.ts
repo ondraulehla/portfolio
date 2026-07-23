@@ -152,7 +152,7 @@ export const cv: CV = {
         cs: 'Ing., Softwarové inženýrství',
       },
       start: '2019-09',
-      end: '2025-06',
+      end: '2025-01',
       note: {
         en: 'Included a research internship / exchange semester at TU Wien, Vienna.',
         cs: 'Součástí byla výzkumná stáž / výjezdový semestr na TU Wien ve Vídni.',

@@ -168,16 +168,27 @@
       ctx.clearRect(0, 0, w, h);
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 1;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       for (const pts of lines) {
-        ctx.beginPath();
+        // resolve the displaced positions once, then thread a curve through
+        // them: each segment is a quadratic with the sample point as its
+        // control and the midpoint as its end, so consecutive segments share
+        // tangents – no corners even when the cursor bends a line hard
+        const px: number[] = [];
+        const py: number[] = [];
         for (let j = 0; j < pts.length; j++) {
           const p = pts[j]!;
           const isLast = j === pts.length - 1;
-          const x = p.x + p.wx + (isLast ? 0 : p.cx);
-          const y = p.y + p.wy + (isLast ? 0 : p.cy);
-          if (j === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          px.push(p.x + p.wx + (isLast ? 0 : p.cx));
+          py.push(p.y + p.wy + (isLast ? 0 : p.cy));
         }
+        ctx.beginPath();
+        ctx.moveTo(px[0]!, py[0]!);
+        for (let j = 1; j < pts.length - 1; j++) {
+          ctx.quadraticCurveTo(px[j]!, py[j]!, (px[j]! + px[j + 1]!) / 2, (py[j]! + py[j + 1]!) / 2);
+        }
+        ctx.lineTo(px[pts.length - 1]!, py[pts.length - 1]!);
         ctx.stroke();
       }
     }
