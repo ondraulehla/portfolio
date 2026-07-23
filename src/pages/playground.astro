@@ -38,20 +38,39 @@ const worldData = {
     <div
       class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 sm:p-6"
     >
-      <a href={localePath(locale, '/')} class="pg-panel cell-flood pg-back pointer-events-auto">
-        <svg
-          class="size-3.5"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"></path></svg
-        >
-        {t('playground.back')}
-      </a>
+      <div class="flex flex-col items-start gap-2">
+        <div class="flex items-stretch gap-2">
+          <a href={localePath(locale, '/')} class="pg-panel cell-flood pg-back pointer-events-auto">
+            <svg
+              class="size-3.5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"></path></svg
+            >
+            {t('playground.back')}
+          </a>
+          <!-- engine + wind, default quiet; the label carries the state -->
+          <button
+            type="button"
+            id="hud-sound"
+            class="pg-panel cell-flood pg-back pointer-events-auto"
+            data-label={t('playground.sound')}
+            data-on={t('playground.on')}
+            data-off={t('playground.off')}
+            aria-pressed="false"
+            hidden
+          >
+            {t('playground.sound')}: {t('playground.off')}
+          </button>
+        </div>
+        <!-- the collection: how many billboards this flight has found -->
+        <p class="pg-panel pg-visited" id="hud-visited" data-label={t('playground.visited')} hidden></p>
+      </div>
 
       <!-- control legend, same strip as the gate briefing -->
       <div class="pg-panel pg-hud" id="hud-controls" hidden>
@@ -59,6 +78,14 @@ const worldData = {
         <span class="pg-rule" aria-hidden="true"></span>
         <span class="pg-hint">{t('playground.controls.alt')}</span>
       </div>
+    </div>
+
+    <!-- edge compass: points at the nearest unvisited billboard when it's off-screen -->
+    <div class="pointer-events-none absolute top-0 left-0 z-20 will-change-transform" id="hud-compass" hidden>
+      <span class="pg-compass-arrow" id="hud-compass-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="size-3"><path d="M12 2 22 22 12 17 2 22Z"></path></svg>
+      </span>
+      <span class="pg-panel pg-hint pg-compass-label" id="hud-compass-label"></span>
     </div>
 
     <!-- proximity prompt – clears the touch pad on phones, sits low on desktop -->
@@ -139,8 +166,13 @@ const worldData = {
           <p class="pg-hint pg-hint-faint mt-2.5">{t('playground.controls.alt')}</p>
         </div>
 
-        <!-- transport -->
-        <button type="button" id="gate-enter" class="border-line pg-transport w-full border-t">
+        <!-- transport – swaps to "Resume flight" when a saved flight exists -->
+        <button
+          type="button"
+          id="gate-enter"
+          data-resume={t('playground.resume')}
+          class="border-line pg-transport w-full border-t"
+        >
           {t('playground.enter')}
         </button>
         <p
@@ -236,6 +268,49 @@ const worldData = {
   }
   .pg-hint-faint {
     color: var(--ink-faint);
+  }
+
+  /* visited counter – a quiet tally that flips to accent when complete */
+  .pg-visited {
+    padding: 0.55rem 0.85rem;
+    color: var(--ink-muted);
+    font: 600 0.68rem/1 var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  .pg-visited strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .pg-visited.is-complete,
+  .pg-visited.is-complete strong {
+    color: var(--accent);
+  }
+
+  /* edge compass – accent arrow + label, positioned by script each frame */
+  .pg-compass-arrow {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 1px solid var(--accent);
+    background: color-mix(in oklab, var(--surface) 82%, transparent);
+    backdrop-filter: blur(12px);
+    color: var(--accent);
+  }
+  .pg-compass-label {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 0.4rem);
+    transform: translateY(-50%);
+    padding: 0.35rem 0.55rem;
+    white-space: nowrap;
+  }
+  /* when the compass sits near the right edge the label flips to its left */
+  #hud-compass.label-left .pg-compass-label {
+    left: auto;
+    right: calc(100% + 0.4rem);
   }
   .pg-rule {
     width: 1px;

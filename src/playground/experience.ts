@@ -18,6 +18,108 @@ interface WorldData {
   labels: { open: string; pressEnter: string };
 }
 
+/**
+ * A flight survives leaving the world: position, heading and the set of
+ * billboards already visited persist for the session, so opening a case
+ * study and coming back resumes the tour instead of restarting it.
+ */
+interface FlightState {
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  visited: string[];
+}
+
+const FLIGHT_KEY = 'pg-flight';
+
+function loadFlight(): FlightState | null {
+  try {
+    const raw = sessionStorage.getItem(FLIGHT_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as FlightState;
+    return Number.isFinite(s.x) && Number.isFinite(s.heading) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Engine + wind, synthesized – no audio assets. Two detuned oscillators
+ * through a lowpass make the putter, filtered noise makes the airstream;
+ * both follow speed so a boost audibly leans in. Constructed only after a
+ * user gesture (the sound toggle / M), so autoplay policy is satisfied.
+ */
+class EngineAudio {
+  private ctx: AudioContext;
+  private master: GainNode;
+  private engineGain: GainNode;
+  private engineOscs: OscillatorNode[];
+  private windGain: GainNode;
+
+  constructor() {
+    this.ctx = new AudioContext();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0;
+    this.master.connect(this.ctx.destination);
+    // ease in so enabling mid-flight doesn't pop
+    this.master.gain.setTargetAtTime(0.5, this.ctx.currentTime, 0.4);
+
+    const engineFilter = this.ctx.createBiquadFilter();
+    engineFilter.type = 'lowpass';
+    engineFilter.frequency.value = 320;
+    this.engineGain = this.ctx.createGain();
+    this.engineGain.gain.value = 0.001;
+    this.engineGain.connect(engineFilter).connect(this.master);
+
+    this.engineOscs = [
+      { type: 'sawtooth' as const, freq: 55, gain: 0.5 },
+      { type: 'square' as const, freq: 27.5, gain: 0.35 },
+    ].map((spec) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = spec.type;
+      osc.frequency.value = spec.freq;
+      const g = this.ctx.createGain();
+      g.gain.value = spec.gain;
+      osc.connect(g).connect(this.engineGain);
+      osc.start();
+      return osc;
+    });
+
+    // two seconds of white noise, looped, narrowed to a wind band
+    const noiseBuf = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+    const chan = noiseBuf.getChannelData(0);
+    for (let i = 0; i < chan.length; i++) chan[i] = Math.random() * 2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = noiseBuf;
+    noise.loop = true;
+    const windFilter = this.ctx.createBiquadFilter();
+    windFilter.type = 'bandpass';
+    windFilter.frequency.value = 650;
+    windFilter.Q.value = 0.6;
+    this.windGain = this.ctx.createGain();
+    this.windGain.gain.value = 0.001;
+    noise.connect(windFilter).connect(this.windGain).connect(this.master);
+    noise.start();
+  }
+
+  /** Follow the flight model; speed in world units/s, boost 0..1. */
+  update(speed: number, boost: number): void {
+    const t = this.ctx.currentTime;
+    const rev = speed / 19; // 1 at cruise
+    this.engineOscs[0]!.frequency.setTargetAtTime(46 + rev * 26 + boost * 22, t, 0.12);
+    this.engineOscs[1]!.frequency.setTargetAtTime(23 + rev * 13 + boost * 11, t, 0.12);
+    this.engineGain.gain.setTargetAtTime(0.05 + rev * 0.1 + boost * 0.05, t, 0.15);
+    this.windGain.gain.setTargetAtTime(rev * 0.05 + boost * 0.05, t, 0.2);
+  }
+
+  dispose(): void {
+    this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
+    const ctx = this.ctx;
+    setTimeout(() => void ctx.close().catch(() => {}), 350);
+  }
+}
+
 // --- world layout: edit src/playground/world.ts, not these aliases -------------
 const ISLAND_RADIUS = WORLD.islandRadius;
 const COAST_WIDTH = WORLD.coastWidth;
@@ -278,15 +380,39 @@ export async function startExperience(): Promise<void> {
   let puffTimer = 0;
 
   // --- input -----------------------------------------------------------------------
-  const keys = { up: false, down: false, left: false, right: false };
+  const keys = { up: false, down: false, left: false, right: false, boost: false };
   const keymap: Record<string, keyof typeof keys> = {
     ArrowUp: 'up', KeyW: 'up',
     ArrowDown: 'down', KeyS: 'down',
     ArrowLeft: 'left', KeyA: 'left',
     ArrowRight: 'right', KeyD: 'right',
+    ShiftLeft: 'boost', ShiftRight: 'boost', Space: 'boost',
   };
 
   let activeSign: ProjectSign | null = null;
+
+  // the tour: billboards this session has already read
+  const savedFlight = loadFlight();
+  const visited = new Set<string>(savedFlight?.visited ?? []);
+
+  function saveFlight(): void {
+    try {
+      const state: FlightState = {
+        x: plane.position.x,
+        y: plane.position.y,
+        z: plane.position.z,
+        heading,
+        visited: [...visited],
+      };
+      sessionStorage.setItem(FLIGHT_KEY, JSON.stringify(state));
+    } catch {}
+  }
+
+  function openActiveSign(): void {
+    if (!activeSign) return;
+    saveFlight();
+    location.href = activeSign.url;
+  }
 
   const onKey = (down: boolean) => (e: KeyboardEvent) => {
     const key = keymap[e.code];
@@ -294,12 +420,53 @@ export async function startExperience(): Promise<void> {
       keys[key] = down;
       e.preventDefault();
     }
-    if (down && e.code === 'Enter' && activeSign) location.href = activeSign.url;
+    if (down && e.code === 'Enter') openActiveSign();
+    if (down && e.code === 'KeyM') toggleSound();
   };
   const onKeyDown = onKey(true);
   const onKeyUp = onKey(false);
   addEventListener('keydown', onKeyDown);
   addEventListener('keyup', onKeyUp);
+
+  // --- sound (default off, remembered per browser) -------------------------------
+  let audio: EngineAudio | null = null;
+  const soundBtn = document.getElementById('hud-sound') as HTMLButtonElement | null;
+
+  function syncSoundButton(): void {
+    if (!soundBtn) return;
+    const on = audio !== null;
+    soundBtn.setAttribute('aria-pressed', String(on));
+    const state = on ? soundBtn.dataset.on : soundBtn.dataset.off;
+    soundBtn.textContent = `${soundBtn.dataset.label}: ${state}`;
+  }
+
+  function toggleSound(): void {
+    if (audio) {
+      audio.dispose();
+      audio = null;
+    } else {
+      try {
+        audio = new EngineAudio();
+      } catch {
+        audio = null; // no WebAudio – leave the button honest, off
+      }
+    }
+    try {
+      localStorage.setItem('pg-sound', audio ? 'on' : 'off');
+    } catch {}
+    syncSoundButton();
+  }
+
+  if (soundBtn) {
+    soundBtn.hidden = false;
+    soundBtn.addEventListener('click', toggleSound);
+    // startExperience runs inside the take-off click, so the gesture
+    // requirement is satisfied even for a remembered preference
+    try {
+      if (localStorage.getItem('pg-sound') === 'on') toggleSound();
+    } catch {}
+    syncSoundButton();
+  }
 
   const pad = document.getElementById('touch-pad');
   if (pad && matchMedia('(pointer: coarse)').matches) {
@@ -321,23 +488,49 @@ export async function startExperience(): Promise<void> {
   const hudPrompt = document.getElementById('hud-prompt');
   const hudPromptText = document.getElementById('hud-prompt-text');
   if (hudControls) hudControls.hidden = false;
-  hudPrompt?.addEventListener('click', () => {
-    if (activeSign) location.href = activeSign.url;
-  });
+  hudPrompt?.addEventListener('click', openActiveSign);
   if (hudPrompt) hudPrompt.style.pointerEvents = 'auto';
+
+  // --- the tour HUD: visited tally + edge compass --------------------------------
+  const hudVisited = document.getElementById('hud-visited');
+  const compass = document.getElementById('hud-compass');
+  const compassArrow = document.getElementById('hud-compass-arrow');
+  const compassLabel = document.getElementById('hud-compass-label');
+
+  function syncVisited(): void {
+    if (!hudVisited || signs.length === 0) return;
+    hudVisited.hidden = false;
+    const done = visited.size >= signs.length;
+    hudVisited.classList.toggle('is-complete', done);
+    hudVisited.innerHTML = `<strong>${visited.size}/${signs.length}</strong> ${hudVisited.dataset.label ?? ''}`;
+  }
+  syncVisited();
 
   // --- flight model -------------------------------------------------------------------
   let heading = Math.PI; // facing the island centre
   let bank = 0;
   let pitch = 0;
   let currentSpeed = 19;
+  let boostLevel = 0; // eased 0..1 so the speed-up leans in rather than snaps
   const BASE_SPEED = 19;
   const forward = new THREE.Vector3();
   const camPos = new THREE.Vector3(0, 18, 122);
   const camLook = new THREE.Vector3();
   const tipOffset = new THREE.Vector3();
+  const signNdc = new THREE.Vector3();
   let lastTime = performance.now();
   let elapsed = 0;
+
+  // resume a saved tour mid-air: same spot, same heading, camera already behind
+  if (savedFlight) {
+    plane.position.set(savedFlight.x, Math.min(Math.max(savedFlight.y, 6), 42), savedFlight.z);
+    heading = savedFlight.heading;
+    forward.set(Math.sin(heading), 0, Math.cos(heading));
+    camPos
+      .copy(plane.position)
+      .addScaledVector(forward, -17)
+      .add(new THREE.Vector3(0, 5.2, 0));
+  }
 
   function tick() {
     const now = performance.now();
@@ -359,8 +552,10 @@ export async function startExperience(): Promise<void> {
     // press Enter; any steering input takes off again
     const anyInput = keys.up || keys.down || keys.left || keys.right;
     const hovering = activeSign !== null && !anyInput;
+    // held Shift/Space leans the throttle in; easing keeps it cinematic
+    boostLevel += ((keys.boost && !hovering ? 1 : 0) - boostLevel) * (1 - Math.pow(0.05, dt));
     // dive a little faster, climb a little slower
-    const targetSpeed = hovering ? 0 : BASE_SPEED - pitch * 7;
+    const targetSpeed = hovering ? 0 : (BASE_SPEED - pitch * 7) * (1 + 0.95 * boostLevel);
     currentSpeed += (targetSpeed - currentSpeed) * (1 - Math.pow(0.1, dt));
     const speed = currentSpeed;
     forward.set(Math.sin(heading), 0, Math.cos(heading));
@@ -387,11 +582,20 @@ export async function startExperience(): Promise<void> {
 
     plane.rotation.set(-pitch * 0.9, heading, -bank, 'YXZ');
     plane.position.y += Math.sin(elapsed * (hovering ? 2.4 : 1.7)) * (hovering ? 0.02 : 0.008);
-    propeller.rotation.z += (hovering ? 18 : 42) * dt;
+    propeller.rotation.z += (hovering ? 18 : 42 + 30 * boostLevel) * dt;
+
+    // a touch of extra field of view sells the boost
+    const targetFov = 60 + 7 * boostLevel;
+    if (Math.abs(camera.fov - targetFov) > 0.05) {
+      camera.fov += (targetFov - camera.fov) * (1 - Math.pow(0.02, dt));
+      camera.updateProjectionMatrix();
+    }
+
+    audio?.update(speed, boostLevel);
 
     // cartoon contrail: little cloud puffs popping off the wingtips
     puffTimer += dt;
-    if (speed > 4 && puffTimer > 0.05) {
+    if (speed > 4 && puffTimer > 0.05 / (1 + 1.4 * boostLevel)) {
       puffTimer = 0;
       tipOffset.set(2.35, 0.18, -0.5).applyEuler(plane.rotation).add(plane.position);
       puffs.spawn(tipOffset);
@@ -475,10 +679,69 @@ export async function startExperience(): Promise<void> {
         hudPrompt.hidden = !next;
         if (next) hudPromptText.textContent = `${data.labels.open} „${next.title}"`;
       }
+      // reading a billboard counts as visiting it
+      if (next && !visited.has(next.url)) {
+        visited.add(next.url);
+        syncVisited();
+        saveFlight();
+      }
     }
+
+    updateCompass();
 
     renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);
+  }
+
+  // The edge compass: when every billboard is either visited or on screen it
+  // stays hidden; otherwise it sits at the viewport edge pointing toward the
+  // nearest unvisited one, with the project's name and distance.
+  let compassText = '';
+  function updateCompass(): void {
+    if (!compass || !compassArrow || !compassLabel) return;
+    let target: { sign: (typeof signs)[number]; d: number } | null = null;
+    for (const sign of signs) {
+      if (visited.has(sign.project.url)) continue;
+      const d = sign.group.position.distanceTo(plane.position);
+      if (!target || d < target.d) target = { sign, d };
+    }
+    if (!target) {
+      compass.hidden = true;
+      return;
+    }
+
+    const arrowSvg = compassArrow.firstElementChild as SVGElement | null;
+    signNdc.copy(target.sign.group.position).project(camera);
+    const behind = signNdc.z > 1;
+    // behind the camera the projection mirrors – flip so the arrow still
+    // points the shorter way around
+    const nx = behind ? -signNdc.x : signNdc.x;
+    const ny = behind ? -signNdc.y : signNdc.y;
+
+    // comfortably inside the frustum → the billboard itself is the pointer
+    if (!behind && Math.abs(nx) < 0.82 && Math.abs(ny) < 0.78) {
+      compass.hidden = true;
+      return;
+    }
+
+    // clamp the direction to the viewport edge, keeping clear of the HUD
+    const w = innerWidth;
+    const h = innerHeight;
+    const cx = w / 2 + (nx * w) / 2;
+    const cy = h / 2 - (ny * h) / 2;
+    const px = Math.min(Math.max(cx, 22), w - 60);
+    const py = Math.min(Math.max(cy, 96), h - 130);
+
+    const angle = Math.atan2(cy - h / 2, cx - w / 2);
+    compass.hidden = false;
+    compass.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
+    if (arrowSvg) arrowSvg.style.transform = `rotate(${(angle + Math.PI / 2).toFixed(3)}rad)`;
+    compass.classList.toggle('label-left', px > w * 0.55);
+    const text = `${target.sign.project.title} · ${Math.round(target.d)} m`;
+    if (text !== compassText) {
+      compassText = text;
+      compassLabel.textContent = text;
+    }
   }
   let raf = requestAnimationFrame(tick);
 
@@ -492,6 +755,9 @@ export async function startExperience(): Promise<void> {
   document.addEventListener(
     'astro:before-swap',
     () => {
+      // leaving via any route keeps the tour resumable
+      saveFlight();
+      audio?.dispose();
       cancelAnimationFrame(raf);
       removeEventListener('resize', onResize);
       removeEventListener('keydown', onKeyDown);
@@ -1779,13 +2045,14 @@ function makePanelTexture(project: ProjectSign, hint: string): THREE.CanvasTextu
   }
   ctx.restore();
 
-  // poster title in the site's display face; long titles step down a size
+  // poster title in the site's display face; long titles step down a size.
+  // Sized to stay legible from a passing plane, not just from the hover.
   ctx.fillStyle = INK;
   const title = project.title.toUpperCase();
-  ctx.font = '400 88px Anton, "Arial Narrow", sans-serif';
-  const size = ctx.measureText(title).width > (W - 128) * 1.85 ? 62 : 88;
+  ctx.font = '400 98px Anton, "Arial Narrow", sans-serif';
+  const size = ctx.measureText(title).width > (W - 128) * 1.85 ? 70 : 98;
   ctx.font = `400 ${size}px Anton, "Arial Narrow", sans-serif`;
-  wrapText(ctx, title, 64, 208 + size * 0.45, W - 128, size * 1.12);
+  wrapText(ctx, title, 64, 204 + size * 0.45, W - 128, size * 1.1);
 
   // square accent call-to-action, bottom-right
   ctx.font = '600 33px ui-monospace, Menlo, monospace';

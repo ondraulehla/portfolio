@@ -38,6 +38,24 @@ export function initGate(): void {
     note.textContent = strings.motion;
     note.hidden = false;
     enter.textContent = strings.anyway;
+  } else {
+    // a saved flight means the visitor came back from a case study – greet
+    // them with "Resume flight" instead of another take-off
+    try {
+      if (sessionStorage.getItem('pg-flight') && enter.dataset.resume) {
+        enter.textContent = enter.dataset.resume;
+      }
+    } catch {}
+
+    // warm the three.js chunk while the visitor reads the briefing, so
+    // pressing the button is instant; the main bundle stays 3D-free
+    const idle: (cb: () => void) => unknown =
+      'requestIdleCallback' in window ? window.requestIdleCallback : (cb) => setTimeout(cb, 900);
+    idle(() => {
+      import('./experience').catch(() => {
+        /* offline or stale chunk – the click path handles recovery */
+      });
+    });
   }
 
   enter.addEventListener('click', async () => {
