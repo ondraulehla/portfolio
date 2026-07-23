@@ -27,6 +27,14 @@ export function projectSlug(entry: Project): string {
   return entry.id.split('/').slice(1).join('/');
 }
 
+export type Note = CollectionEntry<'notes'>;
+
+/** Written notes, newest first. */
+export async function loadNotes(): Promise<Note[]> {
+  const entries = await getCollection('notes');
+  return entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+}
+
 export function projectUrl(entry: Project): string {
   return `${site.domain}/projects/${projectSlug(entry)}`;
 }
@@ -155,7 +163,7 @@ export function projectMarkdown(entry: Project): string {
 }
 
 /** /llms.txt – the llmstxt.org index that points at everything else. */
-export function llmsTxt(projects: Project[]): string {
+export function llmsTxt(projects: Project[], notes: Note[] = []): string {
   const p = cv.profile;
   return [
     `# ${p.name}`,
@@ -174,6 +182,14 @@ export function llmsTxt(projects: Project[]): string {
     '',
     ...projects.map((e) => `- [${e.data.title}](${projectUrl(e)}.md): ${e.data.summary}`),
     '',
+    ...(notes.length
+      ? [
+          '## Writing',
+          '',
+          ...notes.map((n) => `- [${n.data.title}](${site.domain}/notes/${n.id}.md): ${n.data.summary}`),
+          '',
+        ]
+      : []),
     '## Interactive',
     '',
     `- [Neural Network Lab](${site.domain}/neural-network): a neural network from the author's master's thesis, trained live in the browser – editable architecture, decision surface, 3D model.`,

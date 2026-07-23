@@ -1,0 +1,51 @@
+---
+title: 'Measuring agents like flights'
+summary: 'A demo that works once tells you nothing. What pass rate, flakiness and cost per success taught me about building AI agents – and why none of it works without a clean room per run.'
+date: 2026-07-23
+---
+
+## The demo that works once
+
+Every agent demo I have ever given worked. That is what demos are for: you run the thing until it works, and then you show the run where it worked. The uncomfortable part is everything that happens on the runs nobody watches.
+
+Agents are non-deterministic. Same prompt, same model, same sandbox image – and one run fixes a bug with two careful edits while the next rewrites half the file in one go. Usually both land. Sometimes one of them quietly does not. If you only ever look at single runs, you cannot tell whether you built something reliable or something lucky.
+
+Aviation ran into a version of this problem long ago, and its answer was not better pilot memories. Every flight carries a recorder, and when something goes wrong, investigators replay the record instead of arguing about impressions. I wanted the same discipline for agents, so I built [agent-flight-recorder](https://github.com/ondraulehla/agent-flight-recorder): run a task N times, each in its own isolated E2B sandbox, record every tool call, and report what actually happened.
+
+## Three numbers instead of a feeling
+
+Once every run is recorded, three numbers fall out that no single run can give you.
+
+**Pass rate.** "Does it work" is a fraction, not a boolean. A task is defined by assertions – a file must exist, a command must exit zero, the final answer must contain a string – and the runner evaluates them inside the sandbox after every run. Ten runs where six pass is a fundamentally different product from ten out of ten, and you cannot tell the two apart by watching one demo.
+
+One detail I am fond of: the demo task plants two bugs in a small Python module and asks the agent to make the tests pass, with a checksum assertion on the test file itself. The first thing a cornered agent tries is editing the test. The recorder treats that as the failure it is.
+
+**Flakiness.** The batch summary flags a task where the same configuration produced both passing and failing runs. This is the number that most demos hide, and it is also the one that decides whether you can put an agent in front of a customer.
+
+**Cost per success.** Average cost per run is misleading the moment anything fails, because you do not pay for runs, you pay for outcomes. In the demo batch, three parallel runs of the bug-fix task all passed and the cost per success came out at $0.0942, measured to the cent from the streamed usage data. Running the same task under two models turns the eternal "should we use the cheaper model" debate into a table: reliability and cost per success, side by side, measured instead of guessed.
+
+## Where two flights diverge
+
+The part I keep coming back to is the trajectory diff. Two runs of the same prompt are two sequences of tool calls, and the interesting question is where they stopped being the same run. The recorder aligns them step by step and marks each one: matched, same action with cosmetic differences, or present in only one of them.
+
+Raw traces differ in harmless ways – timestamps, generated file content, a shell command with a different flag order – so string equality is useless. The diff has to score semantic similarity of tool calls: loose enough to pair a `Bash` call that only changed a line number, strict enough that a genuinely different edit shows up as a fork. Tuning that threshold is what turns a wall of JSONL into the one line you actually need: here is the step where the failing run left the happy path.
+
+In the demo it is almost comic – one run fixed two bugs with two edits, the other with a single combined edit, and the diff shows exactly that. On a toy task this is a curiosity. On a production agent, the same view pointed at a failing batch is a debugging tool I do not want to work without anymore.
+
+## Isolation is what makes the numbers honest
+
+None of this measurement means anything if runs can contaminate each other. A leftover file from run one turns run two into a different task; a warm cache makes the fast run look like the good run. Every flight gets a fresh sandbox, fixtures are planted before the agent starts, and the whole environment is thrown away afterwards. Isolation is not a security nicety here – it is what makes the statistics valid.
+
+The same logic extends to the network. The recorder stores rate-limit events per run, so a slow batch is distinguishable from a throttled one. Without that, you end up blaming the model for your own 429s.
+
+## What this changed about how I build
+
+A few habits stuck.
+
+I write the assertion before the prompt now. It is test-first development for agents: the prompt is the implementation, the assertion is the spec, and a task without an assertion is a demo waiting to disappoint someone.
+
+One run means nothing. Five runs is my floor for claiming anything about an agent, and the recorder makes five runs as cheap to read as one, because the summary table does the reading.
+
+And when someone tells me an agent "sometimes fails", the answer is no longer a shrug. It is a diff of two traces with an arrow at step four.
+
+Agents will not become deterministic. The tooling around them can still be rigorous – and it is cheaper than it looks, because a recorded flight costs exactly the same as an unrecorded one.

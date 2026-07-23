@@ -1,0 +1,89 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '@/layouts/Base.astro';
+import LiquidText from '@/components/ui/LiquidText.astro';
+import type { Locale } from '@/i18n/config';
+import { localePath } from '@/i18n/utils';
+import { site } from '@/data/site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('notes');
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const locale: Locale = 'en';
+const slug = Astro.params.slug!;
+const { Content } = await render(entry);
+
+const published = entry.data.date.toISOString().slice(0, 10);
+const displayDate = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+  day: 'numeric',
+  timeZone: 'UTC',
+}).format(entry.data.date);
+
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: entry.data.title,
+  description: entry.data.summary,
+  author: { '@type': 'Person', name: site.name, url: site.domain },
+  datePublished: published,
+  mainEntityOfPage: new URL(`/notes/${slug}`, site.domain).toString(),
+};
+---
+
+<Base {locale} title={`${entry.data.title} – Ondřej Úlehla`} description={entry.data.summary}>
+  <script type="application/ld+json" set:html={JSON.stringify(articleLd)} is:inline />
+  <article class="mx-auto max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
+    <a
+      href={localePath(locale, '/')}
+      class="text-ink-muted hover:text-accent inline-flex items-center gap-2 font-mono text-xs tracking-[0.15em] uppercase transition-colors"
+    >
+      ← Ondřej Úlehla
+    </a>
+
+    <header class="mt-8">
+      <p class="text-accent font-mono text-xs font-semibold tracking-[0.2em] uppercase">
+        Notes · <time datetime={published}>{displayDate}</time>
+      </p>
+      <h1 class="font-poster mt-4 text-[length:clamp(2.4rem,5vw,3.6rem)]">
+        <LiquidText text={entry.data.title} />
+      </h1>
+      <p class="text-ink-muted mt-5 text-lg leading-relaxed">{entry.data.summary}</p>
+    </header>
+
+    <div class="prose-custom mt-10">
+      <Content />
+    </div>
+
+    <!-- the tool this note is about -->
+    <div class="border-line mt-14 flex flex-wrap gap-x-6 gap-y-2 border-t pt-6">
+      <a href={localePath(locale, '/projects/agent-flight-recorder')} class="nn-link"
+        >Case study: agent-flight-recorder →</a
+      >
+      <a
+        href="https://github.com/ondraulehla/agent-flight-recorder"
+        target="_blank"
+        rel="noopener"
+        class="nn-link">Source on GitHub ↗</a
+      >
+    </div>
+  </article>
+</Base>
+
+<style is:global>
+  /* the lab's quiet link style, reused for the note footer */
+  .nn-link {
+    color: var(--accent);
+    font: 600 0.85rem/1.4 var(--font-sans);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .nn-link:hover {
+    border-color: var(--accent);
+  }
+</style>

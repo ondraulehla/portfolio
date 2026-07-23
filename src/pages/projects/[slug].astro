@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge.astro';
 import LiquidText from '@/components/ui/LiquidText.astro';
 import type { Locale } from '@/i18n/config';
 import { localePath, useTranslations } from '@/i18n/utils';
+import { site } from '@/data/site';
 
 export async function getStaticPaths() {
   const entries = await getCollection('projects', (e) => e.id.startsWith('en/'));
@@ -27,9 +28,22 @@ const siblings = (await getCollection('projects', (e) => e.id.startsWith(`${loca
 const index = siblings.findIndex((e) => e.id === entry.id);
 const next = siblings[(index + 1) % siblings.length];
 const nextSlug = next && next.id !== entry.id ? next.id.split('/').slice(1).join('/') : null;
+
+// case studies are articles to search engines and AI search alike
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: entry.data.title,
+  description: entry.data.summary,
+  author: { '@type': 'Person', name: site.name, url: site.domain },
+  datePublished: String(entry.data.year),
+  image: new URL(`/og/${slug}.png`, site.domain).toString(),
+  mainEntityOfPage: new URL(`/projects/${slug}`, site.domain).toString(),
+};
 ---
 
 <Base {locale} title={`${entry.data.title} – Ondřej Úlehla`} description={entry.data.summary} ogImage={`/og/${slug}.png`}>
+  <script type="application/ld+json" set:html={JSON.stringify(articleLd)} is:inline />
   <article class="mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
     <a
       href={`${localePath(locale, '/')}#projects`}
