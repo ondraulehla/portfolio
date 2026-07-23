@@ -943,8 +943,10 @@ function buildBoats(): THREE.Group {
       new THREE.ConeGeometry(0.48, 1, 4),
       new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
     );
-    bow.rotation.z = -Math.PI / 2;
-    bow.rotation.y = Math.PI / 4;
+    // Rz points the cone along +x, then Rx spins the 4-sided pyramid about
+    // its own axis so its faces align with the hull. (Euler XYZ applies Z
+    // first – a y-rotation here would swing the tip 45° off the bow line.)
+    bow.rotation.set(Math.PI / 4, 0, -Math.PI / 2);
     bow.position.set(1.7, 0.28, 0);
     boat.add(bow);
     const mast = new THREE.Mesh(
@@ -1303,8 +1305,9 @@ function buildPier(): THREE.Group {
       new THREE.ConeGeometry(0.42, 0.9, 4),
       new THREE.MeshStandardMaterial({ color: cfg.hull, roughness: 0.85 }),
     );
-    bow.rotation.z = -Math.PI / 2;
-    bow.rotation.y = Math.PI / 4;
+    // same as the sailing boats: point with Rz, then spin about the cone's
+    // own axis with Rx – never Ry, which would kink the bow sideways
+    bow.rotation.set(Math.PI / 4, 0, -Math.PI / 2);
     bow.position.set(1.4, 0.25, 0);
     boat.add(bow);
     boat.position.set(
