@@ -492,6 +492,20 @@ export async function startExperience(): Promise<void> {
       btn.addEventListener('pointercancel', release);
       btn.addEventListener('lostpointercapture', release);
       btn.addEventListener('contextmenu', (e) => e.preventDefault());
+      // iOS decides about the long-press callout from the *touch* stream, and
+      // ignores preventDefault on pointerdown (which it synthesises later).
+      // Cancelling touchstart non-passively is the only thing that stops the
+      // selection handles and the Copy / Search bar from appearing mid-flight.
+      btn.addEventListener(
+        'touchstart',
+        (e) => {
+          e.preventDefault();
+          keys[key] = true; // idempotent with pointerdown; covers it not firing
+        },
+        { passive: false },
+      );
+      btn.addEventListener('touchend', release);
+      btn.addEventListener('touchcancel', release);
     });
   }
 

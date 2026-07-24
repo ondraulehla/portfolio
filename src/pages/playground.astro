@@ -122,7 +122,11 @@ const worldData = {
             class={`pg-panel pg-pad ${pos}`}
             aria-label={key}
           >
-            {glyph}
+            {/* pointer-events off so a touch always resolves to the button,
+                never to the glyph's own text node */}
+            <span class="pg-pad-glyph" aria-hidden="true">
+              {glyph}
+            </span>
           </button>
         ))
       }
@@ -380,6 +384,9 @@ const worldData = {
     border-color: var(--accent);
     background: var(--accent);
     color: var(--surface);
+  }
+  .pg-pad-glyph {
+    pointer-events: none;
   }
 
   /* gate transport – the lab's primary transport button, full width */
