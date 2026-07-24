@@ -60,10 +60,15 @@ const uid =
 </style>
 
 <script>
+  import { liteMotion } from '@/scripts/motion';
+
   const SVGNS = 'http://www.w3.org/2000/svg';
 
   function initLiquidText() {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // one instance per section heading, each spawning SVG circles every frame –
+    // the single biggest cost on a phone, and its blobs follow a cursor that
+    // touch devices do not have. Lite mode keeps the accent letterforms, static.
+    const reduced = liteMotion();
 
     document.querySelectorAll<HTMLElement>('[data-liquid-text]').forEach((host) => {
       if (host.dataset.bound) return;

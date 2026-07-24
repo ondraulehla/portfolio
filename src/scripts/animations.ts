@@ -1,5 +1,6 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { liteMotion } from './motion';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -32,6 +33,17 @@ function setup() {
         },
       );
     });
+
+    // Scrubbed effects recompute on every scroll frame. One-shot reveals above
+    // are cheap enough to keep everywhere; these two are not, so phones get
+    // the finished state instead of the animation.
+    if (liteMotion()) {
+      const timelineEl = document.querySelector<HTMLElement>('[data-timeline]');
+      if (timelineEl) timelineEl.style.setProperty('--line-progress', '100%');
+      return () => {
+        document.documentElement.classList.remove('motion-ok');
+      };
+    }
 
     // Experience timeline: draw the vertical line as you scroll through it.
     const timeline = document.querySelector<HTMLElement>('[data-timeline]');

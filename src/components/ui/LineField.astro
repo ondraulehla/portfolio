@@ -14,6 +14,8 @@
 </div>
 
 <script>
+  import { liteMotion } from '@/scripts/motion';
+
   interface Point {
     x: number;
     y: number;
@@ -85,7 +87,9 @@
 
     const canvas = wrap.querySelector<HTMLCanvasElement>('[data-linefield]')!;
     const ctx = canvas.getContext('2d')!;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // touch devices get the same single static frame as reduced-motion users:
+    // the whole effect is cursor-driven, so on a phone it is pure frame cost
+    const reduced = liteMotion();
     const X_GAP = 10;
     const Y_GAP = 32;
 

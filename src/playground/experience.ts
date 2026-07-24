@@ -473,16 +473,37 @@ export async function startExperience(): Promise<void> {
     pad.hidden = false;
     pad.querySelectorAll<HTMLButtonElement>('[data-touch-key]').forEach((btn) => {
       const key = btn.dataset.touchKey as keyof typeof keys;
-      const press = (down: boolean) => (e: Event) => {
+      const release = (e: Event) => {
         e.preventDefault();
-        keys[key] = down;
+        keys[key] = false;
       };
-      btn.addEventListener('pointerdown', press(true));
-      btn.addEventListener('pointerup', press(false));
-      btn.addEventListener('pointercancel', press(false));
-      btn.addEventListener('pointerleave', press(false));
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        keys[key] = true;
+        // iOS hands a long press to its own text-selection UI, which steals the
+        // pointer stream – pointerup then never reaches the button and the key
+        // sticks down. Capturing the pointer keeps every event (and the final
+        // lostpointercapture) on this element no matter what the OS does.
+        try {
+          btn.setPointerCapture(e.pointerId);
+        } catch {}
+      });
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+      btn.addEventListener('lostpointercapture', release);
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
     });
   }
+
+  // last-resort release: a key must never survive the tab losing focus
+  const releaseAll = () => {
+    keys.up = keys.down = keys.left = keys.right = keys.boost = false;
+  };
+  addEventListener('blur', releaseAll);
+  const onVisibility = () => {
+    if (document.hidden) releaseAll();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 
   const hudControls = document.getElementById('hud-controls');
   const hudPrompt = document.getElementById('hud-prompt');
@@ -765,6 +786,8 @@ export async function startExperience(): Promise<void> {
       removeEventListener('resize', onResize);
       removeEventListener('keydown', onKeyDown);
       removeEventListener('keyup', onKeyUp);
+      removeEventListener('blur', releaseAll);
+      document.removeEventListener('visibilitychange', onVisibility);
       renderer.dispose();
     },
     { once: true },

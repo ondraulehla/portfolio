@@ -83,6 +83,8 @@
 </style>
 
 <script>
+  import { liteMotion } from '@/scripts/motion';
+
   const WORDS: Record<string, string> = {
     projects: 'PROJECTS',
     about: 'ABOUT',
@@ -116,7 +118,7 @@
     const wordsHost = layer.querySelector<HTMLElement>('[data-bd-words]')!;
     const dotsHost = layer.querySelector<HTMLElement>('[data-bd-dots]')!;
     const ctx = canvas.getContext('2d')!;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = liteMotion();
 
     /* ---------- variant switching ---------- */
     let variant = 'off';
@@ -402,7 +404,9 @@
       { passive: true },
     );
 
-    addEventListener('pointermove', (e) => {
+    // the cursor parallax has no touch equivalent; skipping the listener keeps
+    // phones off this hot path entirely
+    if (!reduced) addEventListener('pointermove', (e) => {
       const rect = canvas.getBoundingClientRect();
       if (e.clientY >= rect.top && e.clientY <= rect.bottom && rect.top < innerHeight) {
         const x = e.clientX - rect.left;

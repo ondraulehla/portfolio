@@ -223,6 +223,11 @@ const worldData = {
        as a background-image on the same element and must survive */
     background-color: color-mix(in oklab, var(--surface) 82%, transparent);
     backdrop-filter: blur(12px);
+    /* in-flight chrome is instrumentation, not prose – a long press on a phone
+       should never pop the selection handles over the world */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .pg-label {
@@ -360,6 +365,12 @@ const worldData = {
     justify-content: center;
     color: var(--ink-muted);
     font-size: 1rem;
+    /* iOS: a held button must fly the plane, not raise the copy/lookup callout
+       or start a text selection – and no gesture may be read as a scroll */
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     transition:
       background 0.12s,
       color 0.12s,
