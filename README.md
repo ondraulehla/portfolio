@@ -102,6 +102,30 @@ sit in `startExperience` (`BASE_SPEED`, bank/pitch coefficients). Run
 
 ## Deploy
 
-Static output – any static host works. `site` in
-[astro.config.mjs](astro.config.mjs) and `Sitemap:` in
-[public/robots.txt](public/robots.txt) must point at the final domain.
+**Pushing to `main` publishes the live site.** [ulehla.dev](https://ulehla.dev)
+is a Cloudflare Pages project wired to this repository, so Cloudflare builds
+and deploys every push on its own. Nothing in `.github/workflows` does this –
+the only workflow here runs [readme-ci](https://github.com/ondraulehla/readme-ci)
+against the docs. Treat a merge to `main` as a production release.
+
+Cloudflare runs `npm run build` (which gates on `check:i18n` before
+`astro build`) and serves the resulting `dist/`. The project settings – build
+command, output directory, custom domain – live in the Cloudflare dashboard,
+not in this repo; there is no `wrangler.toml` to edit.
+
+What that means for the files here:
+
+- **[public/\_headers](public/_headers) and [public/\_redirects](public/_redirects)
+  are live configuration.** Cloudflare reads them from the deployed output, so
+  editing them changes response headers and routing on the next push.
+- **[vercel.json](vercel.json) does nothing today.** It mirrors `_headers` and
+  only matters if the deploy ever moves to Vercel. Change both together or the
+  mirror rots.
+- `_redirects` carries a hard-won constraint: Cloudflare Pages drops
+  dot-directories from a deployment, so `/.well-known/*` is served by proxying
+  onto dotless mirrors. The reasoning is in the file – read it before touching
+  those paths.
+
+The domain is referenced in two places that must agree with it: `site` in
+[astro.config.mjs](astro.config.mjs) and the `Sitemap:` line in
+[public/robots.txt](public/robots.txt).
