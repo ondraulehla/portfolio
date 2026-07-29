@@ -15,22 +15,27 @@ const slug = project.id.split('/').slice(1).join('/');
 const href = localePath(locale, `/projects/${slug}`);
 ---
 
+<!-- A cell in the full-bleed projects band, not a floating card: the negative
+     margins collapse neighbouring borders into one shared hairline, and hover
+     lifts the cell so its ink outline isn't overpainted by later siblings. -->
 <article
-  class="group border-line hover:border-ink-faint relative overflow-hidden border transition-all duration-300 hover:shadow-[0_12px_40px_var(--glow)]"
+  class="group border-line hover:border-ink focus-within:border-ink relative -mb-px flex flex-col border transition-colors duration-[250ms] focus-within:z-[1] hover:z-[1] md:odd:-mr-px"
   data-reveal
 >
-  <a href={href} class="absolute inset-0 z-10" aria-label={project.data.title} data-astro-prefetch="hover"></a>
+  <a
+    href={href}
+    class="absolute inset-0 z-10"
+    aria-label={project.data.title}
+    data-astro-prefetch="hover"></a>
 
-  <div class="overflow-hidden">
-    <Image
-      src={project.data.cover}
-      alt=""
-      widths={[480, 768, 1200]}
-      sizes="(min-width: 1024px) 560px, 100vw"
-      class="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-      transition:name={`cover-${slug}`}
-    />
-  </div>
+  <Image
+    src={project.data.cover}
+    alt=""
+    widths={[480, 768, 1200]}
+    sizes="(min-width: 768px) 50vw, 100vw"
+    class="border-line aspect-video w-full border-b object-cover"
+    transition:name={`cover-${slug}`}
+  />
 
   <div class="p-6 sm:p-7">
     <div class="text-ink-faint flex items-center gap-3 font-mono text-xs tracking-wide">
@@ -49,20 +54,12 @@ const href = localePath(locale, `/projects/${slug}`);
     <div class="mt-4 flex flex-wrap gap-2">
       {project.data.tech.slice(0, 5).map((item) => <Badge>{item}</Badge>)}
     </div>
+  </div>
 
-    <p class="text-accent mt-5 inline-flex items-center gap-1.5 text-sm font-semibold">
-      {t('projects.viewCase')}
-      <svg
-        class="size-4 transition-transform group-hover:translate-x-1"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"></path></svg
-      >
-    </p>
+  <div
+    class="cell-flood-group border-line mt-auto flex items-center justify-between border-t px-6 py-3.5 font-mono text-xs tracking-[0.15em] uppercase sm:px-7"
+  >
+    <span>{t('projects.viewCase')}</span>
+    <span aria-hidden="true">→</span>
   </div>
 </article>
