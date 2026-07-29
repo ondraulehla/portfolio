@@ -15,10 +15,10 @@ const slug = project.id.split('/').slice(1).join('/');
 const href = localePath(locale, `/projects/${slug}`);
 ---
 
-<!-- Flat hover, in the site's own hairline language: the border darkens to ink
-     and the bottom bar floods, so nothing about the card floats or scales. -->
+<!-- Hover lights the whole frame in accent - border, glow and title move
+     together - and the bottom bar floods in ink as the one committed step. -->
 <article
-  class="group border-line hover:border-ink focus-within:border-ink relative flex flex-col border transition-colors duration-[250ms]"
+  class="group border-line hover:border-accent focus-within:border-accent relative flex flex-col border transition-[border-color,box-shadow] duration-[250ms] focus-within:shadow-[0_12px_40px_var(--glow)] hover:shadow-[0_12px_40px_var(--glow)]"
   data-reveal
 >
   <a
