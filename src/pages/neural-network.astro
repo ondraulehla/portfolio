@@ -138,9 +138,14 @@ const classCounts = ['2', '3', '4'] as const;
       <!-- architecture + challenges in one row: the +Layer button vanishing at
            the three-layer cap is what makes even a full architecture fit next
            to the horizontal preset list. Below lg they stack; on phones the
-           preset row scrolls sideways. -->
+           preset row scrolls sideways.
+           Both cells push their control row down to the bottom padding line:
+           the layers side carries a caption row (INPUT / L1 / …) the challenge
+           side does not, so matching the tops would leave the steppers 19px
+           below the presets. Bottom-aligning needs no magic number and holds
+           when either side wraps to a second line. -->
       <div class="border-line grid border-t lg:grid-cols-[1fr_auto]">
-        <div class="min-w-0 px-4 py-2.5 sm:py-3.5">
+        <div class="flex min-w-0 flex-col justify-between px-4 py-2.5 sm:py-3.5">
           <p class="nn-cell-label">{t('nn.layers')}</p>
           <div
             id="nn-layers"
@@ -152,7 +157,7 @@ const classCounts = ['2', '3', '4'] as const;
           >
           </div>
         </div>
-        <div class="border-line min-w-0 border-t px-4 py-2.5 sm:py-3.5 lg:border-t-0 lg:border-l">
+        <div class="border-line flex min-w-0 flex-col justify-between border-t px-4 py-2.5 sm:py-3.5 lg:border-t-0 lg:border-l">
           <p class="nn-cell-label">{t('nn.challenges')}</p>
           <div class="nn-scroll-row mt-2.5 flex gap-2 overflow-x-auto sm:flex-wrap">
             <button type="button" data-nn-preset="spiral" class="nn-add" title={t('nn.ch.spiralTip')}>
