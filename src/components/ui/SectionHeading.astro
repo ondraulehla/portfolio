@@ -4,12 +4,25 @@ import LiquidText from '@/components/ui/LiquidText.astro';
 interface Props {
   id?: string;
   heading: string;
+  /** Contact, the closing section, centres its whole plate; the rest stay left-anchored. */
+  align?: 'start' | 'center';
 }
-const { id, heading } = Astro.props;
+const { id, heading, align = 'start' } = Astro.props;
 ---
 
-<div class="relative mb-12" data-reveal>
+<div class:list={['relative mb-12', align === 'center' && 'text-center']} data-reveal>
   <h2 {id} class="font-poster text-[length:clamp(3rem,6vw,4.5rem)]">
-    <LiquidText text={heading} />
+    {
+      /* LiquidText paints a block-level SVG, and text-align cannot move a block
+         box - centring needs an inline-level wrapper around it. */
+      align === 'center' ? (
+        <span class="inline-block">
+          <LiquidText text={heading} />
+        </span>
+      ) : (
+        <LiquidText text={heading} />
+      )
+    }
   </h2>
+  <slot />
 </div>
