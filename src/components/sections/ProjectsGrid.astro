@@ -16,16 +16,10 @@ const projects = (await getCollection('projects', (entry) => entry.id.startsWith
   .sort((a, b) => a.data.order - b.data.order);
 ---
 
-<section class="scroll-mt-20 py-16 sm:py-24" id="projects">
-  <div class="mx-auto max-w-6xl px-5 sm:px-8">
-    <SectionHeading heading={t('projects.heading')} />
-  </div>
+<section class="mx-auto max-w-6xl scroll-mt-20 px-5 py-16 sm:px-8 sm:py-24" id="projects">
+  <SectionHeading heading={t('projects.heading')} />
 
-  <!-- The one section that breaks the max-w-6xl rhythm: a full-bleed band of
-       hairline cells. The cards carry the grid lines themselves; the wrapper
-       only closes the bottom edge when an odd count leaves the last row half
-       empty. -->
-  <div class="border-line grid border-b md:grid-cols-2">
+  <div class="grid gap-6 md:grid-cols-2">
     {projects.map((project) => <ProjectCard {project} {locale} />)}
   </div>
 </section>

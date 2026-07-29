@@ -15,11 +15,10 @@ const slug = project.id.split('/').slice(1).join('/');
 const href = localePath(locale, `/projects/${slug}`);
 ---
 
-<!-- A cell in the full-bleed projects band, not a floating card: the negative
-     margins collapse neighbouring borders into one shared hairline, and hover
-     lifts the cell so its ink outline isn't overpainted by later siblings. -->
+<!-- Flat hover, in the site's own hairline language: the border darkens to ink
+     and the bottom bar floods, so nothing about the card floats or scales. -->
 <article
-  class="group border-line hover:border-ink focus-within:border-ink relative -mb-px flex flex-col border transition-colors duration-[250ms] focus-within:z-[1] hover:z-[1] md:odd:-mr-px"
+  class="group border-line hover:border-ink focus-within:border-ink relative flex flex-col border transition-colors duration-[250ms]"
   data-reveal
 >
   <a
@@ -32,7 +31,7 @@ const href = localePath(locale, `/projects/${slug}`);
     src={project.data.cover}
     alt=""
     widths={[480, 768, 1200]}
-    sizes="(min-width: 768px) 50vw, 100vw"
+    sizes="(min-width: 1024px) 560px, 100vw"
     class="border-line aspect-video w-full border-b object-cover"
     transition:name={`cover-${slug}`}
   />
