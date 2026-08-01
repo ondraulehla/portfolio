@@ -19,7 +19,13 @@ const projects = (await loadProjects()).map((entry) => ({
 
 const context = {
   projects,
-  contact: { email: site.email, github: site.github, linkedin: site.linkedin, name: site.name },
+  contact: {
+    email: site.email,
+    github: site.github,
+    linkedin: site.linkedin,
+    x: site.x,
+    name: site.name,
+  },
 };
 ---
 
@@ -55,7 +61,7 @@ const context = {
     if (!raw) return;
     const data = JSON.parse(raw) as {
       projects: ProjectRef[];
-      contact: { email: string; github: string; linkedin: string; name: string };
+      contact: { email: string; github: string; linkedin: string; x: string; name: string };
     };
 
     modelContext.provideContext({
@@ -105,7 +111,7 @@ const context = {
         },
         {
           name: 'get_contact',
-          description: 'Get the ways to reach Ondřej Úlehla: email, GitHub and LinkedIn.',
+          description: 'Get the ways to reach Ondřej Úlehla: email, GitHub, LinkedIn and X.',
           inputSchema: { type: 'object', properties: {} },
           execute: async () =>
             text(
@@ -114,6 +120,7 @@ const context = {
                 `Email: ${data.contact.email}`,
                 `GitHub: ${data.contact.github}`,
                 `LinkedIn: ${data.contact.linkedin}`,
+                `X: ${data.contact.x}`,
               ].join('\n'),
             ),
         },

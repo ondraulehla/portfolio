@@ -62,6 +62,7 @@ export function profileMarkdown(projects: Project[]): string {
     `- **Email:** ${site.email}`,
     `- **GitHub:** ${site.github}`,
     `- **LinkedIn:** ${site.linkedin}`,
+    `- **X:** ${site.x}`,
     '',
     '## Experience',
     '',
@@ -186,7 +187,9 @@ export function llmsTxt(projects: Project[], notes: Note[] = []): string {
       ? [
           '## Writing',
           '',
-          ...notes.map((n) => `- [${n.data.title}](${site.domain}/notes/${n.id}.md): ${n.data.summary}`),
+          ...notes.map(
+            (n) => `- [${n.data.title}](${site.domain}/notes/${n.id}.md): ${n.data.summary}`,
+          ),
           '',
         ]
       : []),
@@ -200,6 +203,7 @@ export function llmsTxt(projects: Project[], notes: Note[] = []): string {
     `- [Email](mailto:${site.email})`,
     `- [GitHub](${site.github})`,
     `- [LinkedIn](${site.linkedin})`,
+    `- [X](${site.x})`,
     '',
   ].join('\n');
 }
@@ -265,6 +269,7 @@ export function agentSkills(projects: Project[]): AgentSkill[] {
         `- Email: ${site.email}`,
         `- GitHub: ${site.github}`,
         `- LinkedIn: ${site.linkedin}`,
+        `- X: ${site.x}`,
         '',
       ].join('\n'),
     },
