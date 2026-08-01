@@ -22,7 +22,6 @@ const context = {
   contact: {
     email: site.email,
     github: site.github,
-    linkedin: site.linkedin,
     x: site.x,
     name: site.name,
   },
@@ -61,7 +60,7 @@ const context = {
     if (!raw) return;
     const data = JSON.parse(raw) as {
       projects: ProjectRef[];
-      contact: { email: string; github: string; linkedin: string; x: string; name: string };
+      contact: { email: string; github: string; x: string; name: string };
     };
 
     modelContext.provideContext({
@@ -111,7 +110,7 @@ const context = {
         },
         {
           name: 'get_contact',
-          description: 'Get the ways to reach Ondřej Úlehla: email, GitHub, LinkedIn and X.',
+          description: 'Get the ways to reach Ondřej Úlehla: email, GitHub and X.',
           inputSchema: { type: 'object', properties: {} },
           execute: async () =>
             text(
@@ -119,7 +118,6 @@ const context = {
                 `Name: ${data.contact.name}`,
                 `Email: ${data.contact.email}`,
                 `GitHub: ${data.contact.github}`,
-                `LinkedIn: ${data.contact.linkedin}`,
                 `X: ${data.contact.x}`,
               ].join('\n'),
             ),
